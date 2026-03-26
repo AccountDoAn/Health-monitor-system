@@ -1582,8 +1582,8 @@
         try {
           // Lấy dữ liệu sinh tồn và cảnh báo song song
           const [resSinhTon, resAlerts] = await Promise.all([
-            fetch("https://health-monitor-system-pni3.onrender.com/sinh-ton"),
-            fetch("https://health-monitor-system-pni3.onrender.com/alerts"),
+            fetch("https://health-monitor-system-twts.onrender.com/sinh-ton"),
+            fetch("https://health-monitor-system-twts.onrender.com/alerts"),
           ]);
 
           allData = await resSinhTon.json();
@@ -2505,3 +2505,4 @@
     </script>
   </body>
 </html>
+
