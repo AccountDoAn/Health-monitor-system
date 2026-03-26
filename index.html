@@ -1,0 +1,2507 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Health Monitor — Dữ liệu sinh tồn</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --navy: #2b5f8e;
+        --sky: #85c8ee;
+        --green: #5ab52a;
+        --mint: #ceecd8;
+        --white: #ffffff;
+        --bg: #f0f7f4;
+        --text: #1a2e1e;
+        --muted: #6b8f7a;
+        --border: #d0e8da;
+        --danger: #e05252;
+        --warn: #e8a930;
+        --ok: var(--green);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: "Sora", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      /* ── HEADER ── */
+      header {
+        background: var(--navy);
+        color: var(--white);
+        padding: 0 40px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-shadow: 0 4px 20px rgba(43, 95, 142, 0.25);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      header .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      header .brand svg {
+        width: 32px;
+        height: 32px;
+        color: var(--sky);
+      }
+
+      header h1 {
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+        color: var(--white);
+      }
+
+      header h1 span {
+        color: var(--sky);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .live-dot {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.78rem;
+        color: var(--mint);
+        font-family: "DM Mono", monospace;
+      }
+
+      .live-dot::before {
+        content: "";
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: var(--green);
+        border-radius: 50%;
+        box-shadow: 0 0 0 0 rgba(90, 181, 42, 0.6);
+        animation: pulse 1.8s infinite;
+      }
+
+      @keyframes pulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(90, 181, 42, 0.6);
+        }
+        70% {
+          box-shadow: 0 0 0 8px rgba(90, 181, 42, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(90, 181, 42, 0);
+        }
+      }
+
+      /* ── MAIN LAYOUT ── */
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 40px 60px;
+      }
+
+      /* ── SUMMARY CARDS ── */
+      .summary-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .stat-card {
+        background: var(--white);
+        border-radius: 12px;
+        padding: 18px 20px;
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        box-shadow: 0 2px 10px rgba(43, 95, 142, 0.06);
+      }
+      .stat-card .label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+      }
+      .stat-card .value {
+        font-size: 1.9rem;
+        font-weight: 700;
+        color: var(--navy);
+        font-family: "DM Mono", monospace;
+        line-height: 1;
+      }
+      .stat-card.danger .value {
+        color: var(--danger);
+      }
+      .stat-card.warn .value {
+        color: var(--warn);
+      }
+      .stat-card.ok .value {
+        color: var(--ok);
+      }
+      .stat-card .sub {
+        font-size: 0.75rem;
+        color: var(--muted);
+      }
+
+      /* ── DATE PICKER ── */
+      .day-nav {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        position: relative;
+      }
+
+      .datepicker-trigger {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--white);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 16px;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(43, 95, 142, 0.07);
+        transition: border-color 0.15s;
+        user-select: none;
+      }
+      .datepicker-trigger:hover {
+        border-color: var(--sky);
+      }
+      .datepicker-trigger.open {
+        border-color: var(--navy);
+      }
+
+      .datepicker-trigger .cal-icon {
+        color: var(--navy);
+        flex-shrink: 0;
+      }
+
+      .datepicker-date {
+        font-family: "DM Mono", monospace;
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--navy);
+        letter-spacing: 0.04em;
+      }
+      .datepicker-date.today-val {
+        color: var(--green);
+      }
+
+      .datepicker-chevron {
+        color: var(--muted);
+        transition: transform 0.2s;
+        flex-shrink: 0;
+      }
+      .datepicker-trigger.open .datepicker-chevron {
+        transform: rotate(180deg);
+      }
+
+      /* Calendar popup */
+      .cal-popup {
+        display: none;
+        position: absolute;
+        top: calc(100% + 8px);
+        left: 0;
+        z-index: 200;
+        background: var(--white);
+        border: 1.5px solid var(--border);
+        border-radius: 14px;
+        box-shadow: 0 8px 32px rgba(43, 95, 142, 0.15);
+        padding: 16px;
+        min-width: 280px;
+        animation: calFadeIn 0.15s ease;
+      }
+      .cal-popup.open {
+        display: block;
+      }
+
+      @keyframes calFadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(-6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .cal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        gap: 6px;
+      }
+
+      .cal-nav-btn {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--border);
+        border-radius: 7px;
+        background: transparent;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--navy);
+        transition: background 0.12s;
+        flex-shrink: 0;
+      }
+      .cal-nav-btn:hover {
+        background: var(--mint);
+      }
+
+      .cal-month-year {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        justify-content: center;
+      }
+
+      .cal-select {
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 3px 6px;
+        font-family: "DM Mono", monospace;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--navy);
+        background: var(--bg);
+        cursor: pointer;
+        outline: none;
+      }
+      .cal-select:focus {
+        border-color: var(--navy);
+      }
+
+      .cal-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px;
+      }
+
+      .cal-dow {
+        text-align: center;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        padding: 4px 0;
+      }
+
+      .cal-day {
+        aspect-ratio: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 7px;
+        font-family: "DM Mono", monospace;
+        font-size: 0.78rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1.5px solid transparent;
+        transition:
+          background 0.1s,
+          border-color 0.1s;
+        position: relative;
+      }
+      .cal-day:hover:not(.empty):not(.selected) {
+        background: var(--mint);
+      }
+      .cal-day.empty {
+        cursor: default;
+      }
+      .cal-day.has-data {
+        font-weight: 700;
+        color: var(--navy);
+      }
+      .cal-day.has-data::after {
+        content: "";
+        position: absolute;
+        bottom: 3px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--sky);
+      }
+      .cal-day.selected {
+        background: var(--navy);
+        color: var(--white);
+        border-color: var(--navy);
+      }
+      .cal-day.selected::after {
+        background: var(--sky);
+      }
+      .cal-day.is-today {
+        border-color: var(--green);
+        color: var(--green);
+        font-weight: 700;
+      }
+      .cal-day.is-today.selected {
+        background: var(--green);
+        border-color: var(--green);
+        color: var(--white);
+      }
+      .cal-day.no-data {
+        color: #ccc;
+        cursor: default;
+      }
+
+      .cal-footer {
+        margin-top: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 6px;
+      }
+      .cal-today-btn {
+        font-size: 0.75rem;
+        font-family: "Sora", sans-serif;
+        font-weight: 600;
+        color: var(--green);
+        background: #e8f8ec;
+        border: none;
+        border-radius: 6px;
+        padding: 5px 12px;
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      .cal-today-btn:hover {
+        background: #d0f0da;
+      }
+
+      .day-count-badge {
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-family: "DM Mono", monospace;
+      }
+
+      .day-today-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 10px;
+        border-radius: 20px;
+        background: #e8f8ec;
+        color: #2d8a3e;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      /* ── TABLE SECTION ── */
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+      }
+
+      .section-header h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--navy);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .section-header h2::before {
+        content: "";
+        display: inline-block;
+        width: 4px;
+        height: 20px;
+        background: var(--green);
+        border-radius: 2px;
+      }
+
+      .search-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--white);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 14px;
+        font-size: 0.83rem;
+        color: var(--muted);
+      }
+
+      .search-box input {
+        border: none;
+        outline: none;
+        font-family: "Sora", sans-serif;
+        font-size: 0.83rem;
+        color: var(--text);
+        background: transparent;
+        width: 180px;
+      }
+
+      /* ── SCROLLABLE TABLE WRAPPER ── */
+      .table-wrapper {
+        background: var(--white);
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        box-shadow: 0 4px 20px rgba(43, 95, 142, 0.07);
+        overflow: hidden;
+      }
+
+      .table-scroll {
+        max-height: 480px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--sky) var(--mint);
+      }
+
+      .table-scroll::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .table-scroll::-webkit-scrollbar-track {
+        background: var(--mint);
+        border-radius: 0 14px 14px 0;
+      }
+
+      .table-scroll::-webkit-scrollbar-thumb {
+        background: var(--sky);
+        border-radius: 4px;
+        border: 2px solid var(--mint);
+      }
+
+      .table-scroll::-webkit-scrollbar-thumb:hover {
+        background: var(--navy);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+      }
+
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--navy);
+        color: var(--white);
+      }
+
+      thead th {
+        padding: 14px 20px;
+        text-align: left;
+        font-size: 0.72rem;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      thead th:first-child {
+        border-radius: 0;
+      }
+
+      tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: background 0.15s;
+      }
+
+      tbody tr:last-child {
+        border-bottom: none;
+      }
+
+      tbody tr:hover {
+        background: #f5fcf7;
+      }
+
+      tbody td {
+        padding: 13px 20px;
+        vertical-align: middle;
+        color: var(--text);
+      }
+
+      /* patient id */
+      .patient-id {
+        font-family: "DM Mono", monospace;
+        font-size: 0.82rem;
+        color: var(--navy);
+        font-weight: 500;
+        background: #e8f2fc;
+        padding: 3px 8px;
+        border-radius: 5px;
+        display: inline-block;
+      }
+
+      /* vitals */
+      .vital {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-family: "DM Mono", monospace;
+        font-size: 0.88rem;
+        font-weight: 500;
+      }
+
+      .vital .bar {
+        width: 52px;
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        overflow: hidden;
+      }
+
+      .vital .bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        background: var(--sky);
+        transition: width 0.5s ease;
+      }
+
+      /* status badge */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .badge::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.8;
+      }
+
+      .badge.ok {
+        background: #e8f8ec;
+        color: #2d8a3e;
+      }
+      .badge.warning {
+        background: #fff4e0;
+        color: #b97a00;
+      }
+      .badge.danger {
+        background: #fdeaea;
+        color: #c0392b;
+      }
+      .badge.critical {
+        background: #3d0000;
+        color: #ff6b6b;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+      }
+      .badge.unknown {
+        background: #f0f0f0;
+        color: #888;
+      }
+
+      /* ── EMPTY / LOADING ── */
+      .state-row td {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        border: 3px solid var(--border);
+        border-top-color: var(--navy);
+        border-radius: 50%;
+        animation: spin 0.75s linear infinite;
+        margin-bottom: 10px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* ── FOOTER ── */
+      .footer-bar {
+        margin-top: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: var(--muted);
+        padding: 0 4px;
+      }
+
+      #last-updated {
+        font-family: "DM Mono", monospace;
+      }
+
+      .refresh-btn {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--navy);
+        color: var(--white);
+        border: none;
+        border-radius: 8px;
+        padding: 7px 16px;
+        font-family: "Sora", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+      }
+
+      .refresh-btn:hover {
+        background: #1e4a72;
+      }
+      .refresh-btn:active {
+        transform: scale(0.97);
+      }
+      .refresh-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* ── ALERT MODAL ── */
+      .alert-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        z-index: 999;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(4px);
+        animation: fadeIn 0.2s ease;
+      }
+
+      .alert-overlay.active {
+        display: flex;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .alert-box {
+        background: #1a0000;
+        border: 2px solid #e05252;
+        border-radius: 16px;
+        padding: 36px 40px;
+        max-width: 520px;
+        width: 90%;
+        box-shadow: 0 0 60px rgba(224, 82, 82, 0.4);
+        animation:
+          slideUp 0.25s ease,
+          glowPulse 1.2s ease-in-out infinite;
+        position: relative;
+      }
+
+      @keyframes slideUp {
+        from {
+          transform: translateY(30px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes glowPulse {
+        0%,
+        100% {
+          box-shadow: 0 0 40px rgba(224, 82, 82, 0.3);
+        }
+        50% {
+          box-shadow: 0 0 70px rgba(224, 82, 82, 0.7);
+        }
+      }
+
+      .alert-icon {
+        font-size: 2.8rem;
+        text-align: center;
+        margin-bottom: 14px;
+        animation: iconBlink 0.6s ease-in-out infinite alternate;
+      }
+
+      @keyframes iconBlink {
+        from {
+          opacity: 1;
+          transform: scale(1);
+        }
+        to {
+          opacity: 0.6;
+          transform: scale(1.15);
+        }
+      }
+
+      .alert-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #ff6b6b;
+        text-align: center;
+        margin-bottom: 8px;
+        letter-spacing: 0.04em;
+      }
+
+      .alert-subtitle {
+        font-size: 0.82rem;
+        color: #ffaaaa;
+        text-align: center;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+
+      .alert-list {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 24px;
+        max-height: 200px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #e05252 #2a0000;
+      }
+
+      .alert-list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 7px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        font-size: 0.83rem;
+        color: #ffd0d0;
+      }
+
+      .alert-list-item:last-child {
+        border-bottom: none;
+      }
+
+      .alert-list-item .pid {
+        font-family: "DM Mono", monospace;
+        color: #fff;
+        font-weight: 600;
+      }
+
+      .alert-list-item .status-tag {
+        background: rgba(224, 82, 82, 0.25);
+        color: #ff8080;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: 0.72rem;
+        font-weight: 600;
+      }
+
+      .alert-confirm-btn {
+        width: 100%;
+        padding: 13px;
+        background: #e05252;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-family: "Sora", sans-serif;
+        font-size: 0.92rem;
+        font-weight: 700;
+        cursor: pointer;
+        letter-spacing: 0.05em;
+        transition:
+          background 0.2s,
+          transform 0.1s;
+      }
+
+      .alert-confirm-btn:hover {
+        background: #c0392b;
+      }
+      .alert-confirm-btn:active {
+        transform: scale(0.98);
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 860px) {
+        .summary-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        main {
+          padding: 24px 20px 50px;
+        }
+        header {
+          padding: 0 20px;
+        }
+        .vital .bar {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <!-- HEADER -->
+    <header>
+      <div class="brand">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
+        <h1>Health<span>Monitor</span></h1>
+      </div>
+      <div class="header-right">
+        <div class="live-dot">Đang theo dõi trực tiếp</div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main>
+      <!-- Summary row (3 cards, không có tổng bệnh nhân) -->
+      <div class="summary-row" id="summary-row">
+        <div class="stat-card ok">
+          <div class="label">Bình thường</div>
+          <div class="value" id="s-ok">—</div>
+          <div class="sub">chỉ số ổn định</div>
+        </div>
+        <div class="stat-card warn">
+          <div class="label">Cần theo dõi</div>
+          <div class="value" id="s-warn">—</div>
+          <div class="sub">cảnh báo nhẹ</div>
+        </div>
+        <div class="stat-card danger">
+          <div class="label">Khẩn cấp</div>
+          <div class="value" id="s-danger">—</div>
+          <div class="sub">cần can thiệp</div>
+        </div>
+      </div>
+
+      <!-- Date Picker -->
+      <div class="day-nav" id="day-nav">
+        <!-- Trigger button -->
+        <div
+          class="datepicker-trigger"
+          id="datepicker-trigger"
+          onclick="toggleCalendar()"
+        >
+          <svg
+            class="cal-icon"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <rect x="3" y="4" width="18" height="18" rx="2" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span class="datepicker-date" id="datepicker-date">—</span>
+          <svg
+            class="datepicker-chevron"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </div>
+
+        <!-- Calendar popup -->
+        <div class="cal-popup" id="cal-popup">
+          <div class="cal-header">
+            <button class="cal-nav-btn" onclick="calShiftMonth(-1)">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <polyline points="15 18 9 12 15 6" />
+              </svg>
+            </button>
+            <div class="cal-month-year">
+              <select
+                class="cal-select"
+                id="cal-month-sel"
+                onchange="calGoToMonth()"
+              ></select>
+              <select
+                class="cal-select"
+                id="cal-year-sel"
+                onchange="calGoToYear()"
+              ></select>
+            </div>
+            <button class="cal-nav-btn" onclick="calShiftMonth(1)">
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+              >
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="cal-grid" id="cal-grid"></div>
+
+          <div class="cal-footer">
+            <button class="cal-today-btn" onclick="calGoToday()">
+              ● Hôm nay
+            </button>
+            <span class="day-count-badge" id="day-count-badge"></span>
+          </div>
+        </div>
+
+        <span id="today-badge" style="display: none" class="day-today-badge"
+          >● Hôm nay</span
+        >
+      </div>
+
+      <!-- Table -->
+      <div class="section-header">
+        <h2>Bảng dữ liệu sinh tồn</h2>
+        <div class="search-box">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input id="search-input" type="text" placeholder="Tìm bệnh nhân..." />
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Mã bệnh nhân</th>
+                <th>Nhịp tim (bpm)</th>
+                <th>SpO₂ (%)</th>
+                <th>Trạng thái</th>
+                <th>Thời gian đo</th>
+              </tr>
+            </thead>
+            <tbody id="table-body">
+              <tr class="state-row">
+                <td colspan="5">
+                  <div class="spinner"></div>
+                  <br />Đang tải dữ liệu...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="footer-bar">
+        <span id="last-updated">—</span>
+        <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 1 0 .49-4.1" />
+          </svg>
+          Làm mới
+        </button>
+      </div>
+    </main>
+
+    <!-- ALERT MODAL -->
+    <div class="alert-overlay" id="alert-overlay">
+      <div class="alert-box">
+        <div class="alert-icon">🚨</div>
+        <div class="alert-title">CẢNH BÁO KHẨN CẤP</div>
+        <div class="alert-subtitle">
+          Phát hiện bệnh nhân có chỉ số bất thường!<br />Vui lòng kiểm tra và xử
+          lý ngay.
+        </div>
+        <div class="alert-list" id="alert-list"></div>
+        <button class="alert-confirm-btn" onclick="dismissAlert()">
+          ✔ ĐÃ XÁC NHẬN
+        </button>
+      </div>
+    </div>
+
+    <script>
+      let allData = [];
+      let alarmOscillators = [];
+
+      // Đọc trạng thái đã xác nhận từ localStorage
+      // Tự reset vào ngày mới để cảnh báo ngày hôm sau vẫn hoạt động
+      const savedDate = localStorage.getItem("alertDismissedDate");
+      const todayStr = new Date().toISOString().slice(0, 10);
+      let alertDismissed =
+        savedDate === todayStr &&
+        localStorage.getItem("alertDismissed") === "true";
+
+      function dismissAlert() {
+        document.getElementById("alert-overlay").classList.remove("active");
+        stopAlarm();
+        alertDismissed = true;
+        localStorage.setItem("alertDismissed", "true");
+        localStorage.setItem("alertDismissedDate", todayStr);
+      }
+
+      /* ── TIẾNG RÚ ALARM (Web Audio API) ── */
+      function startAlarm() {
+        stopAlarm();
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function beepCycle() {
+          const now = ctx.currentTime;
+          // Tạo 2 tone xen kẽ: 880Hz và 660Hz
+          [880, 660].forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.setValueAtTime(freq, now + idx * 0.25);
+            gain.gain.setValueAtTime(0, now + idx * 0.25);
+            gain.gain.linearRampToValueAtTime(0.35, now + idx * 0.25 + 0.02);
+            gain.gain.linearRampToValueAtTime(0, now + idx * 0.25 + 0.22);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + idx * 0.25);
+            osc.stop(now + idx * 0.25 + 0.23);
+            alarmOscillators.push({ osc, ctx });
+          });
+        }
+
+        beepCycle();
+        // Lặp lại mỗi 0.7s
+        const interval = setInterval(() => {
+          if (
+            !document
+              .getElementById("alert-overlay")
+              .classList.contains("active")
+          ) {
+            clearInterval(interval);
+            ctx.close();
+            return;
+          }
+          beepCycle();
+        }, 700);
+
+        alarmOscillators.push({ interval, ctx });
+      }
+
+      function stopAlarm() {
+        alarmOscillators.forEach((item) => {
+          try {
+            if (item.osc) item.osc.stop();
+          } catch (e) {}
+          try {
+            if (item.interval) clearInterval(item.interval);
+          } catch (e) {}
+          try {
+            if (item.ctx) item.ctx.close();
+          } catch (e) {}
+        });
+        alarmOscillators = [];
+      }
+
+      function showAlert(alertsData) {
+        const list = document.getElementById("alert-list");
+        list.innerHTML = alertsData
+          .map((a) => {
+            const loaiLabel =
+              {
+                nhip_tim_qua_cao: "⬆️ Nhịp tim quá cao",
+                oxy_tut_nguy_hiem: "🫁 SpO₂ tụt nguy hiểm",
+                benh_nhan_bam_sos: "🆘 Bệnh nhân nhấn SOS",
+              }[a.loai_su_co] || a.loai_su_co;
+
+            return `
+            <div class="alert-list-item">
+              <span class="pid">${a.userTB_id?.slice(0, 8) ?? "—"}…</span>
+              <span>${a.nhip_tim_luc_soc ?? "—"} bpm &nbsp;|&nbsp; SpO₂ ${a.oxy_luc_soc ?? "—"}%</span>
+              <span class="status-tag">${loaiLabel}</span>
+            </div>`;
+          })
+          .join("");
+        document.getElementById("alert-overlay").classList.add("active");
+        startAlarm();
+      }
+
+      function checkAlerts(alertsData) {
+        if (alertDismissed) return;
+        // Chỉ cảnh báo các sự kiện đang ở trạng thái 'dang_bao_dong'
+        const active = (alertsData || []).filter(
+          (a) => a.trang_thai_xu_ly === "dang_bao_dong",
+        );
+        if (active.length > 0) showAlert(active);
+      }
+
+      /**
+       * Ma trận phân loại theo bảng Nhịp tim × SpO₂:
+       *
+       *                  SpO2 Thấp(<90)   SpO2 TB(90-94)    SpO2 BT(95-100)
+       * Cao (>100 bpm)   NGUY HIỂM        CẢNH BÁO          AN TOÀN
+       * BT  (60-100)     NGUY HIỂM        CẢNH BÁO          AN TOÀN
+       * Thấp (<60 bpm)   CỰC KỲ NGUY HIỂM NGUY HIỂM         CẢNH BÁO
+       */
+      function classifyStatus(row) {
+        const bpm = parseFloat(row.nhip_tim) || 0;
+        const spo2 = parseFloat(row.spo2) || 0;
+
+        const heartHigh = bpm > 100;
+        const heartNormal = bpm >= 60 && bpm <= 100;
+        const heartLow = bpm < 60 && bpm > 0;
+
+        const spo2Low = spo2 > 0 && spo2 < 90;
+        const spo2Medium = spo2 >= 90 && spo2 < 95;
+        const spo2Normal = spo2 >= 95;
+
+        if (heartLow && spo2Low)
+          return { cls: "critical", label: "Cực kỳ nguy hiểm" };
+        if (heartLow && spo2Medium)
+          return { cls: "danger", label: "Nguy hiểm" };
+        if (heartLow && spo2Normal)
+          return { cls: "warning", label: "Cảnh báo (Nhịp tim chậm)" };
+
+        if ((heartHigh || heartNormal) && spo2Low)
+          return { cls: "danger", label: "Nguy hiểm" };
+        if ((heartHigh || heartNormal) && spo2Medium)
+          return { cls: "warning", label: "Cảnh báo" };
+        if (heartHigh && spo2Normal)
+          return { cls: "ok", label: "An toàn (Đang vận động)" };
+        if (heartNormal && spo2Normal)
+          return { cls: "ok", label: "An toàn (Nghỉ ngơi)" };
+
+        return { cls: "unknown", label: "Không đủ dữ liệu" };
+      }
+
+      // Trả về cls cho summary cards
+      function getStatusCls(row) {
+        const s = classifyStatus(row);
+        return s.cls === "critical" ? "danger" : s.cls;
+      }
+
+      function heartBarWidth(bpm) {
+        // normal range 60–100; scale 0–160 → 0–100%
+        const pct = Math.min(100, Math.max(0, ((bpm - 40) / 120) * 100));
+        return pct;
+      }
+
+      function spo2Color(val) {
+        if (val >= 95) return "var(--green)";
+        if (val >= 90) return "var(--warn)";
+        return "var(--danger)";
+      }
+
+      function formatDateTime(ts) {
+        if (!ts) return "—";
+        const d = new Date(ts);
+        if (isNaN(d)) return ts;
+        return d.toLocaleString("vi-VN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        });
+      }
+
+      function toDateKey(ts) {
+        if (!ts) return "unknown";
+        const d = new Date(ts);
+        if (isNaN(d)) return "unknown";
+        // YYYY-MM-DD theo giờ local
+        return (
+          d.getFullYear() +
+          "-" +
+          String(d.getMonth() + 1).padStart(2, "0") +
+          "-" +
+          String(d.getDate()).padStart(2, "0")
+        );
+      }
+
+      function formatDateLabel(key) {
+        if (key === "unknown") return "Không rõ ngày";
+        const [y, m, d] = key.split("-");
+        const todayKey = toDateKey(new Date().toISOString());
+        if (key === todayKey) return `Hôm nay — ${d}/${m}/${y}`;
+        return `${d}/${m}/${y}`;
+      }
+
+      /* ── GROUP DATA BY DAY ── */
+      let dayKeys = []; // mảng các key ngày đã sắp xếp giảm dần
+      let currentDayIdx = 0; // index trong dayKeys đang xem
+
+      function groupByDay(data) {
+        const map = {};
+        data.forEach((row) => {
+          const key = toDateKey(row.thoi_gian_do);
+          if (!map[key]) map[key] = [];
+          map[key].push(row);
+        });
+        dayKeys = Object.keys(map).sort((a, b) => b.localeCompare(a));
+        return map;
+      }
+
+      let dayMap = {};
+
+      function renderDayPicker() {
+        const currentKey = dayKeys[currentDayIdx] || "";
+        const todayKey = toDateKey(new Date().toISOString());
+        const isToday = currentKey === todayKey;
+        const count = (dayMap[currentKey] || []).length;
+
+        // Cập nhật trigger button
+        if (currentKey && currentKey !== "unknown") {
+          const [y, m, d] = currentKey.split("-");
+          const el = document.getElementById("datepicker-date");
+          el.textContent = `${d}/${m}/${y}`;
+          el.className = "datepicker-date" + (isToday ? " today-val" : "");
+        }
+
+        document.getElementById("today-badge").style.display = isToday
+          ? "inline-flex"
+          : "none";
+        document.getElementById("day-count-badge").textContent = count
+          ? `${count} bản ghi`
+          : "Không có dữ liệu";
+
+        // Re-render calendar grid nếu đang mở
+        if (document.getElementById("cal-popup").classList.contains("open")) {
+          renderCalGrid();
+        }
+      }
+
+      /* ── CALENDAR STATE ── */
+      let calViewYear = new Date().getFullYear();
+      let calViewMonth = new Date().getMonth() + 1; // 1-12
+
+      function toggleCalendar() {
+        const popup = document.getElementById("cal-popup");
+        const trigger = document.getElementById("datepicker-trigger");
+        const isOpen = popup.classList.contains("open");
+        if (isOpen) {
+          popup.classList.remove("open");
+          trigger.classList.remove("open");
+        } else {
+          // Sync view tới tháng của ngày đang chọn
+          const currentKey = dayKeys[currentDayIdx] || "";
+          if (currentKey && currentKey !== "unknown") {
+            const [y, m] = currentKey.split("-").map(Number);
+            calViewYear = y;
+            calViewMonth = m;
+          }
+          renderCalSelects();
+          renderCalGrid();
+          popup.classList.add("open");
+          trigger.classList.add("open");
+        }
+      }
+
+      function closeCalendar() {
+        document.getElementById("cal-popup").classList.remove("open");
+        document.getElementById("datepicker-trigger").classList.remove("open");
+      }
+
+      // Đóng khi click ngoài
+      document.addEventListener("click", function (e) {
+        const nav = document.getElementById("day-nav");
+        if (!nav.contains(e.target)) closeCalendar();
+      });
+
+      function renderCalSelects() {
+        const monthSel = document.getElementById("cal-month-sel");
+        const yearSel = document.getElementById("cal-year-sel");
+        const months = [
+          "Tháng 1",
+          "Tháng 2",
+          "Tháng 3",
+          "Tháng 4",
+          "Tháng 5",
+          "Tháng 6",
+          "Tháng 7",
+          "Tháng 8",
+          "Tháng 9",
+          "Tháng 10",
+          "Tháng 11",
+          "Tháng 12",
+        ];
+
+        monthSel.innerHTML = months
+          .map(
+            (mn, i) =>
+              `<option value="${i + 1}" ${i + 1 === calViewMonth ? "selected" : ""}>${mn}</option>`,
+          )
+          .join("");
+
+        // Lấy range năm từ dữ liệu
+        const years = dayKeys
+          .filter((k) => k !== "unknown")
+          .map((k) => parseInt(k.split("-")[0]))
+          .filter(Boolean);
+        const minYear = years.length
+          ? Math.min(...years)
+          : new Date().getFullYear();
+        const maxYear = new Date().getFullYear();
+
+        yearSel.innerHTML = "";
+        for (let y = maxYear; y >= minYear; y--) {
+          yearSel.innerHTML += `<option value="${y}" ${y === calViewYear ? "selected" : ""}>${y}</option>`;
+        }
+      }
+
+      function renderCalGrid() {
+        const grid = document.getElementById("cal-grid");
+        const todayKey = toDateKey(new Date().toISOString());
+        const selectedKey = dayKeys[currentDayIdx] || "";
+        const daysInMonth = new Date(calViewYear, calViewMonth, 0).getDate();
+        const firstDow = new Date(calViewYear, calViewMonth - 1, 1).getDay(); // 0=Sun
+        // Adjust so Monday = 0
+        const startOffset = (firstDow + 6) % 7;
+
+        const dows = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
+        let html = dows.map((d) => `<div class="cal-dow">${d}</div>`).join("");
+
+        // Empty cells before first day
+        for (let i = 0; i < startOffset; i++)
+          html += `<div class="cal-day empty"></div>`;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const key = `${calViewYear}-${String(calViewMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          const hasData = !!dayMap[key];
+          const isToday = key === todayKey;
+          const isSel = key === selectedKey;
+          const cls = [
+            "cal-day",
+            hasData ? "has-data" : "no-data",
+            isToday ? "is-today" : "",
+            isSel ? "selected" : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          const onclick = hasData ? `calSelectDay('${key}')` : "";
+          html += `<div class="${cls}" ${onclick ? `onclick="${onclick}"` : ""}>${d}</div>`;
+        }
+
+        grid.innerHTML = html;
+      }
+
+      function calSelectDay(key) {
+        const idx = dayKeys.indexOf(key);
+        if (idx === -1) return;
+        selectDay(idx);
+        closeCalendar();
+      }
+
+      function calShiftMonth(delta) {
+        calViewMonth += delta;
+        if (calViewMonth > 12) {
+          calViewMonth = 1;
+          calViewYear++;
+        }
+        if (calViewMonth < 1) {
+          calViewMonth = 12;
+          calViewYear--;
+        }
+        renderCalSelects();
+        renderCalGrid();
+      }
+
+      function calGoToMonth() {
+        calViewMonth = parseInt(document.getElementById("cal-month-sel").value);
+        renderCalGrid();
+      }
+
+      function calGoToYear() {
+        calViewYear = parseInt(document.getElementById("cal-year-sel").value);
+        renderCalSelects();
+        renderCalGrid();
+      }
+
+      function calGoToday() {
+        const todayKey = toDateKey(new Date().toISOString());
+        const idx = dayKeys.indexOf(todayKey);
+        if (idx !== -1) {
+          selectDay(idx);
+          closeCalendar();
+        } else {
+          // Không có dữ liệu hôm nay, chỉ navigate calendar về tháng hiện tại
+          calViewYear = new Date().getFullYear();
+          calViewMonth = new Date().getMonth() + 1;
+          renderCalSelects();
+          renderCalGrid();
+        }
+      }
+
+      function selectDay(idx) {
+        currentDayIdx = idx;
+        renderDayPicker();
+        const dayData = dayMap[dayKeys[idx]] || [];
+        renderTable(dayData);
+        updateSummary(dayData);
+      }
+
+      function shiftDay(dir) {
+        const next = currentDayIdx - dir;
+        if (next < 0 || next >= dayKeys.length) return;
+        selectDay(next);
+      }
+
+      function renderTable(data) {
+        const tbody = document.getElementById("table-body");
+        if (!data || data.length === 0) {
+          tbody.innerHTML = `<tr class="state-row"><td colspan="6">Không có dữ liệu.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = data
+          .map((row, i) => {
+            const { cls, label } = classifyStatus(row);
+            const bpm = parseFloat(row.nhip_tim) || 0;
+            const spo2 = parseFloat(row.spo2) || 0;
+            const barW = heartBarWidth(bpm);
+
+            return `
+            <tr>
+              <td style="color:var(--muted);font-size:0.78rem;font-family:'DM Mono',monospace;">${String(i + 1).padStart(2, "0")}</td>
+              <td><span class="patient-id">${row.userTB_id ?? "—"}</span></td>
+              <td>
+                <div class="vital">
+                  <span>${bpm > 0 ? bpm : "—"}</span>
+                  <div class="bar"><div class="bar-fill" style="width:${barW}%;background:var(--sky)"></div></div>
+                </div>
+              </td>
+              <td>
+                <div class="vital">
+                  <span style="color:${spo2Color(spo2)}">${spo2 > 0 ? spo2 + "%" : "—"}</span>
+                  <div class="bar"><div class="bar-fill" style="width:${spo2}%;background:${spo2Color(spo2)}"></div></div>
+                </div>
+              </td>
+              <td><span class="badge ${cls}">${label}</span></td>
+              <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted);white-space:nowrap;">
+                ${formatDateTime(row.thoi_gian_do)}
+              </td>
+            </tr>`;
+          })
+          .join("");
+      }
+
+      function updateSummary(data) {
+        const ok = data.filter((r) => getStatusCls(r) === "ok").length;
+        const warn = data.filter((r) => getStatusCls(r) === "warning").length;
+        const danger = data.filter((r) => getStatusCls(r) === "danger").length;
+        document.getElementById("s-ok").textContent = ok;
+        document.getElementById("s-warn").textContent = warn;
+        document.getElementById("s-danger").textContent = danger;
+      }
+
+      function updateTimestamp() {
+        const now = new Date();
+        document.getElementById("last-updated").textContent =
+          "Cập nhật lúc " +
+          now.toLocaleTimeString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            second: "2-digit",
+          });
+      }
+
+      async function loadData() {
+        const btn = document.getElementById("refresh-btn");
+        btn.disabled = true;
+
+        document.getElementById("table-body").innerHTML =
+          `<tr class="state-row"><td colspan="6"><div class="spinner"></div><br>Đang tải dữ liệu...</td></tr>`;
+
+        try {
+          // Lấy dữ liệu sinh tồn và cảnh báo song song
+          const [resSinhTon, resAlerts] = await Promise.all([
+            fetch("https://health-monitor-system-pni3.onrender.com/sinh-ton"),
+            fetch("https://health-monitor-system-pni3.onrender.com/alerts"),
+          ]);
+
+          allData = await resSinhTon.json();
+          const alertsData = await resAlerts.json();
+
+          // Nhóm theo ngày
+          dayMap = groupByDay(allData);
+          currentDayIdx = 0;
+          renderDayPicker();
+
+          const todayData = dayMap[dayKeys[0]] || [];
+          renderTable(todayData);
+          updateSummary(todayData);
+          updateTimestamp();
+
+          // Kiểm tra cảnh báo từ bảng su_kien_cap_cuu
+          checkAlerts(alertsData);
+        } catch (e) {
+          document.getElementById("table-body").innerHTML =
+            `<tr class="state-row"><td colspan="6">⚠️ Không thể kết nối tới máy chủ. Vui lòng thử lại.</td></tr>`;
+          console.error(e);
+        }
+
+        btn.disabled = false;
+      }
+
+      // Search filter — lọc trên dữ liệu của ngày đang xem
+      document
+        .getElementById("search-input")
+        .addEventListener("input", function () {
+          const q = this.value.toLowerCase().trim();
+          const dayData = dayMap[dayKeys[currentDayIdx]] || [];
+          if (!q) {
+            renderTable(dayData);
+            return;
+          }
+          const filtered = dayData.filter((r) =>
+            (r.userTB_id || "").toLowerCase().includes(q),
+          );
+          renderTable(filtered);
+        });
+
+      // Auto-refresh every 30s
+      loadData();
+      setInterval(loadData, 30000);
+    </script>
+
+    <!-- ── CHAT BOX ── -->
+    <style>
+      .chat-fab {
+        position: fixed;
+        bottom: 28px;
+        right: 28px;
+        width: 52px;
+        height: 52px;
+        background: var(--navy);
+        border-radius: 50%;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 20px rgba(43, 95, 142, 0.35);
+        z-index: 300;
+        transition:
+          background 0.2s,
+          transform 0.2s;
+      }
+      .chat-fab:hover {
+        background: #1e4a72;
+        transform: scale(1.08);
+      }
+      .chat-fab svg {
+        color: white;
+        transition: opacity 0.2s;
+      }
+      .chat-fab .icon-close {
+        display: none;
+      }
+      .chat-fab.open .icon-chat {
+        display: none;
+      }
+      .chat-fab.open .icon-close {
+        display: block;
+      }
+
+      .chat-box {
+        position: fixed;
+        bottom: 92px;
+        right: 28px;
+        width: 340px;
+        height: 480px;
+        background: var(--white);
+        border: 1.5px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 12px 48px rgba(43, 95, 142, 0.18);
+        display: flex;
+        flex-direction: column;
+        z-index: 299;
+        overflow: hidden;
+        transform: scale(0.92) translateY(12px);
+        opacity: 0;
+        pointer-events: none;
+        transform-origin: bottom right;
+        transition:
+          transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1),
+          opacity 0.18s ease;
+      }
+      .chat-box.open {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+        pointer-events: all;
+      }
+
+      .chat-header {
+        background: var(--navy);
+        padding: 14px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .chat-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--sky);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .chat-avatar svg {
+        color: var(--navy);
+      }
+      .chat-header-info {
+        flex: 1;
+      }
+      .chat-header-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--white);
+        line-height: 1;
+      }
+      .chat-header-sub {
+        font-size: 0.7rem;
+        color: var(--sky);
+        margin-top: 2px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .chat-header-sub::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        background: var(--green);
+        border-radius: 50%;
+        display: inline-block;
+      }
+
+      .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--sky) var(--mint);
+        background: var(--bg);
+      }
+      .chat-messages::-webkit-scrollbar {
+        width: 5px;
+      }
+      .chat-messages::-webkit-scrollbar-track {
+        background: var(--mint);
+      }
+      .chat-messages::-webkit-scrollbar-thumb {
+        background: var(--sky);
+        border-radius: 3px;
+      }
+
+      .chat-msg {
+        display: flex;
+        flex-direction: column;
+        max-width: 82%;
+        gap: 3px;
+        animation: msgIn 0.18s ease;
+      }
+      @keyframes msgIn {
+        from {
+          opacity: 0;
+          transform: translateY(6px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .chat-msg.me {
+        align-self: flex-end;
+        align-items: flex-end;
+      }
+      .chat-msg.them {
+        align-self: flex-start;
+        align-items: flex-start;
+      }
+
+      .chat-bubble {
+        padding: 9px 13px;
+        border-radius: 14px;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        word-break: break-word;
+      }
+      .chat-msg.me .chat-bubble {
+        background: var(--navy);
+        color: var(--white);
+        border-bottom-right-radius: 4px;
+      }
+      .chat-msg.them .chat-bubble {
+        background: var(--white);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 4px;
+      }
+
+      .chat-time {
+        font-size: 0.65rem;
+        color: var(--muted);
+        font-family: "DM Mono", monospace;
+        padding: 0 4px;
+      }
+
+      .chat-date-divider {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0;
+      }
+      .chat-date-divider::before,
+      .chat-date-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      .chat-date-divider span {
+        font-size: 0.65rem;
+        color: var(--muted);
+        white-space: nowrap;
+        font-family: "DM Mono", monospace;
+      }
+
+      .chat-footer {
+        padding: 10px 12px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--white);
+        flex-shrink: 0;
+      }
+      .chat-input {
+        flex: 1;
+        border: 1.5px solid var(--border);
+        border-radius: 20px;
+        padding: 8px 14px;
+        font-family: "Sora", sans-serif;
+        font-size: 0.82rem;
+        outline: none;
+        background: var(--bg);
+        color: var(--text);
+        transition: border-color 0.15s;
+        resize: none;
+        line-height: 1.4;
+        max-height: 80px;
+      }
+      .chat-input:focus {
+        border-color: var(--navy);
+        background: var(--white);
+      }
+      .chat-input::placeholder {
+        color: var(--muted);
+      }
+
+      .chat-send {
+        width: 36px;
+        height: 36px;
+        background: var(--navy);
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+        transition:
+          background 0.15s,
+          transform 0.1s;
+      }
+      .chat-send:hover {
+        background: #1e4a72;
+      }
+      .chat-send:active {
+        transform: scale(0.92);
+      }
+      .chat-send:disabled {
+        opacity: 0.4;
+        cursor: default;
+      }
+
+      .fab-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        min-width: 18px;
+        height: 18px;
+        background: var(--danger);
+        color: white;
+        border-radius: 9px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 4px;
+        border: 2px solid white;
+      }
+
+      /* Contact list */
+      .contact-list {
+        overflow-y: auto;
+        flex: 1;
+        scrollbar-width: thin;
+        scrollbar-color: var(--sky) var(--mint);
+      }
+      .contact-list::-webkit-scrollbar {
+        width: 5px;
+      }
+      .contact-list::-webkit-scrollbar-track {
+        background: var(--mint);
+      }
+      .contact-list::-webkit-scrollbar-thumb {
+        background: var(--sky);
+        border-radius: 3px;
+      }
+
+      .contact-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.12s;
+      }
+      .contact-item:hover {
+        background: #f5fcf7;
+      }
+      .contact-item:last-child {
+        border-bottom: none;
+      }
+
+      .contact-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--navy);
+        color: white;
+        font-family: "DM Mono", monospace;
+        font-size: 0.78rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .contact-avatar.online::after {
+        content: "";
+        position: absolute;
+        bottom: 1px;
+        right: 1px;
+        width: 10px;
+        height: 10px;
+        background: var(--green);
+        border-radius: 50%;
+        border: 2px solid white;
+      }
+
+      .contact-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .contact-name {
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .contact-role {
+        font-size: 0.7rem;
+        color: var(--navy);
+        font-weight: 600;
+        margin-top: 1px;
+      }
+      .contact-preview {
+        font-size: 0.72rem;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        margin-top: 2px;
+      }
+
+      .contact-unread {
+        min-width: 20px;
+        height: 20px;
+        background: var(--navy);
+        color: white;
+        border-radius: 10px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 5px;
+        flex-shrink: 0;
+      }
+
+      .contact-empty {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        text-align: center;
+        background: var(--bg);
+      }
+
+      /* Back button */
+      .chat-back-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 7px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        flex-shrink: 0;
+        transition: background 0.12s;
+      }
+      .chat-back-btn:hover {
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      /* Chat avatar in header (text initials) */
+      #chat-avatar-header {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--sky);
+        color: var(--navy);
+        font-family: "DM Mono", monospace;
+        font-size: 0.72rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      @media (max-width: 480px) {
+        .chat-box {
+          width: calc(100vw - 32px);
+          right: 16px;
+          bottom: 82px;
+        }
+        .chat-fab {
+          right: 16px;
+          bottom: 20px;
+        }
+      }
+    </style>
+
+    <!-- FAB button -->
+    <button class="chat-fab" id="chat-fab" onclick="toggleChat()">
+      <svg
+        class="icon-chat"
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path
+          d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+        />
+      </svg>
+      <svg
+        class="icon-close"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      >
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+      <!-- Unread badge -->
+      <span class="fab-badge" id="fab-badge" style="display: none"></span>
+    </button>
+
+    <!-- Chat box -->
+    <div class="chat-box" id="chat-box">
+      <!-- ── VIEW 1: DANH SÁCH LIÊN HỆ ── -->
+      <div id="view-contacts">
+        <div class="chat-header">
+          <svg
+            width="18"
+            height="18"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="color: var(--sky); flex-shrink: 0"
+          >
+            <path
+              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+            />
+          </svg>
+          <div class="chat-header-info">
+            <div class="chat-header-name">Tin nhắn</div>
+            <div class="chat-header-sub" id="contact-count-sub">
+              Không có liên hệ
+            </div>
+          </div>
+        </div>
+
+        <div class="contact-list" id="contact-list">
+          <!-- Populated by JS -->
+        </div>
+
+        <div class="contact-empty" id="contact-empty">
+          <svg
+            width="40"
+            height="40"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="color: var(--border); margin-bottom: 10px"
+          >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          </svg>
+          <div
+            style="font-size: 0.82rem; font-weight: 600; color: var(--muted)"
+          >
+            Chưa có liên hệ nào
+          </div>
+          <div
+            style="font-size: 0.75rem; color: var(--border); margin-top: 4px"
+          >
+            Tài khoản bác sĩ hoặc thiết bị<br />liên kết sẽ xuất hiện ở đây
+          </div>
+        </div>
+      </div>
+
+      <!-- ── VIEW 2: CỬA SỔ CHAT ── -->
+      <div
+        id="view-chat"
+        style="display: none; flex-direction: column; height: 100%"
+      >
+        <div class="chat-header">
+          <button class="chat-back-btn" onclick="backToContacts()">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+            >
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+          <div class="chat-avatar" id="chat-avatar-header"></div>
+          <div class="chat-header-info">
+            <div class="chat-header-name" id="chat-contact-name">—</div>
+            <div class="chat-header-sub" id="chat-contact-role">—</div>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chat-messages"></div>
+
+        <div class="chat-footer">
+          <textarea
+            class="chat-input"
+            id="chat-input"
+            rows="1"
+            placeholder="Nhập tin nhắn..."
+          ></textarea>
+          <button class="chat-send" onclick="sendMessage()">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="22" y1="2" x2="11" y2="13" />
+              <polygon points="22 2 15 22 11 13 2 9 22 2" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* ── DỮ LIỆU LIÊN HỆ (sau này load từ API) ── */
+      // Để trống = không có liên hệ. Thêm object vào mảng khi có tài khoản liên kết.
+      // Ví dụ: { id: 1, name: 'BS. Nguyễn Văn A', role: 'Bác sĩ', online: true, avatar: 'BS' }
+      const CONTACTS = [
+        {
+          id: 1,
+          name: "BS. Nguyễn Văn Minh",
+          role: "Bác sĩ điều trị",
+          online: true,
+          avatar: "BM",
+        },
+        {
+          id: 2,
+          name: "Trần Thị Lan",
+          role: "Bệnh nhân",
+          online: false,
+          avatar: "TL",
+        },
+      ];
+
+      // Lưu lịch sử chat local (theo id liên hệ)
+      const chatHistory = {
+        1: [
+          {
+            text: "Xin chào, nhịp tim bệnh nhân BN001 có vẻ bất thường, anh xem giúp em với ạ.",
+            side: "me",
+            ts: Date.now() - 3600000 * 2,
+            read: true,
+          },
+          {
+            text: "Tôi đã xem rồi. SpO2 đang ở mức 91%, cần theo dõi thêm. Em cho bệnh nhân thở oxy hỗ trợ nhé.",
+            side: "them",
+            ts: Date.now() - 3600000 * 2 + 60000,
+            read: true,
+          },
+          {
+            text: "Dạ em hiểu, em sẽ xử lý ngay ạ.",
+            side: "me",
+            ts: Date.now() - 3600000 * 2 + 120000,
+            read: true,
+          },
+          {
+            text: "Cập nhật lại cho tôi sau 30 phút nhé.",
+            side: "them",
+            ts: Date.now() - 3600000 + 5000,
+            read: false,
+          },
+        ],
+        2: [
+          {
+            text: "Chào bác sĩ, em thấy hơi khó thở ạ.",
+            side: "them",
+            ts: Date.now() - 1800000,
+            read: true,
+          },
+          {
+            text: "Bạn Lan ơi, chỉ số SpO2 của bạn đang hơi thấp. Bạn đang ở phòng nào vậy?",
+            side: "me",
+            ts: Date.now() - 1800000 + 90000,
+            read: true,
+          },
+          {
+            text: "Em ở phòng 204 ạ.",
+            side: "them",
+            ts: Date.now() - 1800000 + 150000,
+            read: false,
+          },
+        ],
+      };
+      let currentContact = null;
+
+      /* ── KHỞI TẠO ── */
+      function updateFabBadge() {
+        const total = CONTACTS.reduce((sum, c) => {
+          return (
+            sum +
+            (chatHistory[c.id]?.filter((m) => m.side === "them" && !m.read)
+              .length || 0)
+          );
+        }, 0);
+        const badge = document.getElementById("fab-badge");
+        badge.style.display = total > 0 ? "flex" : "none";
+        badge.textContent = total > 9 ? "9+" : total;
+      }
+
+      function initChat() {
+        const list = document.getElementById("contact-list");
+        const empty = document.getElementById("contact-empty");
+        const sub = document.getElementById("contact-count-sub");
+
+        if (CONTACTS.length === 0) {
+          list.style.display = "none";
+          empty.style.display = "flex";
+          sub.textContent = "Không có liên hệ";
+          return;
+        }
+
+        empty.style.display = "none";
+        list.style.display = "block";
+        sub.textContent = `${CONTACTS.length} liên hệ`;
+
+        list.innerHTML = CONTACTS.map((c) => {
+          const initials =
+            c.avatar ||
+            c.name
+              .split(" ")
+              .map((w) => w[0])
+              .slice(-2)
+              .join("")
+              .toUpperCase();
+          const lastMsg = chatHistory[c.id]?.slice(-1)[0];
+          const preview = lastMsg ? lastMsg.text : "Chưa có tin nhắn";
+          const unread =
+            chatHistory[c.id]?.filter((m) => m.side === "them" && !m.read)
+              .length || 0;
+          return `
+            <div class="contact-item" onclick="openChat(${c.id})">
+              <div class="contact-avatar ${c.online ? "online" : ""}">${initials}</div>
+              <div class="contact-info">
+                <div class="contact-name">${c.name}</div>
+                <div class="contact-role">${c.role}</div>
+                <div class="contact-preview">${preview}</div>
+              </div>
+              ${unread ? `<div class="contact-unread">${unread}</div>` : ""}
+            </div>`;
+        }).join("");
+      }
+
+      /* ── MỞ CHAT VỚI LIÊN HỆ ── */
+      function openChat(id) {
+        currentContact = CONTACTS.find((c) => c.id === id);
+        if (!currentContact) return;
+        if (!chatHistory[id]) chatHistory[id] = [];
+
+        // Đánh dấu đã đọc
+        chatHistory[id].forEach((m) => (m.read = true));
+        updateFabBadge();
+
+        // Cập nhật header
+        const initials =
+          currentContact.avatar ||
+          currentContact.name
+            .split(" ")
+            .map((w) => w[0])
+            .slice(-2)
+            .join("")
+            .toUpperCase();
+        document.getElementById("chat-avatar-header").textContent = initials;
+        document.getElementById("chat-contact-name").textContent =
+          currentContact.name;
+        document.getElementById("chat-contact-role").textContent =
+          currentContact.online ? "Đang hoạt động" : currentContact.role;
+        document.getElementById("chat-contact-role").style.color =
+          currentContact.online ? "var(--mint)" : "var(--sky)";
+
+        // Chuyển view
+        document.getElementById("view-contacts").style.display = "none";
+        const vc = document.getElementById("view-chat");
+        vc.style.display = "flex";
+
+        renderMessages();
+        setTimeout(() => {
+          scrollChatToBottom();
+          document.getElementById("chat-input").focus();
+        }, 50);
+      }
+
+      function backToContacts() {
+        currentContact = null;
+        document.getElementById("view-chat").style.display = "none";
+        document.getElementById("view-contacts").style.display = "block";
+        initChat(); // refresh unread badges
+      }
+
+      /* ── RENDER TIN NHẮN ── */
+      function renderMessages() {
+        const msgs = document.getElementById("chat-messages");
+        const history = chatHistory[currentContact?.id] || [];
+
+        if (history.length === 0) {
+          msgs.innerHTML = `
+            <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:0.8rem;text-align:center;padding:20px">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Chưa có tin nhắn nào.<br>Hãy bắt đầu cuộc trò chuyện!
+            </div>`;
+          return;
+        }
+
+        let lastDate = "";
+        msgs.innerHTML = history
+          .map((m) => {
+            const d = new Date(m.ts);
+            const dateStr = d.toLocaleDateString("vi-VN", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+            const timeStr = d.toLocaleTimeString("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            const divider =
+              dateStr !== lastDate
+                ? `<div class="chat-date-divider"><span>${dateStr}</span></div>`
+                : "";
+            lastDate = dateStr;
+            return `${divider}
+            <div class="chat-msg ${m.side}">
+              <div class="chat-bubble">${escHtml(m.text)}</div>
+              <div class="chat-time">${timeStr}</div>
+            </div>`;
+          })
+          .join("");
+      }
+
+      function escHtml(str) {
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      /* ── GỬI TIN NHẮN ── */
+      function sendMessage() {
+        const input = document.getElementById("chat-input");
+        const text = input.value.trim();
+        if (!text || !currentContact) return;
+
+        chatHistory[currentContact.id].push({
+          text,
+          side: "me",
+          ts: Date.now(),
+          read: true,
+        });
+        renderMessages();
+        scrollChatToBottom();
+        input.value = "";
+        input.style.height = "auto";
+      }
+
+      function scrollChatToBottom() {
+        const msgs = document.getElementById("chat-messages");
+        msgs.scrollTop = msgs.scrollHeight;
+      }
+
+      /* ── TOGGLE CHAT BOX ── */
+      function toggleChat() {
+        const box = document.getElementById("chat-box");
+        const fab = document.getElementById("chat-fab");
+        box.classList.toggle("open");
+        fab.classList.toggle("open");
+        if (box.classList.contains("open")) {
+          initChat();
+          updateFabBadge();
+        }
+      }
+
+      updateFabBadge();
+
+      /* ── KEYBOARD ── */
+      document
+        .getElementById("chat-input")
+        .addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        });
+      document
+        .getElementById("chat-input")
+        .addEventListener("input", function () {
+          this.style.height = "auto";
+          this.style.height = Math.min(this.scrollHeight, 80) + "px";
+        });
+    </script>
+  </body>
+</html>
