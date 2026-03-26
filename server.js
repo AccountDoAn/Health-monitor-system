@@ -7,7 +7,7 @@ const app = express();
 // ===== CORS =====
 app.use(
   cors({
-    origin: ["https://AccountDoAn.github.io"], // 🔥 sửa ở đây
+    origin: ["https://accountdoan.github.io"], // 🔥 sửa ở đây
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
     credentials: true,
