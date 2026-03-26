@@ -1041,7 +1041,6 @@
                 <th>Mã bệnh nhân</th>
                 <th>Nhịp tim (bpm)</th>
                 <th>SpO₂ (%)</th>
-                <th>Trạng thái</th>
                 <th>Thời gian đo</th>
               </tr>
             </thead>
@@ -1182,7 +1181,7 @@
 
             return `
             <div class="alert-list-item">
-              <span class="pid">${a.userTB_id?.slice(0, 8) ?? "—"}…</span>
+              <span class="pid">${a.usertb_id?.slice(0, 8) ?? "—"}…</span>
               <span>${a.nhip_tim_luc_soc ?? "—"} bpm &nbsp;|&nbsp; SpO₂ ${a.oxy_luc_soc ?? "—"}%</span>
               <span class="status-tag">${loaiLabel}</span>
             </div>`;
@@ -1516,7 +1515,7 @@
       function renderTable(data) {
         const tbody = document.getElementById("table-body");
         if (!data || data.length === 0) {
-          tbody.innerHTML = `<tr class="state-row"><td colspan="6">Không có dữ liệu.</td></tr>`;
+          tbody.innerHTML = `<tr class="state-row"><td colspan="5">Không có dữ liệu.</td></tr>`;
           return;
         }
 
@@ -1530,7 +1529,7 @@
             return `
             <tr>
               <td style="color:var(--muted);font-size:0.78rem;font-family:'DM Mono',monospace;">${String(i + 1).padStart(2, "0")}</td>
-              <td><span class="patient-id">${row.userTB_id ?? "—"}</span></td>
+              <td><span class="patient-id">${row.usertb_id ?? "—"}</span></td>
               <td>
                 <div class="vital">
                   <span>${bpm > 0 ? bpm : "—"}</span>
@@ -1543,7 +1542,6 @@
                   <div class="bar"><div class="bar-fill" style="width:${spo2}%;background:${spo2Color(spo2)}"></div></div>
                 </div>
               </td>
-              <td><span class="badge ${cls}">${label}</span></td>
               <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted);white-space:nowrap;">
                 ${formatDateTime(row.thoi_gian_do)}
               </td>
@@ -1577,7 +1575,7 @@
         btn.disabled = true;
 
         document.getElementById("table-body").innerHTML =
-          `<tr class="state-row"><td colspan="6"><div class="spinner"></div><br>Đang tải dữ liệu...</td></tr>`;
+          `<tr class="state-row"><td colspan="5"><div class="spinner"></div><br>Đang tải dữ liệu...</td></tr>`;
 
         try {
           // Lấy dữ liệu sinh tồn và cảnh báo song song
@@ -1603,7 +1601,7 @@
           checkAlerts(alertsData);
         } catch (e) {
           document.getElementById("table-body").innerHTML =
-            `<tr class="state-row"><td colspan="6">⚠️ Không thể kết nối tới máy chủ. Vui lòng thử lại.</td></tr>`;
+            `<tr class="state-row"><td colspan="5">⚠️ Không thể kết nối tới máy chủ. Vui lòng thử lại.</td></tr>`;
           console.error(e);
         }
 
@@ -1621,7 +1619,7 @@
             return;
           }
           const filtered = dayData.filter((r) =>
-            (r.userTB_id || "").toLowerCase().includes(q),
+            (r.usertb_id || "").toLowerCase().includes(q),
           );
           renderTable(filtered);
         });
