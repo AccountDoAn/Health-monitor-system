@@ -1170,32 +1170,41 @@
 
       function showAlert(alertsData) {
         const list = document.getElementById("alert-list");
-        list.innerHTML = alertsData
-          .map((a) => {
-            const loaiLabel =
-              {
-                nhip_tim_qua_cao: "⬆️ Nhịp tim quá cao",
-                oxy_tut_nguy_hiem: "🫁 SpO₂ tụt nguy hiểm",
-                benh_nhan_bam_sos: "🆘 Bệnh nhân nhấn SOS",
-              }[a.loai_su_co] || a.loai_su_co;
 
-            return `
-            <div class="alert-list-item">
-              <span class="pid">${a.usertb_id?.slice(0, 8) ?? "—"}…</span>
-              <span>${a.nhip_tim_luc_soc ?? "—"} bpm &nbsp;|&nbsp; SpO₂ ${a.oxy_luc_soc ?? "—"}%</span>
-              <span class="status-tag">${loaiLabel}</span>
-            </div>`;
-          })
+        const loaiLabel = {
+          nhip_tim_cao: "⬆️ Nhịp tim quá cao",
+          nhip_tim_thap: "⬇️ Nhịp tim quá thấp",
+          spo2_thap: "🫁 SpO₂ tụt nguy hiểm",
+          bat_thuong_kep: "⚠️ HR + SpO₂ bất thường",
+          mat_tin_hieu: "📡 Mất kết nối thiết bị",
+          phat_hien_te_nga: "🆘 Phát hiện té ngã",
+        };
+
+        const mucDoLabel = {
+          canh_bao: "🟡 Cảnh báo",
+          nguy_hiem: "🔴 Nguy hiểm",
+        };
+
+        list.innerHTML = alertsData
+          .map(
+            (a) => `
+          <div class="alert-list-item">
+            <span class="pid">${(a.nguoi_dung_tb_id ?? "—").slice(0, 8)}…</span>
+            <span>${loaiLabel[a.loai_canh_bao] ?? a.loai_canh_bao ?? "—"}</span>
+            <span class="status-tag">${mucDoLabel[a.muc_do_nghiem_trong] ?? a.muc_do_nghiem_trong ?? "—"}</span>
+          </div>`,
+          )
           .join("");
+
         document.getElementById("alert-overlay").classList.add("active");
         startAlarm();
       }
 
       function checkAlerts(alertsData) {
         if (alertDismissed) return;
-        // Chỉ cảnh báo các sự kiện đang ở trạng thái 'dang_bao_dong'
+        // canh_bao_suc_khoe: chỉ báo động khi đang chờ xác nhận (chưa được xử lý)
         const active = (alertsData || []).filter(
-          (a) => a.trang_thai_xu_ly === "dang_bao_dong",
+          (a) => a.trang_thai_xu_ly === "cho_xac_nhan",
         );
         if (active.length > 0) showAlert(active);
       }
@@ -1529,7 +1538,7 @@
             return `
             <tr>
               <td style="color:var(--muted);font-size:0.78rem;font-family:'DM Mono',monospace;">${String(i + 1).padStart(2, "0")}</td>
-              <td><span class="patient-id">${row.usertb_id ?? "—"}</span></td>
+              <td><span class="patient-id">${row.nguoi_dung_tb_id ?? "—"}</span></td>
               <td>
                 <div class="vital">
                   <span>${bpm > 0 ? bpm : "—"}</span>
@@ -1580,7 +1589,7 @@
         try {
           // Lấy dữ liệu sinh tồn và cảnh báo song song
           const [resSinhTon, resAlerts] = await Promise.all([
-            fetch("https://health-monitor-system-twts.onrender.com/sinh-ton"),
+            fetch("https://health-monitor-system-twts.onrender.com/vitals"),
             fetch("https://health-monitor-system-twts.onrender.com/alerts"),
           ]);
 
@@ -1619,7 +1628,7 @@
             return;
           }
           const filtered = dayData.filter((r) =>
-            (r.usertb_id || "").toLowerCase().includes(q),
+            (r.nguoi_dung_tb_id || "").toLowerCase().includes(q),
           );
           renderTable(filtered);
         });
@@ -2503,3 +2512,4 @@
     </script>
   </body>
 </html>
+
