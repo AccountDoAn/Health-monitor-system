@@ -7,22 +7,20 @@ const app = express();
 // ===== CORS =====
 app.use(
   cors({
-    origin: ["https://accountdoan.github.io"], // 🔥 sửa ở đây
+    origin: ["https://accountdoan.github.io"],
     methods: ["GET", "POST", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
     credentials: true,
   }),
 );
 
-app.options("*", cors());
-
 app.use(express.json());
 
 // ===== Supabase =====
-const supabaseUrl = "https://xqhcxvnfiglxlzxlrtok.supabase.co";
-const supabaseKey =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhxaGN4dm5maWdseGx6eGxydG9rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NDQ2MDMsImV4cCI6MjA5MDAyMDYwM30.0xHS9QlLHSVdQFuLWtEmguzG-dRsC_VQXU8va64s5dQ";
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(
+  "https://uacypltrrqmwoecqlipo.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVhY3lwbHRycnFtd29lY3FsaXBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2MTY4ODYsImV4cCI6MjA5MDE5Mjg4Nn0.BpGaMXMIWXWRgG38hKp4Khk-Dpw1CTKpb8GYwm1GyDc",
+);
 
 // ===== Test =====
 app.get("/", (req, res) => {
@@ -30,17 +28,23 @@ app.get("/", (req, res) => {
 });
 
 // ==========================================
-// 🧑‍⚕️ 1. Danh sách hồ sơ bệnh nhân
+// 🧑‍⚕️ 1. Danh sách bệnh nhân
 // ==========================================
-app.get("/users", async (req, res) => {
+app.get("/patients", async (req, res) => {
   try {
-    const { data, error } = await supabase.from("ho_so_userTB").select("*");
+    const { data, error } = await supabase.from("ho_so_benh_nhan").select(`
+        id,
+        nguoi_dung_tb_id,
+        nguoi_dung (
+          ho_ten,
+          so_dien_thoai
+        )
+      `);
 
     if (error) throw error;
 
     res.json(data);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -48,7 +52,7 @@ app.get("/users", async (req, res) => {
 // ==========================================
 // ❤️ 2. Dữ liệu sinh tồn (history)
 // ==========================================
-app.get("/sinh-ton", async (req, res) => {
+app.get("/vitals", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("du_lieu_sinh_ton")
@@ -60,22 +64,21 @@ app.get("/sinh-ton", async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ==========================================
-// ❤️ 3. Sinh tồn theo userTB
+// ❤️ 3. Sinh tồn theo bệnh nhân
 // ==========================================
-app.get("/sinh-ton/:userTB_id", async (req, res) => {
+app.get("/vitals/:id", async (req, res) => {
   try {
-    const { userTB_id } = req.params;
+    const { id } = req.params;
 
     const { data, error } = await supabase
       .from("du_lieu_sinh_ton")
       .select("*")
-      .eq("userTB_id", userTB_id)
+      .eq("nguoi_dung_tb_id", id)
       .order("thoi_gian_do", { ascending: false })
       .limit(50);
 
@@ -83,29 +86,27 @@ app.get("/sinh-ton/:userTB_id", async (req, res) => {
 
     res.json(data);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ==========================================
-// ⚡ 4. LIVE data (real-time)
+// ⚡ 4. LIVE data
 // ==========================================
-app.get("/live/:userTB_id", async (req, res) => {
+app.get("/live/:id", async (req, res) => {
   try {
-    const { userTB_id } = req.params;
+    const { id } = req.params;
 
     const { data, error } = await supabase
       .from("trang_thai_live")
       .select("*")
-      .eq("userTB_id", userTB_id)
+      .eq("nguoi_dung_tb_id", id)
       .single();
 
     if (error) throw error;
 
     res.json(data);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -116,37 +117,53 @@ app.get("/live/:userTB_id", async (req, res) => {
 app.get("/alerts", async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from("su_kien_cap_cuu")
+      .from("canh_bao_suc_khoe")
       .select("*")
-      .order("thoi_gian_phat", { ascending: false });
+      .order("thoi_gian_phat_hien", { ascending: false })
+      .limit(100);
 
     if (error) throw error;
 
     res.json(data);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ==========================================
-// 🚨 6. Alert theo user
+// 🚨 6. Alert theo bệnh nhân
 // ==========================================
-app.get("/alerts/:userTB_id", async (req, res) => {
+app.get("/alerts/:id", async (req, res) => {
   try {
-    const { userTB_id } = req.params;
+    const { id } = req.params;
 
     const { data, error } = await supabase
-      .from("su_kien_cap_cuu")
+      .from("canh_bao_suc_khoe")
       .select("*")
-      .eq("userTB_id", userTB_id)
-      .order("thoi_gian_phat", { ascending: false });
+      .eq("nguoi_dung_tb_id", id)
+      .order("thoi_gian_phat_hien", { ascending: false });
 
     if (error) throw error;
 
     res.json(data);
   } catch (err) {
-    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==========================================
+// 🚨 7. Dashboard bác sĩ (VIEW)
+// ==========================================
+app.get("/doctor-dashboard", async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("v_bang_dieu_khien_bac_si")
+      .select("*");
+
+    if (error) throw error;
+
+    res.json(data);
+  } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
