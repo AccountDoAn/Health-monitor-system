@@ -859,6 +859,80 @@
         transform: scale(0.98);
       }
 
+      /* ── DEVICE TABS ── */
+      .device-tabs-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .device-tabs-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+
+      .device-tabs {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        flex: 1;
+      }
+
+      .device-tab {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 14px;
+        border-radius: 10px;
+        border: 1.5px solid var(--border);
+        background: var(--white);
+        font-family: "Sora", sans-serif;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.15s;
+        white-space: nowrap;
+      }
+
+      .device-tab:hover {
+        border-color: var(--sky);
+        color: var(--navy);
+      }
+
+      .device-tab.active {
+        background: var(--navy);
+        border-color: var(--navy);
+        color: var(--white);
+      }
+
+      .device-tab .tab-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--muted);
+        flex-shrink: 0;
+      }
+
+      .device-tab.active .tab-dot {
+        background: var(--sky);
+      }
+      .device-tab .tab-count {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        padding: 1px 6px;
+        font-size: 0.68rem;
+      }
+      .device-tab.active .tab-count {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
       /* ── RESPONSIVE ── */
       @media (max-width: 860px) {
         .summary-row {
@@ -917,6 +991,12 @@
           <div class="value" id="s-danger">—</div>
           <div class="sub">cần can thiệp</div>
         </div>
+      </div>
+
+      <!-- Device Tabs -->
+      <div class="device-tabs-row" id="device-tabs-row" style="display: none">
+        <span class="device-tabs-label">Thiết bị:</span>
+        <div class="device-tabs" id="device-tabs"></div>
       </div>
 
       <!-- Date Picker -->
@@ -1038,10 +1118,9 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th>Mã bệnh nhân</th>
+                <th>Bệnh nhân</th>
                 <th>Nhịp tim (bpm)</th>
                 <th>SpO₂ (%)</th>
-                <th>Trạng thái</th>
                 <th>Thời gian đo</th>
               </tr>
             </thead>
@@ -1171,32 +1250,40 @@
 
       function showAlert(alertsData) {
         const list = document.getElementById("alert-list");
-        list.innerHTML = alertsData
-          .map((a) => {
-            const loaiLabel =
-              {
-                nhip_tim_qua_cao: "⬆️ Nhịp tim quá cao",
-                oxy_tut_nguy_hiem: "🫁 SpO₂ tụt nguy hiểm",
-                benh_nhan_bam_sos: "🆘 Bệnh nhân nhấn SOS",
-              }[a.loai_su_co] || a.loai_su_co;
 
-            return `
-            <div class="alert-list-item">
-              <span class="pid">${a.userTB_id?.slice(0, 8) ?? "—"}…</span>
-              <span>${a.nhip_tim_luc_soc ?? "—"} bpm &nbsp;|&nbsp; SpO₂ ${a.oxy_luc_soc ?? "—"}%</span>
-              <span class="status-tag">${loaiLabel}</span>
-            </div>`;
-          })
+        const loaiLabel = {
+          nhip_tim_cao: "⬆️ Nhịp tim quá cao",
+          nhip_tim_thap: "⬇️ Nhịp tim quá thấp",
+          spo2_thap: "🫁 SpO₂ tụt nguy hiểm",
+          bat_thuong_kep: "⚠️ HR + SpO₂ bất thường",
+          mat_tin_hieu: "📡 Mất kết nối thiết bị",
+          phat_hien_te_nga: "🆘 Phát hiện té ngã",
+        };
+
+        const mucDoLabel = {
+          canh_bao: "🟡 Cảnh báo",
+          nguy_hiem: "🔴 Nguy hiểm",
+        };
+
+        list.innerHTML = alertsData
+          .map(
+            (a) => `
+          <div class="alert-list-item">
+            <span class="pid">${a.patientName ?? "—"}</span>
+            <span>${a.heartRate ?? "—"} bpm &nbsp;|&nbsp; SpO₂ ${a.spo2 ?? "—"}%</span>
+            <span class="status-tag">${loaiLabel[a.alertType] ?? a.alertType ?? "—"} &nbsp;${mucDoLabel[a.severity] ?? ""}</span>
+          </div>`,
+          )
           .join("");
+
         document.getElementById("alert-overlay").classList.add("active");
         startAlarm();
       }
 
       function checkAlerts(alertsData) {
         if (alertDismissed) return;
-        // Chỉ cảnh báo các sự kiện đang ở trạng thái 'dang_bao_dong'
         const active = (alertsData || []).filter(
-          (a) => a.trang_thai_xu_ly === "dang_bao_dong",
+          (a) => a.status === "cho_xac_nhan",
         );
         if (active.length > 0) showAlert(active);
       }
@@ -1210,7 +1297,7 @@
        * Thấp (<60 bpm)   CỰC KỲ NGUY HIỂM NGUY HIỂM         CẢNH BÁO
        */
       function classifyStatus(row) {
-        const bpm = parseFloat(row.nhip_tim) || 0;
+        const bpm = parseFloat(row.heartRate) || 0;
         const spo2 = parseFloat(row.spo2) || 0;
 
         const heartHigh = bpm > 100;
@@ -1294,14 +1381,68 @@
         return `${d}/${m}/${y}`;
       }
 
-      /* ── GROUP DATA BY DAY ── */
+      /* ── GROUP DATA BY DEVICE ── */
+      let deviceMap = {}; // { deviceId: [rows] }
+      let deviceIds = []; // mảng deviceId đã sắp xếp
+      let currentDeviceId = null;
+
+      function groupByDevice(data) {
+        const map = {};
+        data.forEach((row) => {
+          const key = row.deviceId || "unknown";
+          if (!map[key]) map[key] = [];
+          map[key].push(row);
+        });
+        deviceIds = Object.keys(map).sort();
+        return map;
+      }
+
+      function renderDeviceTabs() {
+        const row = document.getElementById("device-tabs-row");
+        const tabs = document.getElementById("device-tabs");
+
+        if (deviceIds.length <= 1) {
+          row.style.display = "none";
+          return;
+        }
+
+        row.style.display = "flex";
+        tabs.innerHTML = deviceIds
+          .map((id, idx) => {
+            const rows = deviceMap[id] || [];
+            const label = id === "unknown" ? "Không rõ" : `Thiết bị ${idx + 1}`;
+            const isActive = id === currentDeviceId;
+            return `
+            <button class="device-tab ${isActive ? "active" : ""}" onclick="selectDevice('${id}')">
+              <span class="tab-dot"></span>
+              ${label}
+              <span class="tab-count">${rows.length}</span>
+            </button>`;
+          })
+          .join("");
+      }
+
+      function selectDevice(id) {
+        currentDeviceId = id;
+        renderDeviceTabs();
+
+        // Lọc data theo device rồi nhóm theo ngày
+        const deviceData = deviceMap[id] || [];
+        dayMap = groupByDay(deviceData);
+        currentDayIdx = 0;
+        renderDayPicker();
+
+        const todayData = dayMap[dayKeys[0]] || [];
+        renderTable(todayData);
+        updateSummary(todayData);
+      }
       let dayKeys = []; // mảng các key ngày đã sắp xếp giảm dần
       let currentDayIdx = 0; // index trong dayKeys đang xem
 
       function groupByDay(data) {
         const map = {};
         data.forEach((row) => {
-          const key = toDateKey(row.thoi_gian_do);
+          const key = toDateKey(row.time);
           if (!map[key]) map[key] = [];
           map[key].push(row);
         });
@@ -1516,36 +1657,61 @@
       function renderTable(data) {
         const tbody = document.getElementById("table-body");
         if (!data || data.length === 0) {
-          tbody.innerHTML = `<tr class="state-row"><td colspan="6">Không có dữ liệu.</td></tr>`;
+          tbody.innerHTML = `<tr class="state-row"><td colspan="5">Không có dữ liệu.</td></tr>`;
           return;
         }
 
         tbody.innerHTML = data
           .map((row, i) => {
-            const { cls, label } = classifyStatus(row);
-            const bpm = parseFloat(row.nhip_tim) || 0;
+            const { cls } = classifyStatus(row);
+            const bpm = parseFloat(row.heartRate) || 0;
             const spo2 = parseFloat(row.spo2) || 0;
             const barW = heartBarWidth(bpm);
 
+            // Delta indicators
+            const dHR = row.deltaHeartRate;
+            const dSpo = row.deltaSpo2;
+            const deltaHR =
+              dHR != null
+                ? `<span style="font-size:0.7rem;color:${dHR > 0 ? "var(--danger)" : dHR < 0 ? "var(--sky)" : "var(--muted)"}">${dHR > 0 ? "▲" : dHR < 0 ? "▼" : "–"}${Math.abs(dHR)}</span>`
+                : "";
+            const deltaSP =
+              dSpo != null
+                ? `<span style="font-size:0.7rem;color:${dSpo < 0 ? "var(--danger)" : dSpo > 0 ? "var(--green)" : "var(--muted)"}">${dSpo > 0 ? "▲" : dSpo < 0 ? "▼" : "–"}${Math.abs(dSpo)}</span>`
+                : "";
+
+            // Row highlight nếu có alert
+            const rowStyle =
+              cls === "critical"
+                ? "background:#1a00001a;"
+                : cls === "danger"
+                  ? "background:#fdeaea55;"
+                  : cls === "warning"
+                    ? "background:#fff4e055;"
+                    : "";
+
             return `
-            <tr>
+            <tr style="${rowStyle}">
               <td style="color:var(--muted);font-size:0.78rem;font-family:'DM Mono',monospace;">${String(i + 1).padStart(2, "0")}</td>
-              <td><span class="patient-id">${row.userTB_id ?? "—"}</span></td>
+              <td>
+                <div style="font-weight:600;font-size:0.84rem;color:var(--text)">${row.patientName ?? "—"}</div>
+              </td>
               <td>
                 <div class="vital">
                   <span>${bpm > 0 ? bpm : "—"}</span>
+                  ${deltaHR}
                   <div class="bar"><div class="bar-fill" style="width:${barW}%;background:var(--sky)"></div></div>
                 </div>
               </td>
               <td>
                 <div class="vital">
                   <span style="color:${spo2Color(spo2)}">${spo2 > 0 ? spo2 + "%" : "—"}</span>
+                  ${deltaSP}
                   <div class="bar"><div class="bar-fill" style="width:${spo2}%;background:${spo2Color(spo2)}"></div></div>
                 </div>
               </td>
-              <td><span class="badge ${cls}">${label}</span></td>
               <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted);white-space:nowrap;">
-                ${formatDateTime(row.thoi_gian_do)}
+                ${formatDateTime(row.time)}
               </td>
             </tr>`;
           })
@@ -1555,7 +1721,9 @@
       function updateSummary(data) {
         const ok = data.filter((r) => getStatusCls(r) === "ok").length;
         const warn = data.filter((r) => getStatusCls(r) === "warning").length;
-        const danger = data.filter((r) => getStatusCls(r) === "danger").length;
+        const danger = data.filter((r) =>
+          ["danger", "critical"].includes(getStatusCls(r)),
+        ).length;
         document.getElementById("s-ok").textContent = ok;
         document.getElementById("s-warn").textContent = warn;
         document.getElementById("s-danger").textContent = danger;
@@ -1577,20 +1745,37 @@
         btn.disabled = true;
 
         document.getElementById("table-body").innerHTML =
-          `<tr class="state-row"><td colspan="6"><div class="spinner"></div><br>Đang tải dữ liệu...</td></tr>`;
+          `<tr class="state-row"><td colspan="5"><div class="spinner"></div><br>Đang tải dữ liệu...</td></tr>`;
 
         try {
           // Lấy dữ liệu sinh tồn và cảnh báo song song
           const [resSinhTon, resAlerts] = await Promise.all([
-            fetch("https://health-monitor-system-pni3.onrender.com/sinh-ton"),
-            fetch("https://health-monitor-system-pni3.onrender.com/alerts"),
+            fetch("https://health-monitor-system-twts.onrender.com/vitals"),
+            fetch("https://health-monitor-system-twts.onrender.com/alerts"),
           ]);
 
           allData = await resSinhTon.json();
           const alertsData = await resAlerts.json();
 
-          // Nhóm theo ngày
-          dayMap = groupByDay(allData);
+          // 🔍 DEBUG: Log raw API response
+          console.log("📡 [API Response] Full vitals data:", allData);
+          console.log("📊 [Patients] Unique names:", [
+            ...new Set(allData.map((v) => v.patientName)),
+          ]);
+          console.log("📱 [Devices] Unique IDs:", [
+            ...new Set(allData.map((v) => v.deviceId)),
+          ]);
+
+          // Nhóm theo thiết bị trước
+          deviceMap = groupByDevice(allData);
+          currentDeviceId = deviceIds[0] || null;
+          renderDeviceTabs();
+
+          // Nhóm theo ngày trong thiết bị đang chọn
+          const activeData = currentDeviceId
+            ? deviceMap[currentDeviceId] || []
+            : allData;
+          dayMap = groupByDay(activeData);
           currentDayIdx = 0;
           renderDayPicker();
 
@@ -1599,11 +1784,11 @@
           updateSummary(todayData);
           updateTimestamp();
 
-          // Kiểm tra cảnh báo từ bảng su_kien_cap_cuu
+          // Kiểm tra cảnh báo
           checkAlerts(alertsData);
         } catch (e) {
           document.getElementById("table-body").innerHTML =
-            `<tr class="state-row"><td colspan="6">⚠️ Không thể kết nối tới máy chủ. Vui lòng thử lại.</td></tr>`;
+            `<tr class="state-row"><td colspan="5">⚠️ Không thể kết nối tới máy chủ. Vui lòng thử lại.</td></tr>`;
           console.error(e);
         }
 
@@ -1621,7 +1806,7 @@
             return;
           }
           const filtered = dayData.filter((r) =>
-            (r.userTB_id || "").toLowerCase().includes(q),
+            (r.patientName || "").toLowerCase().includes(q),
           );
           renderTable(filtered);
         });
