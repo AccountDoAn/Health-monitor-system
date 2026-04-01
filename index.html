@@ -859,80 +859,6 @@
         transform: scale(0.98);
       }
 
-      /* ── DEVICE TABS ── */
-      .device-tabs-row {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-      }
-
-      .device-tabs-label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        white-space: nowrap;
-      }
-
-      .device-tabs {
-        display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        flex: 1;
-      }
-
-      .device-tab {
-        display: flex;
-        align-items: center;
-        gap: 7px;
-        padding: 7px 14px;
-        border-radius: 10px;
-        border: 1.5px solid var(--border);
-        background: var(--white);
-        font-family: "Sora", sans-serif;
-        font-size: 0.78rem;
-        font-weight: 600;
-        color: var(--muted);
-        cursor: pointer;
-        transition: all 0.15s;
-        white-space: nowrap;
-      }
-
-      .device-tab:hover {
-        border-color: var(--sky);
-        color: var(--navy);
-      }
-
-      .device-tab.active {
-        background: var(--navy);
-        border-color: var(--navy);
-        color: var(--white);
-      }
-
-      .device-tab .tab-dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: var(--muted);
-        flex-shrink: 0;
-      }
-
-      .device-tab.active .tab-dot {
-        background: var(--sky);
-      }
-      .device-tab .tab-count {
-        background: rgba(0, 0, 0, 0.1);
-        border-radius: 8px;
-        padding: 1px 6px;
-        font-size: 0.68rem;
-      }
-      .device-tab.active .tab-count {
-        background: rgba(255, 255, 255, 0.2);
-      }
-
       /* ── RESPONSIVE ── */
       @media (max-width: 860px) {
         .summary-row {
@@ -991,12 +917,6 @@
           <div class="value" id="s-danger">—</div>
           <div class="sub">cần can thiệp</div>
         </div>
-      </div>
-
-      <!-- Device Tabs -->
-      <div class="device-tabs-row" id="device-tabs-row" style="display: none">
-        <span class="device-tabs-label">Thiết bị:</span>
-        <div class="device-tabs" id="device-tabs"></div>
       </div>
 
       <!-- Date Picker -->
@@ -1381,61 +1301,7 @@
         return `${d}/${m}/${y}`;
       }
 
-      /* ── GROUP DATA BY DEVICE ── */
-      let deviceMap = {}; // { deviceId: [rows] }
-      let deviceIds = []; // mảng deviceId đã sắp xếp
-      let currentDeviceId = null;
-
-      function groupByDevice(data) {
-        const map = {};
-        data.forEach((row) => {
-          const key = row.deviceId || "unknown";
-          if (!map[key]) map[key] = [];
-          map[key].push(row);
-        });
-        deviceIds = Object.keys(map).sort();
-        return map;
-      }
-
-      function renderDeviceTabs() {
-        const row = document.getElementById("device-tabs-row");
-        const tabs = document.getElementById("device-tabs");
-
-        if (deviceIds.length <= 1) {
-          row.style.display = "none";
-          return;
-        }
-
-        row.style.display = "flex";
-        tabs.innerHTML = deviceIds
-          .map((id, idx) => {
-            const rows = deviceMap[id] || [];
-            const label = id === "unknown" ? "Không rõ" : `Thiết bị ${idx + 1}`;
-            const isActive = id === currentDeviceId;
-            return `
-            <button class="device-tab ${isActive ? "active" : ""}" onclick="selectDevice('${id}')">
-              <span class="tab-dot"></span>
-              ${label}
-              <span class="tab-count">${rows.length}</span>
-            </button>`;
-          })
-          .join("");
-      }
-
-      function selectDevice(id) {
-        currentDeviceId = id;
-        renderDeviceTabs();
-
-        // Lọc data theo device rồi nhóm theo ngày
-        const deviceData = deviceMap[id] || [];
-        dayMap = groupByDay(deviceData);
-        currentDayIdx = 0;
-        renderDayPicker();
-
-        const todayData = dayMap[dayKeys[0]] || [];
-        renderTable(todayData);
-        updateSummary(todayData);
-      }
+      /* ── GROUP DATA BY DAY ── */
       let dayKeys = []; // mảng các key ngày đã sắp xếp giảm dần
       let currentDayIdx = 0; // index trong dayKeys đang xem
 
@@ -1757,25 +1623,8 @@
           allData = await resSinhTon.json();
           const alertsData = await resAlerts.json();
 
-          // 🔍 DEBUG: Log raw API response
-          console.log("📡 [API Response] Full vitals data:", allData);
-          console.log("📊 [Patients] Unique names:", [
-            ...new Set(allData.map((v) => v.patientName)),
-          ]);
-          console.log("📱 [Devices] Unique IDs:", [
-            ...new Set(allData.map((v) => v.deviceId)),
-          ]);
-
-          // Nhóm theo thiết bị trước
-          deviceMap = groupByDevice(allData);
-          currentDeviceId = deviceIds[0] || null;
-          renderDeviceTabs();
-
-          // Nhóm theo ngày trong thiết bị đang chọn
-          const activeData = currentDeviceId
-            ? deviceMap[currentDeviceId] || []
-            : allData;
-          dayMap = groupByDay(activeData);
+          // Nhóm theo ngày
+          dayMap = groupByDay(allData);
           currentDayIdx = 0;
           renderDayPicker();
 
@@ -1784,7 +1633,7 @@
           updateSummary(todayData);
           updateTimestamp();
 
-          // Kiểm tra cảnh báo
+          // Kiểm tra cảnh báo từ bảng su_kien_cap_cuu
           checkAlerts(alertsData);
         } catch (e) {
           document.getElementById("table-body").innerHTML =
