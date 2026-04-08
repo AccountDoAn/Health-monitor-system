@@ -1278,48 +1278,58 @@ app.post("/auth/forgot-password", async (req, res) => {
     // 5. Gửi email
     const resetLink = `${FRONTEND_URL}/reset-password.html?token=${token}`;
 
-    await transporter.sendMail({
-      from:    `"Health Monitor" <${process.env.EMAIL_USER}>`,
-      to:      user.email,
-      subject: "🔐 Đặt lại mật khẩu — Health Monitor",
-      html: `
-        <div style="font-family:'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f0f7f4;border-radius:16px">
-          <div style="text-align:center;margin-bottom:24px">
-            <div style="background:#2b5f8e;display:inline-block;padding:12px 20px;border-radius:12px">
-              <span style="color:#85c8ee;font-size:1.3rem;font-weight:800;letter-spacing:-0.02em">Health<span style="color:#5ab52a">Monitor</span></span>
-            </div>
-          </div>
-          <div style="background:#fff;border-radius:12px;padding:28px 24px;border:1px solid #d0e8da">
-            <h2 style="color:#2b5f8e;margin:0 0 8px">Đặt lại mật khẩu</h2>
-            <p style="color:#6b8f7a;margin:0 0 20px">Xin chào <strong style="color:#1a2e1e">${user.ho_ten}</strong>,</p>
-            <p style="color:#1a2e1e;line-height:1.6;margin:0 0 24px">
-              Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
-              Nhấn vào nút bên dưới để tiếp tục. Link này có hiệu lực trong <strong>1 giờ</strong>.
-            </p>
-            <div style="text-align:center;margin-bottom:24px">
-              <a href="${resetLink}" style="display:inline-block;background:#2b5f8e;color:#fff;padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.95rem;letter-spacing:0.02em">
-                ✅ Đặt lại mật khẩu
-              </a>
-            </div>
-            <p style="color:#6b8f7a;font-size:0.82rem;margin:0 0 8px">Nếu nút không hoạt động, copy link sau vào trình duyệt:</p>
-            <p style="color:#2b5f8e;font-size:0.78rem;word-break:break-all;margin:0 0 20px">${resetLink}</p>
-            <hr style="border:none;border-top:1px solid #d0e8da;margin:20px 0"/>
-            <p style="color:#6b8f7a;font-size:0.78rem;margin:0">
-              Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.
-              Tài khoản của bạn vẫn an toàn.
-            </p>
-          </div>
-          <p style="text-align:center;color:#6b8f7a;font-size:0.72rem;margin-top:16px">
-            © Health Monitor System — Chỉ dành cho nhân viên y tế được cấp quyền
-          </p>
-        </div>
-      `,
-    });
+    // Kiểm tra cấu hình email
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.error("[forgot-password] Thiếu EMAIL_USER hoặc EMAIL_PASS trong biến môi trường");
+      return res.status(500).json({ error: "Server chưa cấu hình email. Liên hệ quản trị viên." });
+    }
 
-    res.json({ message: "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu." });
+    try {
+      const info = await transporter.sendMail({
+        from:    `"Health Monitor" <${process.env.EMAIL_USER}>`,
+        to:      user.email,
+        subject: "🔐 Đặt lại mật khẩu — Health Monitor",
+        html: `
+          <div style="font-family:'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f0f7f4;border-radius:16px">
+            <div style="text-align:center;margin-bottom:24px">
+              <div style="background:#2b5f8e;display:inline-block;padding:12px 20px;border-radius:12px">
+                <span style="color:#85c8ee;font-size:1.3rem;font-weight:800;letter-spacing:-0.02em">Health<span style="color:#5ab52a">Monitor</span></span>
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:12px;padding:28px 24px;border:1px solid #d0e8da">
+              <h2 style="color:#2b5f8e;margin:0 0 8px">Đặt lại mật khẩu</h2>
+              <p style="color:#6b8f7a;margin:0 0 20px">Xin chào <strong style="color:#1a2e1e">${user.ho_ten}</strong>,</p>
+              <p style="color:#1a2e1e;line-height:1.6;margin:0 0 24px">
+                Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
+                Nhấn vào nút bên dưới để tiếp tục. Link này có hiệu lực trong <strong>1 giờ</strong>.
+              </p>
+              <div style="text-align:center;margin-bottom:24px">
+                <a href="${resetLink}" style="display:inline-block;background:#2b5f8e;color:#fff;padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.95rem;letter-spacing:0.02em">
+                  ✅ Đặt lại mật khẩu
+                </a>
+              </div>
+              <p style="color:#6b8f7a;font-size:0.82rem;margin:0 0 8px">Nếu nút không hoạt động, copy link sau vào trình duyệt:</p>
+              <p style="color:#2b5f8e;font-size:0.78rem;word-break:break-all;margin:0 0 20px">${resetLink}</p>
+              <hr style="border:none;border-top:1px solid #d0e8da;margin:20px 0"/>
+              <p style="color:#6b8f7a;font-size:0.78rem;margin:0">
+                Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.
+              </p>
+            </div>
+          </div>
+        `,
+      });
+      console.log("[forgot-password] Email sent OK:", info.messageId, "→", user.email);
+      res.json({ message: "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu." });
+    } catch (mailErr) {
+      console.error("[forgot-password] Lỗi gửi email:", mailErr.message);
+      console.error("[forgot-password] Chi tiết:", mailErr.code, mailErr.responseCode);
+      return res.status(500).json({
+        error: "Không thể gửi email. Kiểm tra cấu hình EMAIL_USER và EMAIL_PASS (App Password) trên Render.",
+      });
+    }
   } catch (err) {
     console.error("[POST /auth/forgot-password]", err.message);
-    res.status(500).json({ error: "Không thể gửi email. Vui lòng thử lại sau." });
+    res.status(500).json({ error: "Lỗi server: " + err.message });
   }
 });
 
