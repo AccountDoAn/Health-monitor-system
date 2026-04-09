@@ -1,2236 +1,571 @@
 <!doctype html>
 <html lang="vi" data-theme="light">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Health Monitor — Bác sĩ</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;600;700;800&display=swap" rel="stylesheet"/>
-  <style>
-/* ── RESET & TOKENS ── */
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Health Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-:root{
-  --navy:#2b5f8e; --sky:#85c8ee; --green:#5ab52a; --mint:#ceecd8;
-  --white:#ffffff; --bg:#f0f7f4; --card:#ffffff;
-  --text:#1a2e1e; --muted:#6b8f7a; --border:#d0e8da;
-  --danger:#e05252; --warn:#e8a930; --ok:#5ab52a;
-  --sidebar-w:240px;
-  --fs:14px; /* base font size — controllable */
-  --shadow:0 2px 12px rgba(43,95,142,0.08);
-}
-[data-theme="dark"]{
-  --bg:#0f1a14; --card:#18261b; --text:#d4ead9; --muted:#6b8f7a;
-  --border:#2a4030; --white:#18261b; --navy:#3a7ab8;
-}
-html{ font-size:var(--fs); }
-body{ font-family:'Sora',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; }
-
-/* ── SIDEBAR ── */
-.sidebar{
-  width:var(--sidebar-w); min-height:100vh; background:var(--navy);
-  display:flex; flex-direction:column; flex-shrink:0;
-  position:fixed; left:0; top:0; bottom:0; z-index:100;
-  transition:width 0.2s;
-}
-.sb-logo{
-  display:flex; align-items:center; gap:10px;
-  padding:20px 16px 16px; border-bottom:1px solid rgba(255,255,255,0.1);
-}
-.sb-logo-icon{
-  width:34px; height:34px; background:rgba(255,255,255,0.15);
-  border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0;
-}
-.sb-logo-icon svg{ color:var(--sky); width:18px; height:18px; }
-.sb-logo-name{ font-size:0.9rem; font-weight:800; color:#fff; letter-spacing:-0.02em; }
-.sb-logo-name span{ color:var(--mint); }
-
-.sb-section{ padding:10px 10px 4px; font-size:0.6rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:rgba(255,255,255,0.35); }
-
-.sb-nav{ flex:1; overflow-y:auto; padding:8px 10px; display:flex; flex-direction:column; gap:2px; }
-.sb-item{
-  display:flex; align-items:center; gap:10px;
-  padding:9px 12px; border-radius:10px; cursor:pointer;
-  font-size:0.82rem; font-weight:600; color:rgba(255,255,255,0.65);
-  transition:background 0.15s, color 0.15s; border:none; background:none; width:100%; text-align:left;
-}
-.sb-item:hover{ background:rgba(255,255,255,0.1); color:#fff; }
-.sb-item.active{ background:rgba(255,255,255,0.18); color:#fff; }
-.sb-item svg{ width:16px; height:16px; flex-shrink:0; }
-.sb-item .sb-badge{
-  margin-left:auto; background:var(--danger); color:#fff;
-  border-radius:10px; padding:1px 7px; font-size:0.65rem; font-weight:700;
-}
-
-.sb-bottom{
-  padding:10px; border-top:1px solid rgba(255,255,255,0.1);
-  display:flex; flex-direction:column; gap:2px;
-}
-.sb-doctor{
-  display:flex; align-items:center; gap:9px;
-  padding:10px 12px; border-radius:10px; margin-bottom:4px;
-  background:rgba(255,255,255,0.08);
-}
-.sb-av{
-  width:32px; height:32px; border-radius:50%;
-  background:var(--sky); color:var(--navy);
-  display:flex; align-items:center; justify-content:center;
-  font-size:0.72rem; font-weight:800; flex-shrink:0;
-}
-.sb-dname{ font-size:0.78rem; font-weight:700; color:#fff; line-height:1.2; }
-.sb-drole{ font-size:0.65rem; color:rgba(255,255,255,0.5); }
-
-/* ── MAIN ── */
-.main{ margin-left:var(--sidebar-w); flex:1; min-height:100vh; display:flex; flex-direction:column; }
-
-/* ── TOPBAR ── */
-.topbar{
-  background:var(--card); border-bottom:1px solid var(--border);
-  padding:0 24px; height:56px; display:flex; align-items:center; gap:12px;
-  position:sticky; top:0; z-index:50;
-  box-shadow:0 1px 0 var(--border);
-}
-.topbar-title{ font-size:0.95rem; font-weight:700; color:var(--navy); flex:1; }
-.topbar-sub{ font-size:0.72rem; color:var(--muted); font-family:'DM Mono',monospace; }
-.live-dot{
-  display:flex; align-items:center; gap:6px;
-  font-size:0.7rem; color:var(--green); font-family:'DM Mono',monospace;
-}
-.live-dot::before{
-  content:''; width:7px; height:7px;
-  background:var(--green); border-radius:50%; animation:pulse 1.8s infinite;
-}
-@keyframes pulse{ 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:0.5;transform:scale(1.3);} }
-
-/* ── CONTENT AREA ── */
-.content{ flex:1; padding:20px 24px; display:flex; flex-direction:column; gap:16px; }
-
-/* ── SUMMARY CARDS ── */
-.summary-row{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
-.sum-card{
-  background:var(--card); border:1px solid var(--border);
-  border-radius:12px; padding:14px 16px;
-  box-shadow:var(--shadow);
-}
-.sum-label{ font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); margin-bottom:6px; }
-.sum-val{ font-size:1.5rem; font-weight:800; color:var(--navy); font-family:'DM Mono',monospace; }
-.sum-sub{ font-size:0.68rem; color:var(--muted); margin-top:2px; }
-.sum-card.ok .sum-val{ color:var(--ok); }
-.sum-card.warn .sum-val{ color:var(--warn); }
-.sum-card.danger .sum-val{ color:var(--danger); }
-
-/* ── DATE PICKER ── */
-.toolbar{
-  display:flex; align-items:center; gap:10px;
-  background:var(--card); border:1px solid var(--border);
-  border-radius:12px; padding:10px 16px;
-  box-shadow:var(--shadow);
-}
-.toolbar-label{ font-size:0.75rem; font-weight:700; color:var(--muted); }
-.datepicker-trigger{
-  display:flex; align-items:center; gap:7px;
-  background:var(--bg); border:1.5px solid var(--border);
-  border-radius:8px; padding:6px 12px; cursor:pointer;
-  font-family:'DM Mono',monospace; font-size:0.78rem; color:var(--navy); font-weight:500;
-  transition:border-color 0.15s;
-}
-.datepicker-trigger:hover,.datepicker-trigger.open{ border-color:var(--navy); }
-.datepicker-trigger svg{ width:13px; height:13px; color:var(--muted); }
-.refresh-btn{
-  display:flex; align-items:center; gap:6px;
-  background:var(--navy); color:#fff; border:none;
-  border-radius:8px; padding:7px 14px; cursor:pointer;
-  font-family:'Sora',sans-serif; font-size:0.75rem; font-weight:700;
-  transition:background 0.15s; margin-left:auto;
-}
-.refresh-btn:hover{ background:#1e4a72; }
-.refresh-btn:disabled{ opacity:0.5; cursor:not-allowed; }
-.refresh-btn svg{ width:13px; height:13px; }
-.last-updated{ font-size:0.68rem; color:var(--muted); font-family:'DM Mono',monospace; }
-
-/* Calendar popup */
-.cal-popup{
-  display:none; position:absolute; top:calc(100% + 6px); left:0;
-  background:var(--card); border:1px solid var(--border);
-  border-radius:12px; padding:12px; box-shadow:0 8px 32px rgba(0,0,0,0.12);
-  z-index:200; min-width:240px;
-}
-.cal-popup.open{ display:block; }
-.cal-head{ display:flex; align-items:center; gap:6px; margin-bottom:10px; }
-.cal-sel{ border:1px solid var(--border); border-radius:6px; padding:4px 6px; font-size:0.72rem; font-family:'Sora',sans-serif; background:var(--bg); color:var(--text); }
-.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
-.cal-dh{ font-size:0.6rem; font-weight:700; text-align:center; color:var(--muted); padding:3px 0; }
-.cal-day{ font-size:0.7rem; text-align:center; padding:5px 3px; border-radius:5px; }
-.cal-day.has-data{ background:var(--mint); color:var(--navy); cursor:pointer; font-weight:700; }
-.cal-day.has-data:hover{ background:var(--sky); }
-.cal-day.selected{ background:var(--navy) !important; color:#fff !important; }
-.cal-day.is-today{ outline:2px solid var(--green); outline-offset:-1px; }
-.cal-day.empty,.cal-day.no-data{ color:var(--border); }
-.cal-today-btn{ font-size:0.7rem; color:var(--navy); font-weight:700; background:none; border:none; cursor:pointer; margin-left:auto; }
-.dp-wrap{ position:relative; }
-
-/* ── PATIENT TABLE ── */
-.section-card{
-  background:var(--card); border:1px solid var(--border);
-  border-radius:12px; box-shadow:var(--shadow); overflow:hidden;
-}
-.section-head{
-  padding:14px 18px; border-bottom:1px solid var(--border);
-  display:flex; align-items:center; gap:10px;
-}
-.section-title{ font-size:0.85rem; font-weight:700; color:var(--navy); flex:1; }
-.search-box{
-  display:flex; align-items:center; gap:7px;
-  background:var(--bg); border:1.5px solid var(--border);
-  border-radius:8px; padding:6px 11px;
-}
-.search-box svg{ width:13px; height:13px; color:var(--muted); flex-shrink:0; }
-.search-box input{
-  border:none; background:none; outline:none;
-  font-family:'Sora',sans-serif; font-size:0.78rem; color:var(--text);
-  width:160px;
-}
-.search-box input::placeholder{ color:var(--muted); opacity:0.7; }
-
-/* Patient list */
-.pt-list{ display:flex; flex-direction:column; }
-.pt-row{
-  display:grid; grid-template-columns:100px 1fr 110px 110px 90px 90px 100px;
-  align-items:center; padding:12px 18px; border-bottom:1px solid var(--border);
-  cursor:pointer; transition:background 0.12s; position:relative;
-}
-.pt-row:last-child{ border-bottom:none; }
-.pt-row:hover{ background:rgba(43,95,142,0.04); }
-.pt-row.selected{ background:rgba(133,200,238,0.15); border-left:3px solid var(--navy); }
-.pt-header{
-  display:grid; grid-template-columns:100px 1fr 110px 110px 90px 90px 100px;
-  padding:8px 18px; background:var(--bg);
-  font-size:0.65rem; font-weight:700; text-transform:uppercase;
-  letter-spacing:0.07em; color:var(--muted); border-bottom:1px solid var(--border);
-}
-.pt-id{ font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); }
-.pt-name{ font-size:0.82rem; font-weight:600; color:var(--text); }
-.pt-dob{ font-size:0.72rem; color:var(--muted); font-family:'DM Mono',monospace; }
-.pt-device{ font-size:0.7rem; color:var(--navy); font-family:'DM Mono',monospace; }
-.pt-hr{ font-size:0.85rem; font-weight:700; font-family:'DM Mono',monospace; }
-.pt-spo2{ font-size:0.85rem; font-weight:700; font-family:'DM Mono',monospace; }
-.pt-status span{
-  display:inline-flex; align-items:center; gap:4px;
-  padding:3px 9px; border-radius:20px; font-size:0.65rem; font-weight:700;
-}
-.status-ok{ background:#e6f7e6; color:#2d7a2d; }
-.status-warn{ background:#fff4e0; color:#8a5800; }
-.status-danger{ background:#fdeaea; color:#c0392b; }
-.status-offline{ background:#f0f0f0; color:#888; }
-
-/* Hover tooltip */
-.pt-tooltip{
-  display:none; position:fixed;
-  background:var(--card); border:1px solid var(--border);
-  border-radius:12px; padding:16px; box-shadow:0 8px 32px rgba(0,0,0,0.15);
-  z-index:300; min-width:260px; max-width:320px;
-  pointer-events:none;
-  animation:fadeIn 0.15s ease;
-}
-@keyframes fadeIn{ from{opacity:0;transform:translateY(4px);} to{opacity:1;transform:translateY(0);} }
-.tt-name{ font-size:0.9rem; font-weight:700; color:var(--navy); margin-bottom:10px; }
-.tt-row{ display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px solid var(--border); font-size:0.75rem; }
-.tt-row:last-child{ border-bottom:none; }
-.tt-label{ color:var(--muted); font-weight:600; }
-.tt-val{ color:var(--text); font-family:'DM Mono',monospace; font-weight:500; }
-
-/* ── VITALS TABLE ── */
-.vitals-section{ display:none; }
-.vitals-section.visible{ display:block; }
-.device-tabs{ display:flex; gap:6px; padding:12px 18px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-.dev-tab{
-  display:flex; align-items:center; gap:6px;
-  padding:6px 13px; border-radius:8px; cursor:pointer; border:none;
-  background:var(--bg); color:var(--muted); font-family:'Sora',sans-serif;
-  font-size:0.72rem; font-weight:600; transition:background 0.12s,color 0.12s;
-}
-.dev-tab.active{ background:var(--navy); color:#fff; }
-.dev-tab .dot{ width:6px; height:6px; border-radius:50%; background:var(--border); }
-.dev-tab.active .dot,.dev-tab .dot.online{ background:var(--green); }
-.vitals-table-wrap{ overflow-x:auto; }
-.vitals-table{ width:100%; border-collapse:collapse; }
-.vitals-table th{
-  padding:9px 14px; text-align:left; font-size:0.63rem;
-  font-weight:700; text-transform:uppercase; letter-spacing:0.07em;
-  color:var(--muted); background:var(--bg); border-bottom:1px solid var(--border);
-  white-space:nowrap;
-}
-.vitals-table td{
-  padding:9px 14px; font-size:0.78rem; border-bottom:1px solid var(--border);
-  font-family:'DM Mono',monospace;
-}
-.vitals-table tr:last-child td{ border-bottom:none; }
-.vitals-table tr:hover td{ background:rgba(43,95,142,0.03); }
-.hr-val{ color:var(--danger); font-weight:700; }
-.spo2-val{ color:var(--navy); font-weight:700; }
-.hr-ok{ color:var(--ok); }
-.mode-badge{
-  display:inline-block; padding:2px 8px; border-radius:10px;
-  font-size:0.62rem; font-weight:700; background:var(--mint); color:var(--navy);
-}
-.mode-warn{ background:#fff4e0; color:#8a5800; }
-.mode-danger{ background:#fdeaea; color:#c0392b; }
-.tables-loading{ padding:40px; text-align:center; color:var(--muted); font-size:0.82rem; }
-
-/* ── SPINNER ── */
-.spinner{
-  display:inline-block; width:20px; height:20px;
-  border:2px solid var(--border); border-top-color:var(--navy);
-  border-radius:50%; animation:spin 0.65s linear infinite;
-}
-@keyframes spin{ to{transform:rotate(360deg);} }
-
-/* ── SETTINGS PANEL (sidebar overlay) ── */
-.settings-overlay{
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,0.4); z-index:400; backdrop-filter:blur(3px);
-}
-.settings-overlay.open{ display:flex; align-items:center; justify-content:center; }
-.settings-modal{
-  background:var(--card); border-radius:16px; padding:28px;
-  min-width:340px; max-width:400px; width:90%;
-  box-shadow:0 20px 60px rgba(0,0,0,0.2);
-  animation:fadeUp 0.25s ease;
-}
-@keyframes fadeUp{ from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:translateY(0);} }
-.settings-title{
-  font-size:1rem; font-weight:700; color:var(--navy);
-  margin-bottom:20px; display:flex; align-items:center; gap:8px;
-}
-.settings-group{ margin-bottom:18px; }
-.settings-label{ font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; color:var(--muted); margin-bottom:10px; }
-.settings-row{ display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border); }
-.settings-row:last-child{ border-bottom:none; }
-.settings-row-label{ font-size:0.82rem; color:var(--text); font-weight:500; }
-.toggle-switch{
-  width:40px; height:22px; background:var(--border); border-radius:11px;
-  cursor:pointer; position:relative; transition:background 0.2s; border:none;
-}
-.toggle-switch.on{ background:var(--navy); }
-.toggle-switch::after{
-  content:''; position:absolute; top:3px; left:3px;
-  width:16px; height:16px; background:#fff; border-radius:50%;
-  transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2);
-}
-.toggle-switch.on::after{ transform:translateX(18px); }
-.font-btns{ display:flex; gap:6px; }
-.font-btn{
-  padding:4px 12px; border-radius:6px; border:1.5px solid var(--border);
-  background:var(--bg); color:var(--text); cursor:pointer;
-  font-family:'Sora',sans-serif; font-size:0.75rem; font-weight:600;
-  transition:background 0.12s,border-color 0.12s;
-}
-.font-btn.active,.font-btn:hover{ background:var(--navy); color:#fff; border-color:var(--navy); }
-.pw-change-field{ margin-top:10px; }
-.pw-change-field input{
-  width:100%; padding:9px 12px; border:1.5px solid var(--border);
-  border-radius:8px; font-family:'Sora',sans-serif; font-size:0.82rem;
-  background:var(--bg); color:var(--text); outline:none; margin-bottom:8px;
-  transition:border-color 0.15s;
-}
-.pw-change-field input:focus{ border-color:var(--navy); }
-.btn-primary{
-  width:100%; padding:10px; background:var(--navy); color:#fff;
-  border:none; border-radius:8px; font-family:'Sora',sans-serif;
-  font-size:0.82rem; font-weight:700; cursor:pointer; transition:background 0.15s;
-}
-.btn-primary:hover{ background:#1e4a72; }
-.settings-close{
-  position:absolute; top:16px; right:16px;
-  background:none; border:none; cursor:pointer; color:var(--muted);
-}
-
-/* ── SLIDE PANELS (Thiết bị / Liên kết / Hồ sơ) ── */
-.slide-overlay{
-  display:none; position:fixed; inset:0;
-  background:rgba(0,0,0,0.4); z-index:400; backdrop-filter:blur(2px);
-}
-.slide-overlay.open{ display:flex; align-items:stretch; justify-content:flex-end; }
-.slide-panel{
-  background:var(--card); width:420px; max-width:95vw;
-  display:flex; flex-direction:column; box-shadow:-8px 0 32px rgba(0,0,0,0.15);
-  animation:slideIn 0.25s ease;
-}
-@keyframes slideIn{ from{transform:translateX(100%);} to{transform:translateX(0);} }
-.slide-head{
-  background:var(--navy); padding:16px 18px;
-  display:flex; align-items:center; justify-content:space-between; flex-shrink:0;
-}
-.slide-title{ color:#fff; font-size:0.9rem; font-weight:700; display:flex; align-items:center; gap:8px; }
-.slide-close{ background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.7); }
-.slide-body{ flex:1; overflow-y:auto; padding:18px; }
-
-/* ── ALERT OVERLAY ── */
-.alert-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:600;backdrop-filter:blur(4px);align-items:center;justify-content:center;}
-.alert-overlay.active{display:flex;}
-.alert-box{background:var(--card);border-radius:16px;padding:28px;max-width:400px;width:90%;box-shadow:0 20px 60px rgba(224,82,82,0.3);border:2px solid var(--danger);animation:fadeUp 0.3s ease;}
-.alert-title{font-size:1rem;font-weight:800;color:var(--danger);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
-.alert-list-item{padding:8px 0;border-bottom:1px solid var(--border);font-size:0.8rem;}
-.alert-list-item .pid{font-weight:700;color:var(--navy);}
-.alert-list-item .stag{font-size:0.7rem;color:var(--muted);}
-.alert-dismiss{margin-top:16px;width:100%;padding:10px;background:var(--danger);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-weight:700;cursor:pointer;}
-
-/* ── CHAT FAB ── */
-.chat-fab{
-  position:fixed; bottom:24px; right:24px; z-index:350;
-  width:52px; height:52px; border-radius:50%; background:var(--navy);
-  border:none; cursor:pointer; box-shadow:0 4px 18px rgba(43,95,142,0.35);
-  display:flex; align-items:center; justify-content:center; transition:transform 0.2s;
-}
-.chat-fab:hover{ transform:scale(1.08); }
-.chat-fab .ic-chat{ display:block; color:#fff; }
-.chat-fab .ic-close{ display:none; color:#fff; }
-.chat-fab.open .ic-chat{ display:none; }
-.chat-fab.open .ic-close{ display:block; }
-.fab-badge{
-  position:absolute; top:-4px; right:-4px;
-  background:var(--danger); color:#fff; border-radius:10px;
-  padding:1px 6px; font-size:0.62rem; font-weight:800;
-  display:none; align-items:center; justify-content:center;
-}
-.chat-box{
-  position:fixed; bottom:84px; right:24px; z-index:349;
-  width:320px; height:460px; background:var(--card);
-  border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.15);
-  border:1px solid var(--border); display:none; flex-direction:column; overflow:hidden;
-}
-.chat-box.open{ display:flex; }
-.chat-header{
-  background:var(--navy); padding:12px 14px;
-  display:flex; align-items:center; gap:9px; flex-shrink:0;
-}
-.chat-av{ width:30px;height:30px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:0.68rem;font-weight:800;flex-shrink:0; }
-.chat-hinfo .chat-hname{ font-size:0.8rem;font-weight:700;color:#fff; }
-.chat-hinfo .chat-hsub{ font-size:0.65rem;color:rgba(255,255,255,0.6); }
-.chat-back{ background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.8);display:flex;align-items:center;margin-right:2px; }
-.contact-list{ flex:1;overflow-y:auto; }
-.contact-item{ display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.12s; }
-.contact-item:hover{ background:var(--bg); }
-.cav{ width:34px;height:34px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;flex-shrink:0; }
-.cinfo{ flex:1;min-width:0; }
-.cname{ font-size:0.78rem;font-weight:700;color:var(--text); }
-.crole{ font-size:0.65rem;color:var(--muted); }
-.cpreview{ font-size:0.68rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.cempty{ flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;padding:20px;color:var(--muted); }
-.chat-msgs{ flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg); }
-.cmsg{ display:flex;flex-direction:column; }
-.cmsg.me{ align-items:flex-end; }
-.cbubble{ background:var(--navy);color:#fff;padding:8px 12px;border-radius:12px 12px 2px 12px;font-size:0.78rem;line-height:1.5;max-width:85%;white-space:pre-wrap;word-break:break-word; }
-.cmsg.me .cbubble{ background:var(--navy);color:#fff; }
-.ctime{ font-size:0.6rem;color:var(--muted);margin-top:2px; }
-.cdate-div{ text-align:center;font-size:0.62rem;color:var(--muted);padding:4px 0; }
-.cdate-div span{ background:var(--border);padding:2px 10px;border-radius:10px; }
-.chat-foot{ padding:8px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:6px;background:var(--card); }
-.chat-type-sel{ font-family:'Sora',sans-serif;font-size:0.7rem;border:1px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--navy);background:var(--bg);outline:none;cursor:pointer;width:100%; }
-.chat-inp-row{ display:flex;gap:6px;align-items:flex-end; }
-.chat-inp{ flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;font-family:'Sora',sans-serif;font-size:0.78rem;resize:none;outline:none;background:var(--bg);color:var(--text);max-height:75px; }
-.chat-inp:focus{ border-color:var(--navy); }
-.chat-send{ width:34px;height:34px;border-radius:8px;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;transition:background 0.12s; }
-.chat-send:hover{ background:#1e4a72; }
-.chat-send:disabled{ opacity:0.5; }
-
-/* ── RESPONSIVE ── */
-@media(max-width:768px){
-  .sidebar{ width:56px; }
-  .sidebar .sb-logo-name,.sidebar .sb-item span,.sidebar .sb-doctor .sb-dname,.sidebar .sb-doctor .sb-drole{ display:none; }
-  .main{ margin-left:56px; }
-  .summary-row{ grid-template-columns:repeat(2,1fr); }
-  .pt-row,.pt-header{ grid-template-columns:80px 1fr 80px 70px; }
-  .pt-row>*:nth-child(n+5),.pt-header>*:nth-child(n+5){ display:none; }
-}
-  </style>
+:root{--navy:#2b5f8e;--sky:#85c8ee;--green:#5ab52a;--mint:#ceecd8;--white:#fff;--bg:#f0f7f4;--card:#fff;--text:#1a2e1e;--muted:#6b8f7a;--border:#d0e8da;--danger:#e05252;--warn:#e8a930;--sw:240px;}
+[data-theme=dark]{--bg:#0f1a14;--card:#18261b;--text:#d4ead9;--border:#2a4030;--white:#18261b;}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+.sb{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sb-logo-icon{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.sb-logo-icon svg{color:var(--sky);width:18px;height:18px;}
+.sb-logo-name{font-size:.9rem;font-weight:800;color:#fff;}
+.sb-logo-name span{color:var(--mint);}
+.sb-nav{flex:1;padding:10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sb-sec{padding:10px 10px 4px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.65);transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left;}
+.sb-btn:hover,.sb-btn.active{background:rgba(255,255,255,.15);color:#fff;}
+.sb-btn svg{width:15px;height:15px;flex-shrink:0;}
+.sb-btn.red{color:rgba(224,82,82,.85);}
+.sb-btn.red:hover{background:rgba(224,82,82,.15);}
+.sb-bottom{padding:10px;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:2px;}
+.sb-user{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.08);margin-bottom:4px;}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
+.sb-uname{font-size:.78rem;font-weight:700;color:#fff;line-height:1.2;}
+.sb-urole{font-size:.65rem;color:rgba(255,255,255,.5);}
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:.95rem;font-weight:700;color:var(--navy);flex:1;}
+.live-dot{display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--green);font-family:'DM Mono',monospace;}
+.live-dot::before{content:'';width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 1.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+.last-upd{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;}
+.content{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:14px;}
+.sum-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.sum-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;}
+.sum-val{font-size:1.6rem;font-weight:800;color:var(--navy);font-family:'DM Mono',monospace;}
+.sum-sub{font-size:.66rem;color:var(--muted);margin-top:2px;}
+.toolbar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.tb-label{font-size:.74rem;font-weight:700;color:var(--muted);}
+.tb-date{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:.78rem;color:var(--navy);font-weight:500;position:relative;user-select:none;}
+.tb-date:hover{border-color:var(--navy);}
+.date-dd{position:absolute;top:calc(100% + 4px);left:0;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;min-width:180px;max-height:240px;overflow-y:auto;display:none;}
+.date-dd.open{display:block;}
+.date-opt{padding:8px 14px;font-size:.76rem;cursor:pointer;font-family:'DM Mono',monospace;color:var(--text);border-bottom:1px solid var(--border);}
+.date-opt:last-child{border-bottom:none;}
+.date-opt:hover,.date-opt.sel{background:var(--mint);color:var(--navy);font-weight:700;}
+.btn-ref{display:flex;align-items:center;gap:6px;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:700;margin-left:auto;}
+.btn-ref:hover{background:#1e4a72;}
+.btn-ref:disabled{opacity:.5;cursor:not-allowed;}
+.sec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.sec-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sec-title{font-size:.85rem;font-weight:700;color:var(--navy);flex:1;}
+.srch{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 11px;}
+.srch svg{width:13px;height:13px;color:var(--muted);flex-shrink:0;}
+.srch input{border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:150px;}
+.srch input::placeholder{color:var(--muted);opacity:.7;}
+.pt-header,.pt-row{display:grid;grid-template-columns:90px 1fr 100px 110px 80px 70px 100px;align-items:center;padding:10px 18px;}
+.pt-header{background:var(--bg);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);}
+.pt-row{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.pt-row:last-child{border-bottom:none;}
+.pt-row:hover{background:rgba(43,95,142,.04);}
+.pt-row.sel{background:rgba(133,200,238,.15);border-left:3px solid var(--navy);}
+.mono{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);}
+.val{font-family:'DM Mono',monospace;font-size:.84rem;font-weight:700;}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:.63rem;font-weight:700;}
+.ok{background:#e6f7e6;color:#2d7a2d;}.warn{background:#fff4e0;color:#8a5800;}.danger{background:#fdeaea;color:#c0392b;}.off{background:#f0f0f0;color:#888;}
+.loading{padding:32px;text-align:center;color:var(--muted);font-size:.82rem;}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:7px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.vsec{display:none;}.vsec.show{display:block;}
+.dtabs{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.dtab{padding:5px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .12s;}
+.dtab:hover,.dtab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.vtw{overflow-x:auto;}
+.vt{width:100%;border-collapse:collapse;}
+.vt th{padding:8px 14px;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;}
+.vt td{padding:8px 14px;font-size:.78rem;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;}
+.vt tr:last-child td{border-bottom:none;}
+.vt tr:hover td{background:rgba(43,95,142,.03);}
+.vcount{padding:6px 18px;font-size:.68rem;color:var(--muted);border-bottom:1px solid var(--border);}
+.tip{display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;box-shadow:0 8px 28px rgba(0,0,0,.14);z-index:500;min-width:230px;pointer-events:none;}
+.tn{font-size:.86rem;font-weight:700;color:var(--navy);margin-bottom:7px;}
+.tr{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:.71rem;}
+.tr:last-child{border-bottom:none;}
+.tl{color:var(--muted);font-weight:600;}.tv{font-family:'DM Mono',monospace;}
+.slide-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;}
+.slide-bg.open{display:flex;justify-content:flex-end;}
+.slide-panel{background:var(--card);width:400px;max-width:95vw;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(0,0,0,.15);}
+.slide-hd{background:var(--navy);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.slide-ttl{color:#fff;font-size:.88rem;font-weight:700;}
+.slide-x{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.7);display:flex;}
+.slide-body{flex:1;overflow-y:auto;padding:16px;}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:16px;padding:26px;width:350px;max-width:95vw;position:relative;}
+.modal-ttl{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:18px;}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:.82rem;color:var(--text);}
+.tgl{width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;border:none;position:relative;transition:background .2s;}
+.tgl.on{background:var(--navy);}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;}
+.tgl.on::after{transform:translateX(18px);}
+.fg{display:flex;gap:5px;}
+.fb{padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;}
+.fb.on,.fb:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
+.finp{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.8rem;background:var(--bg);color:var(--text);outline:none;margin-bottom:7px;}
+.finp:focus{border-color:var(--navy);}
+.bprim{width:100%;padding:9px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;}
+.bprim:hover{background:#1e4a72;}
+.pwmsg{font-size:.7rem;text-align:center;min-height:14px;margin-bottom:6px;}
+.mclose{position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);}
+.cfab{position:fixed;bottom:24px;right:24px;z-index:300;width:50px;height:50px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(43,95,142,.35);}
+.cfab svg{color:#fff;}
+.cbox{position:fixed;bottom:82px;right:24px;width:305px;height:430px;background:var(--card);border-radius:14px;box-shadow:0 6px 28px rgba(0,0,0,.14);border:1px solid var(--border);display:none;flex-direction:column;overflow:hidden;z-index:299;}
+.cbox.open{display:flex;}
+.chd{background:var(--navy);padding:11px 13px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.chdn{font-size:.8rem;font-weight:700;color:#fff;}
+.chds{font-size:.63rem;color:rgba(255,255,255,.6);}
+.cbk{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.8);display:flex;}
+.cav{width:27px;height:27px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.63rem;font-weight:800;flex-shrink:0;}
+.clist{flex:1;overflow-y:auto;}
+.citem{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;}
+.citem:hover{background:var(--bg);}
+.cav2{width:30px;height:30px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:800;flex-shrink:0;}
+.cn{font-size:.76rem;font-weight:700;color:var(--text);}
+.cp{font-size:.64rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cmsgs{flex:1;overflow-y:auto;padding:9px;display:flex;flex-direction:column;gap:6px;background:var(--bg);}
+.cmsg{display:flex;flex-direction:column;align-items:flex-end;}
+.cbbl{background:var(--navy);color:#fff;padding:7px 10px;border-radius:10px 10px 2px 10px;font-size:.74rem;line-height:1.5;max-width:90%;white-space:pre-wrap;word-break:break-word;}
+.cts{font-size:.58rem;color:var(--muted);margin-top:2px;}
+.cft{padding:7px;border-top:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;gap:5px;}
+.ctype{font-family:'Sora',sans-serif;font-size:.7rem;border:1px solid var(--border);border-radius:7px;padding:4px 8px;color:var(--navy);background:var(--bg);outline:none;width:100%;}
+.crow{display:flex;gap:5px;align-items:flex-end;}
+.cinp{flex:1;border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;font-family:'Sora',sans-serif;font-size:.74rem;resize:none;outline:none;background:var(--bg);color:var(--text);max-height:70px;}
+.cinp:focus{border-color:var(--navy);}
+.csnd{width:31px;height:31px;border-radius:7px;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;}
+.csnd:hover{background:#1e4a72;}
+.cempty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.76rem;}
+</style>
 </head>
 <body>
 
-<!-- ── SIDEBAR ── -->
-<aside class="sidebar">
+<aside class="sb">
   <div class="sb-logo">
-    <div class="sb-logo-icon">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-    </div>
+    <div class="sb-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
     <div class="sb-logo-name">Health<span>Monitor</span></div>
   </div>
-
   <div class="sb-nav">
-    <div class="sb-section">Theo dõi</div>
-    <button class="sb-item active" onclick="setView('overview')" id="nav-overview">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-      <span>Tổng quan</span>
+    <div class="sb-sec">Theo dõi</div>
+    <button class="sb-btn active" onclick="setNav(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Tổng quan
     </button>
-    <button class="sb-item" onclick="openSlide('devices')" id="nav-devices">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-      <span>Thiết bị</span>
+    <button class="sb-btn" onclick="openSlide('devices');setNav(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Thiết bị
     </button>
-    <button class="sb-item" onclick="openSlide('links')" id="nav-links">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      <span>Liên kết</span>
+    <button class="sb-btn" onclick="openSlide('links');setNav(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Liên kết
     </button>
-    <button class="sb-item" onclick="openSlide('records')" id="nav-records">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-      <span>Hồ sơ bệnh án</span>
+    <button class="sb-btn" onclick="openSlide('records');setNav(this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>Hồ sơ bệnh án
     </button>
   </div>
-
   <div class="sb-bottom">
-    <div class="sb-doctor" id="sb-doctor">
+    <div class="sb-user">
       <div class="sb-av" id="sb-av">BS</div>
-      <div>
-        <div class="sb-dname" id="sb-dname">Đang tải...</div>
-        <div class="sb-drole" id="sb-drole">Bác sĩ</div>
-      </div>
+      <div><div class="sb-uname" id="sb-name">Đang tải...</div><div class="sb-urole" id="sb-role">Bác sĩ</div></div>
     </div>
-    <button class="sb-item" onclick="openSettings()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>
-      <span>Cài đặt</span>
+    <button class="sb-btn" onclick="openSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>Cài đặt
     </button>
-    <button class="sb-item" onclick="doLogout()" style="color:rgba(224,82,82,0.8)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-      <span>Đăng xuất</span>
+    <button class="sb-btn red" onclick="doLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Đăng xuất
     </button>
   </div>
 </aside>
 
-<!-- ── MAIN ── -->
 <div class="main">
-
-  <!-- Topbar -->
   <div class="topbar">
-    <div>
-      <div class="topbar-title" id="topbar-title">Tổng quan</div>
-      <div class="topbar-sub" id="topbar-sub">Theo dõi sinh tồn bệnh nhân</div>
-    </div>
-    <div class="live-dot">Đang theo dõi trực tiếp</div>
-    <div class="last-updated" id="last-updated">—</div>
+    <div class="topbar-title">Tổng quan bệnh nhân</div>
+    <div class="live-dot">Đang theo dõi</div>
+    <div class="last-upd" id="last-upd">—</div>
   </div>
-
-  <!-- Content -->
   <div class="content">
-
-    <!-- Summary cards -->
-    <div class="summary-row" id="summary-row">
-      <div class="sum-card ok">
-        <div class="sum-label">Bình thường</div>
-        <div class="sum-val" id="s-ok">—</div>
-        <div class="sum-sub">bệnh nhân</div>
-      </div>
-      <div class="sum-card warn">
-        <div class="sum-label">Cảnh báo</div>
-        <div class="sum-val" id="s-warn">—</div>
-        <div class="sum-sub">bệnh nhân</div>
-      </div>
-      <div class="sum-card danger">
-        <div class="sum-label">Nguy hiểm</div>
-        <div class="sum-val" id="s-danger">—</div>
-        <div class="sum-sub">bệnh nhân</div>
-      </div>
-      <div class="sum-card">
-        <div class="sum-label">Tổng bệnh nhân</div>
-        <div class="sum-val" id="s-total">—</div>
-        <div class="sum-sub">đang theo dõi</div>
-      </div>
+    <div class="sum-row">
+      <div class="sum-card"><div class="sum-label">Bình thường</div><div class="sum-val" id="s-ok" style="color:var(--green)">—</div><div class="sum-sub">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Cảnh báo</div><div class="sum-val" id="s-warn" style="color:var(--warn)">—</div><div class="sum-sub">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Nguy hiểm</div><div class="sum-val" id="s-danger" style="color:var(--danger)">—</div><div class="sum-sub">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Tổng bệnh nhân</div><div class="sum-val" id="s-total">—</div><div class="sum-sub">đang theo dõi</div></div>
     </div>
-
-    <!-- Toolbar -->
     <div class="toolbar">
-      <div class="toolbar-label">Ngày xem:</div>
-      <div class="dp-wrap">
-        <div class="datepicker-trigger" id="datepicker-trigger" onclick="toggleCalendar()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-          <span id="datepicker-date">—</span>
-        </div>
-        <div class="cal-popup" id="cal-popup">
-          <div class="cal-head">
-            <select class="cal-sel" id="cal-month" onchange="renderCalGrid()"></select>
-            <select class="cal-sel" id="cal-year" onchange="renderCalGrid()"></select>
-            <button class="cal-today-btn" onclick="todayBtn()">Hôm nay</button>
-          </div>
-          <div class="cal-grid" id="cal-grid-head">
-            <div class="cal-dh">CN</div><div class="cal-dh">T2</div><div class="cal-dh">T3</div>
-            <div class="cal-dh">T4</div><div class="cal-dh">T5</div><div class="cal-dh">T6</div><div class="cal-dh">T7</div>
-          </div>
-          <div class="cal-grid" id="cal-grid"></div>
+      <div class="tb-label">Ngày xem:</div>
+      <div class="tb-date" id="date-trigger" onclick="toggleDD()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="date-lbl">Tất cả ngày</span>
+        <div class="date-dd" id="date-dd">
+          <div class="date-opt sel" onclick="pickDate(null,this)">📅 Tất cả ngày</div>
         </div>
       </div>
-      <button class="refresh-btn" id="refresh-btn" onclick="loadData()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        Làm mới
+      <button class="btn-ref" id="btn-ref" onclick="loadData()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
       </button>
     </div>
-
-    <!-- Patient list -->
-    <div class="section-card">
-      <div class="section-head">
-        <div class="section-title">🧑‍⚕️ Danh sách bệnh nhân</div>
-        <div class="search-box">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="search-input" placeholder="Tìm bệnh nhân..." oninput="filterPatients(this.value)"/>
-        </div>
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🧑‍⚕️ Danh sách bệnh nhân</div>
+        <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="srch" placeholder="Tìm bệnh nhân..."/></div>
       </div>
-      <div class="pt-header">
-        <div>Mã BN</div>
-        <div>Họ tên</div>
-        <div>Ngày sinh</div>
-        <div>Thiết bị</div>
-        <div>Nhịp tim</div>
-        <div>SpO₂</div>
-        <div>Trạng thái</div>
-      </div>
-      <div class="pt-list" id="patient-list">
-        <div class="tables-loading"><div class="spinner"></div><br>Đang tải dữ liệu...</div>
-      </div>
+      <div class="pt-header"><div>Mã BN</div><div>Họ tên</div><div>Ngày sinh</div><div>Thiết bị</div><div>Nhịp tim</div><div>SpO₂</div><div>Trạng thái</div></div>
+      <div id="pt-list"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
-
-    <!-- Vitals table (hiện khi click bệnh nhân) -->
-    <div class="section-card vitals-section" id="vitals-section">
-      <div class="section-head">
-        <div class="section-title" id="vitals-title">📈 Dữ liệu sinh tồn</div>
-      </div>
-      <div class="device-tabs" id="device-tabs-bar" style="display:none"></div>
-      <div id="tables-container">
-        <div class="tables-loading">Chọn bệnh nhân để xem dữ liệu sinh tồn</div>
-      </div>
-    </div>
-
-  </div><!-- .content -->
-</div><!-- .main -->
-
-<!-- Tooltip -->
-<div class="pt-tooltip" id="pt-tooltip"></div>
-
-<!-- Alert overlay -->
-<div class="alert-overlay" id="alert-overlay">
-  <div class="alert-box">
-    <div class="alert-title">🚨 Cảnh báo khẩn cấp</div>
-    <div id="alert-list"></div>
-    <button class="alert-dismiss" onclick="dismissAlert()">Đã xác nhận</button>
-  </div>
-</div>
-
-<!-- Settings modal -->
-<div class="settings-overlay" id="settings-overlay" onclick="if(event.target===this)closeSettings()">
-  <div class="settings-modal" style="position:relative">
-    <button class="settings-close" onclick="closeSettings()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
-    <div class="settings-title">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>
-      Cài đặt
-    </div>
-
-    <div class="settings-group">
-      <div class="settings-label">Giao diện</div>
-      <div class="settings-row">
-        <span class="settings-row-label">🌙 Chế độ tối</span>
-        <button class="toggle-switch" id="dark-toggle" onclick="toggleDark()"></button>
-      </div>
-      <div class="settings-row">
-        <span class="settings-row-label">🔤 Cỡ chữ</span>
-        <div class="font-btns">
-          <button class="font-btn" onclick="setFont(12)">Nhỏ</button>
-          <button class="font-btn active" onclick="setFont(14)">Vừa</button>
-          <button class="font-btn" onclick="setFont(16)">Lớn</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="settings-group">
-      <div class="settings-label">Bảo mật</div>
-      <div class="pw-change-field">
-        <input type="password" id="pw-old" placeholder="Mật khẩu hiện tại"/>
-        <input type="password" id="pw-new" placeholder="Mật khẩu mới (≥ 6 ký tự)"/>
-        <input type="password" id="pw-confirm" placeholder="Xác nhận mật khẩu mới"/>
-        <div id="pw-msg" style="font-size:0.72rem;margin-bottom:8px;min-height:16px"></div>
-        <button class="btn-primary" onclick="changePassword()">Đổi mật khẩu</button>
-      </div>
+    <div class="sec-card vsec" id="vsec">
+      <div class="sec-head"><div class="sec-title" id="vtitle">📈 Dữ liệu sinh tồn</div></div>
+      <div class="dtabs" id="dtabs"></div>
+      <div id="vbody"><div class="loading">Chọn ngày để xem dữ liệu</div></div>
     </div>
   </div>
 </div>
 
-<!-- Slide panel: Thiết bị / Liên kết / Hồ sơ -->
-<div class="slide-overlay" id="slide-overlay" onclick="if(event.target===this)closeSlide()">
+<div class="tip" id="tip"></div>
+
+<div class="slide-bg" id="slide-bg" onclick="if(event.target===this)closeSlide()">
   <div class="slide-panel">
-    <div class="slide-head">
-      <div class="slide-title" id="slide-title">—</div>
-      <button class="slide-close" onclick="closeSlide()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>
-    <div class="slide-body" id="slide-body">
-      <div class="tables-loading"><div class="spinner"></div></div>
+    <div class="slide-hd"><div class="slide-ttl" id="slide-ttl">—</div><button class="slide-x" onclick="closeSlide()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="slide-body" id="slide-body"><div class="loading"><span class="spin"></span></div></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <button class="mclose" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">⚙️ Cài đặt</div>
+    <div class="srow"><span class="slbl">🌙 Chế độ tối</span><button class="tgl" id="dark-tgl" onclick="toggleDark()"></button></div>
+    <div class="srow"><span class="slbl">🔤 Cỡ chữ</span><div class="fg"><button class="fb" onclick="setFont(12,this)">Nhỏ</button><button class="fb on" onclick="setFont(14,this)">Vừa</button><button class="fb" onclick="setFont(16,this)">Lớn</button></div></div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Đổi mật khẩu</div>
+      <input class="finp" type="password" id="pw-old" placeholder="Mật khẩu hiện tại"/>
+      <input class="finp" type="password" id="pw-new" placeholder="Mật khẩu mới (≥6 ký tự)"/>
+      <input class="finp" type="password" id="pw-cf" placeholder="Xác nhận mật khẩu mới"/>
+      <div class="pwmsg" id="pwmsg"></div>
+      <button class="bprim" onclick="changePw()">Đổi mật khẩu</button>
     </div>
   </div>
 </div>
 
-<!-- Chat FAB -->
-<button class="chat-fab" id="chat-fab" onclick="toggleChat()">
-  <svg class="ic-chat" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-  <svg class="ic-close" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  <span class="fab-badge" id="fab-badge" style="display:none"></span>
-</button>
-
-<div class="chat-box" id="chat-box">
-  <div id="vc" style="display:flex;flex-direction:column;height:100%">
-    <div class="chat-header">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--sky);flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <div class="chat-hinfo"><div class="chat-hname">Ghi chú bệnh nhân</div><div class="chat-hsub" id="csub">—</div></div>
-    </div>
-    <div class="contact-list" id="contact-list"></div>
-    <div class="cempty" id="cempty" style="display:none">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-      <div style="font-size:0.79rem;font-weight:600;color:var(--muted)">Chưa có bệnh nhân</div>
-    </div>
+<button class="cfab" onclick="toggleChat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+<div class="cbox" id="cbox">
+  <div id="cv-list" style="display:flex;flex-direction:column;height:100%">
+    <div class="chd"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--sky)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><div class="chdn">Ghi chú y tế</div><div class="chds" id="csub">—</div></div></div>
+    <div class="clist" id="clist"></div>
+    <div class="cempty" id="cempty" style="display:none">Chưa có bệnh nhân</div>
   </div>
-  <div id="vch" style="display:none;flex-direction:column;height:100%">
-    <div class="chat-header">
-      <button class="chat-back" onclick="backToContacts()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
-      <div class="chat-av" id="chav">—</div>
-      <div class="chat-hinfo"><div class="chat-hname" id="chname">—</div><div class="chat-hsub" id="chrole">—</div></div>
-    </div>
-    <div class="chat-msgs" id="chat-msgs"></div>
-    <div class="chat-foot">
-      <select class="chat-type-sel" id="chat-type-select">
-        <option value="theo_doi">👁️ Theo dõi</option>
-        <option value="don_thuoc">💊 Đơn thuốc</option>
-        <option value="khuyen_nghi">📋 Khuyến nghị</option>
-        <option value="tai_kham">📅 Tái khám</option>
-      </select>
-      <div class="chat-inp-row">
-        <textarea class="chat-inp" id="chat-inp" rows="1" placeholder="Nhập ghi chú..."></textarea>
-        <button class="chat-send" onclick="sendMsg()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-      </div>
+  <div id="cv-chat" style="display:none;flex-direction:column;height:100%">
+    <div class="chd"><button class="cbk" onclick="backChat()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button><div class="cav" id="cav">—</div><div><div class="chdn" id="cpname">—</div><div class="chds">Bệnh nhân</div></div></div>
+    <div class="cmsgs" id="cmsgs"></div>
+    <div class="cft">
+      <select class="ctype" id="ctype"><option value="theo_doi">👁️ Theo dõi</option><option value="don_thuoc">💊 Đơn thuốc</option><option value="khuyen_nghi">📋 Khuyến nghị</option><option value="tai_kham">📅 Tái khám</option></select>
+      <div class="crow"><textarea class="cinp" id="cinp" rows="1" placeholder="Nhập ghi chú..."></textarea><button class="csnd" onclick="sendNote()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>
     </div>
   </div>
 </div>
-
 
 <script>
-console.log('=== HealthMonitor JS loading ===');
+// SESSION CHECK
+try {
+  const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  if(!s.userId || s.role !== 'user_bs'){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
+} catch(_){ location.replace('index.html'); }
+
 const API = 'https://health-monitor-system-twts.onrender.com';
+const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
+const DID = SESS.userId;
 
-// ── SESSION GUARD ──
-// Kiểm tra session ngay khi trang load — trước khi render bất cứ thứ gì
-(function sessionGuard(){
-  try {
-    const sess = localStorage.getItem('hm_session');
-    if(!sess){
-      // Chưa đăng nhập → về trang login
-      window.location.replace('index.html');
-      return;
-    }
-    const s = JSON.parse(sess);
-    if(!s || !s.userId || s.role !== 'user_bs'){
-      localStorage.removeItem('hm_session');
-      window.location.replace('index.html');
-      return;
-    }
-    // Đã đăng nhập → cập nhật DOCTOR_ID từ session
-    // (override URL param nếu session tồn tại)
-    if(!window.location.search.includes('doctor=')){
-      // Thêm doctor param vào URL mà không reload
-      const url = new URL(window.location.href);
-      url.searchParams.set('doctor', s.userId);
-      window.history.replaceState({}, '', url.toString());
-    }
-  } catch(_){
-    window.location.replace('index.html');
-  }
-})();
+let pts=[], vcache={}, selPid=null, selDate=null, allDates=[], curCPid=null, ccache={};
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-// ── DOCTOR ID — lấy từ URL param ?doctor=UUID ──
-function getDoctorId(){
-  try {
-    const urlParam = new URLSearchParams(window.location.search).get('doctor');
-    if(urlParam && urlParam.length > 10) return urlParam;
-  } catch(_){}
-  return null; // Không có → hiển thị màn hình yêu cầu đăng nhập
+function doLogout(){ if(!confirm('Đăng xuất?')) return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
+function setNav(b){ document.querySelectorAll('.sb-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }
+function openSettings(){ document.getElementById('modal-bg').classList.add('open'); }
+function closeSettings(){ document.getElementById('modal-bg').classList.remove('open'); }
+function toggleDark(){ const h=document.documentElement; const d=h.getAttribute('data-theme')==='dark'; h.setAttribute('data-theme',d?'light':'dark'); document.getElementById('dark-tgl').classList.toggle('on',!d); localStorage.setItem('hm_theme',d?'light':'dark'); }
+function setFont(n,b){ document.documentElement.style.setProperty('--fs',n+'px'); document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on')); b.classList.add('on'); localStorage.setItem('hm_font',n); }
+async function changePw(){
+  const o=document.getElementById('pw-old').value, n=document.getElementById('pw-new').value, c=document.getElementById('pw-cf').value, m=document.getElementById('pwmsg');
+  m.style.color='var(--danger)';
+  if(!o||!n||!c){m.textContent='Điền đủ thông tin';return;} if(n.length<6){m.textContent='Mật khẩu ≥ 6 ký tự';return;} if(n!==c){m.textContent='Không khớp';return;}
+  m.style.color='var(--muted)'; m.textContent='Đang xử lý...';
+  try { const r=await fetch(`${API}/auth/change-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:DID,newPassword:n})}); const d=await r.json(); if(r.ok){m.style.color='var(--green)';m.textContent='✅ Thành công!';['pw-old','pw-new','pw-cf'].forEach(id=>document.getElementById(id).value='');}else{m.textContent=d.error||'Lỗi';} } catch(e){m.textContent='Không thể kết nối';}
 }
-var DOCTOR_ID = getDoctorId();
-// Xóa localStorage cũ
-try { localStorage.removeItem('doctor_id'); } catch(_){}
+(()=>{ const t=localStorage.getItem('hm_theme'); if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('dark-tgl').classList.add('on');} const f=parseInt(localStorage.getItem('hm_font')); if(f)document.documentElement.style.setProperty('--fs',f+'px'); })();
 
-// ── ĐĂNG XUẤT ──
-function doLogout(){
-  if(!confirm('Bạn có chắc muốn đăng xuất?')) return;
-  localStorage.removeItem('hm_session');
-  window.location.replace('index.html');
+// DATE DROPDOWN
+function toggleDD(){ document.getElementById('date-dd').classList.toggle('open'); }
+document.addEventListener('click',e=>{ if(!document.getElementById('date-trigger').contains(e.target)) document.getElementById('date-dd').classList.remove('open'); });
+function buildDD(){
+  const dd=document.getElementById('date-dd');
+  dd.innerHTML=`<div class="date-opt${!selDate?' sel':''}" onclick="pickDate(null,this)">📅 Tất cả ngày</div>`;
+  allDates.forEach(d=>{ const[y,m,day]=d.split('-'); dd.innerHTML+=`<div class="date-opt${selDate===d?' sel':''}" onclick="pickDate('${d}',this)">${day}/${m}/${y}</div>`; });
 }
+function pickDate(d,el){ selDate=d; document.getElementById('date-lbl').textContent=d?d.split('-').reverse().join('/'):'Tất cả ngày'; document.getElementById('date-dd').classList.remove('open'); document.querySelectorAll('.date-opt').forEach(e=>e.classList.remove('sel')); if(el)el.classList.add('sel'); if(selPid)showV(selPid); updSum(); }
 
-// ── STATE ──
-let allData = [], dayMap = {}, dayKeys = [], currentDayIdx = 0;
-let calVY = new Date().getFullYear(), calVM = new Date().getMonth()+1;
-const todayStr = new Date().toISOString().slice(0,10);
-let alertDismissed = localStorage.getItem('alertDismissedDate')===todayStr && localStorage.getItem('alertDismissed')==='true';
-let alarmOscs = [];
-let dpDevices=[], dpActiveMap={}, dpPatients=[];
-
-// ── HELPERS ──
-function toDateKey(ts){
-  if(!ts) return 'unknown';
-  const d=new Date(ts); if(isNaN(d)) return 'unknown';
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-}
-function fmtDT(ts){
-  if(!ts) return '—'; const d=new Date(ts); if(isNaN(d)) return ts;
-  return d.toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit',day:'2-digit',month:'2-digit',year:'numeric'});
-}
-function escHtml(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-function hBarW(bpm){return Math.min(100,Math.max(0,((bpm-40)/120)*100));}
-function spo2C(v){return v>=95?'var(--green)':v>=90?'var(--warn)':'var(--danger)';}
-
-// ── CLASSIFY ──
-function classify(row){
-  const bpm=parseFloat(row.heartRate)||0, spo=parseFloat(row.spo2)||0;
-  const hH=bpm>100,hN=bpm>=60&&bpm<=100,hL=bpm>0&&bpm<60;
-  const s1=spo>0&&spo<90,s2=spo>=90&&spo<95,s3=spo>=95;
-  if(hL&&s1) return{cls:'critical'};
-  if(hL&&s2) return{cls:'danger'};
-  if(hL&&s3) return{cls:'warning'};
-  if((hH||hN)&&s1) return{cls:'danger'};
-  if((hH||hN)&&s2) return{cls:'warning'};
-  return{cls:'ok'};
-}
-function getClsCls(row){const s=classify(row);return s.cls==='critical'?'danger':s.cls;}
-
-// ── DEVICE INFO MAP + TAB STATE ──
-let deviceInfoMap = {};
-let currentDeviceId = sessionStorage.getItem('hm_tab') || null; // giữ tab sau refresh
-let currentDayData  = [];     // toàn bộ data của ngày đang xem
-
-// ── GROUP BY DEVICE ──
-function groupByDevice(data){
-  const map={};
-  data.forEach(r=>{const k=r.deviceId||'unknown';if(!map[k])map[k]=[];map[k].push(r);});
-  return map;
-}
-
-// ── RENDER TABS ──
-function renderDeviceTabs(byDevice){
-  const bar = document.getElementById('device-tabs-bar');
-  const devIds = Object.keys(byDevice).sort();
-  if(devIds.length === 0){ bar.style.display='none'; return; }
-
-  // Khôi phục tab đã chọn; nếu không còn tồn tại thì chọn tab đầu tiên
-  if(!currentDeviceId || !byDevice[currentDeviceId]){
-    currentDeviceId = devIds[0];
-    sessionStorage.setItem('hm_tab', currentDeviceId);
-  }
-
-  bar.style.display = 'flex';
-  bar.innerHTML = devIds.map(devId => {
-    const info    = deviceInfoMap[devId] || {};
-    const serial  = info.serial || devId.slice(-3);
-    const isOnl   = info.online;
-    const battery = info.battery;
-    const cnt     = byDevice[devId].length;
-    const isActive= devId === currentDeviceId;
-    const patName = byDevice[devId][0]?.patientName || '—';
-
-    return `<button
-      class="device-tab-btn ${isActive?'active':''}"
-      onclick="selectDeviceTab('${devId}')"
-      title="${patName}">
-      <span class="tab-dot ${isOnl?'online':''}"></span>
-      <span>${serial}</span>
-      ${battery!=null?`<span style="font-size:0.68rem;opacity:0.8">🔋${battery}%</span>`:''}
-      <span class="tab-count">${cnt}</span>
-    </button>`;
-  }).join('');
-}
-
-// ── CHỌN TAB ──
-function selectDeviceTab(devId){
-  currentDeviceId = devId;
-  sessionStorage.setItem('hm_tab', devId); // lưu lại để khôi phục sau refresh
-  const byDevice  = groupByDevice(currentDayData);
-  renderDeviceTabs(byDevice);
-  renderSingleTable(byDevice[devId]||[], devId, document.getElementById('search-input').value);
-  updateSummary(currentDayData);
-}
-
-// ── RENDER 1 BẢNG (thiết bị đang chọn) ──
-function renderSingleTable(rows, devId, searchQ){
-  const container = document.getElementById('tables-container');
-  const q = (searchQ||'').toLowerCase().trim();
-  if(q) rows = rows.filter(r=>(r.patientName||'').toLowerCase().includes(q));
-
-  const info    = deviceInfoMap[devId] || {};
-  const serial  = info.serial || devId.slice(0,16)+'…';
-  const isOnl   = info.online;
-  const battery = info.battery;
-  const patName = rows[0]?.patientName || '—';
-
-  const tableRows = rows.length === 0
-    ? '<tr class="state-row"><td colspan="4">Không có dữ liệu khớp.</td></tr>'
-    : rows.map((row,i)=>{
-        const{cls}=classify(row);
-        const bpm=parseFloat(row.heartRate)||0,spo=parseFloat(row.spo2)||0;
-        const dHR=row.deltaHeartRate,dSP=row.deltaSpo2;
-        const dHRh=dHR!=null?`<span style="font-size:0.66rem;color:${dHR>0?'var(--danger)':dHR<0?'var(--sky)':'var(--muted)'}">${dHR>0?'▲':dHR<0?'▼':'–'}${Math.abs(dHR)}</span>`:'';
-        const dSPh=dSP!=null?`<span style="font-size:0.66rem;color:${dSP<0?'var(--danger)':dSP>0?'var(--green)':'var(--muted)'}">${dSP>0?'▲':dSP<0?'▼':'–'}${Math.abs(dSP)}</span>`:'';
-        const bg=cls==='critical'?'background:#1a00001a':cls==='danger'?'background:#fdeaea55':cls==='warning'?'background:#fff4e055':'';
-        return`<tr style="${bg}">
-          <td style="color:var(--muted);font-size:0.75rem;font-family:'DM Mono',monospace">${String(i+1).padStart(2,'0')}</td>
-          <td><div class="vital"><span>${bpm||'—'}</span>${dHRh}<div class="bar"><div class="bar-fill" style="width:${hBarW(bpm)}%;background:var(--sky)"></div></div></div></td>
-          <td><div class="vital"><span style="color:${spo2C(spo)}">${spo?spo+'%':'—'}</span>${dSPh}<div class="bar"><div class="bar-fill" style="width:${spo}%;background:${spo2C(spo)}"></div></div></div></td>
-          <td style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--muted);white-space:nowrap">${fmtDT(row.time)}</td>
-        </tr>`;
-      }).join('');
-
-  container.innerHTML = `
-    <div>
-      <div class="device-table-header">
-        <div class="device-table-title">
-          <span style="width:7px;height:7px;border-radius:50%;background:${isOnl?'var(--green)':'var(--muted)'};display:inline-block;${isOnl?'animation:pulse 1.8s infinite':''}"></span>
-          ${patName}
-        </div>
-        <div class="device-meta">
-          <span class="device-serial-badge">📟 ${serial}</span>
-          ${battery!=null?`<span class="device-serial-badge" style="background:#e8f8ec;color:#2d8a3e">🔋 ${battery}%</span>`:''}
-          <span class="device-count">${rows.length} bản ghi</span>
-        </div>
-      </div>
-      <div class="table-wrapper">
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>#</th><th>Nhịp tim (bpm)</th><th>SpO₂ (%)</th><th>Thời gian đo</th></tr></thead>
-            <tbody>${tableRows}</tbody>
-          </table>
-        </div>
-      </div>
-    </div>`;
-}
-
-// ── RENDER ALL (entry point sau khi có data) ──
-
-// ── LOAD DATA ──
-// Nguồn dữ liệu chính: /doctor/:id/patients → lấy đúng bệnh nhân của bác sĩ
-// Sau đó fetch sinh tồn theo ngày hoặc theo từng bệnh nhân
-
-// Lưu danh sách bệnh nhân của bác sĩ (dùng để lọc tabs và bảng)
-let doctorPatients = []; // [{ patientId, patientName, device }]
-
+// LOAD DATA
 async function loadData(){
-  const btn=document.getElementById('refresh-btn');btn.disabled=true;
-
-  if(!DOCTOR_ID){
-    document.getElementById('patient-list').innerHTML='<div class="tables-loading">Chưa xác định tài khoản bác sĩ</div>';
-    btn.disabled=false;
-    return;
-  }
-
-  document.getElementById('patient-list').innerHTML='<div class="tables-loading"><div class="spinner"></div><br>Đang tải danh sách bệnh nhân...</div>';
-
-  try{
-    console.log('[loadData] Fetching patients for:', DOCTOR_ID);
-    // 1. Fetch bệnh nhân của bác sĩ
-    const rPat = await fetch(`${API}/doctor/${DOCTOR_ID}/patients`);
-    console.log('[loadData] rPat status:', rPat.status, rPat.ok);
-    if(rPat.ok){
-      doctorPatients = await rPat.json();
-    } else {
-      const errText = await rPat.text();
-      console.error('[loadData] patients error:', errText);
-      doctorPatients = [];
-    }
-
-    console.log('[loadData] doctorPatients count:', doctorPatients.length);
-
-    console.log('[loadData] Calling renderPatientList with', doctorPatients.length, 'patients');
-    // 2. Hiện danh sách bệnh nhân ngay
-    renderPatientList(doctorPatients.map(p=>({
-      id:           p.patientId,
-      name:         p.patientName,
-      dob:          p.dob,
-      gender:       p.gender,
-      deviceSerial: p.device?.serial || '—',
-      deviceId:     p.device?.deviceId,
-      hr:           p.live?.heartRate ?? null,
-      spo2:         p.live?.spo2 ?? null,
-      lastTime:     p.live?.updatedAt,
-      bloodType:    p.profile?.nhom_mau,
-      disease:      p.profile?.benh_man_tinh,
-    })), '');
-    console.log('[loadData] renderPatientList done');
-
-    // Cập nhật allPatients để tooltip dùng
-    allPatients = doctorPatients.map(p=>({
-      id:           p.patientId,
-      name:         p.patientName,
-      dob:          p.dob,
-      gender:       p.gender,
-      deviceSerial: p.device?.serial || '—',
-      deviceId:     p.device?.deviceId,
-      hr:           p.live?.heartRate ?? null,
-      spo2:         p.live?.spo2 ?? null,
-      lastTime:     p.live?.updatedAt,
-      bloodType:    p.profile?.nhom_mau,
-      disease:      p.profile?.benh_man_tinh,
-    }));
-
-    // 3. Cập nhật summary
-    updateSummary([]);
-
-    // 4. Fetch thiết bị để build deviceInfoMap
-    try{
-      const rd = await fetch(`${API}/devices`);
-      if(rd.ok){
-        const devicesRaw = await rd.json();
-        const now = Date.now();
-        deviceInfoMap = {};
-        devicesRaw.forEach(d=>{
-          deviceInfoMap[d.id]={
-            serial: d.so_seri,
-            online: d.lan_online_cuoi ? now-new Date(d.lan_online_cuoi).getTime()<60000 : false,
-            battery: d.phan_tram_pin,
-          };
-        });
-      }
-    }catch(_){}
-
-    // 5. Build calendar từ /vitals/days
-    try{
-      const rDays = await fetch(`${API}/vitals/days`);
-      if(rDays.ok){
-        const allDays = await rDays.json();
-        if(allDays.length > 0){
-          dayKeys = allDays.sort((a,b)=>b.localeCompare(a));
-          currentDayIdx = 0;
-          renderDayPicker(); // hiển thị ngày mới nhất + cập nhật summary
-        }
-      }
-    }catch(_){}
-
-    // 6. Cảnh báo
-    try{
-      const ra = await fetch(`${API}/alerts`);
-      if(ra.ok) checkAlerts(await ra.json());
-    }catch(_){}
-
-    document.getElementById('last-updated').textContent = 'Cập nhật lúc ' + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    updFabBadge();
-
-    // Restore patient selection
-    const saved = sessionStorage.getItem('hm_selected_patient');
-    if(saved && allPatients.find(p=>p.id===saved)) selectPatient(saved);
-
-  }catch(e){
-    document.getElementById('patient-list').innerHTML=`<div class="tables-loading">⚠️ Lỗi: ${e.message}</div>`;
-    console.error('[loadData]', e);
-  }
+  const btn=document.getElementById('btn-ref'); btn.disabled=true;
+  document.getElementById('pt-list').innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r=await fetch(`${API}/doctor/${DID}/patients`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const raw=await r.json();
+    pts=raw.map(p=>({id:p.patientId,name:p.patientName,dob:p.dob,gender:p.gender,serial:p.device?.serial||'—',hr:p.live?.heartRate??null,spo2:p.live?.spo2??null,last:p.live?.updatedAt,blood:p.profile?.nhom_mau,disease:p.profile?.benh_man_tinh,phone:p.phone}));
+    renderPts(pts);
+    updSum();
+    document.getElementById('last-upd').textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    loadSbDoc();
+    try { const rd=await fetch(`${API}/vitals/days`); if(rd.ok){allDates=(await rd.json()).sort((a,b)=>b.localeCompare(a));buildDD();} } catch(_){}
+  } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   btn.disabled=false;
 }
 
-// Fetch dữ liệu 1 ngày từ /vitals/by-date/:date, lọc theo bệnh nhân của bác sĩ
-async function loadDayData(dateKey, patientIds){
-  document.getElementById('tables-container').innerHTML=`<div id="tables-loading"><div class="spinner"></div><br>Đang tải ngày ${dateKey.split('-').reverse().join('/')}...</div>`;
-  try{
-    const res = await fetch(`${API}/vitals/by-date/${dateKey}`);
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    let data = await res.json();
+// RENDER PATIENTS
+function renderPts(list,q=''){
+  const el=document.getElementById('pt-list');
+  const fl=q?list.filter(p=>(p.name||'').toLowerCase().includes(q.toLowerCase())):list;
+  if(!fl.length){el.innerHTML='<div class="loading">Không có dữ liệu</div>';return;}
+  el.innerHTML=fl.map(p=>{
+    const hr=p.hr!=null?Number(p.hr):null, spo2=p.spo2!=null?Number(p.spo2):null;
+    const hc=hr!=null?(hr>100||hr<50?'var(--danger)':hr>90?'var(--warn)':'var(--green)'):'var(--muted)';
+    const sc=spo2!=null?(spo2<90?'var(--danger)':spo2<94?'var(--warn)':'var(--navy)'):'var(--muted)';
+    const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
+    const sid=(p.id||'').slice(0,8).toUpperCase();
+    const bdg=sbadge(hr,spo2);
+    return `<div class="pt-row${selPid===p.id?' sel':''}" onclick="clickPt('${p.id}')" onmouseenter="showTip(event,'${p.id}')" onmouseleave="hideTip()">
+      <div class="mono">BN-${sid}</div>
+      <div style="font-size:.82rem;font-weight:600">${esc(p.name)}</div>
+      <div class="mono">${dob}</div>
+      <div class="mono">${esc(p.serial)}</div>
+      <div class="val" style="color:${hc}">${hr!=null?hr:'—'}</div>
+      <div class="val" style="color:${sc}">${spo2!=null?spo2+'%':'—'}</div>
+      <div>${bdg}</div>
+    </div>`;
+  }).join('');
+}
+function sbadge(hr,spo2){
+  if(hr==null&&spo2==null) return '<span class="badge off">⚫ Offline</span>';
+  if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) return '<span class="badge danger">🔴 Nguy hiểm</span>';
+  if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) return '<span class="badge warn">🟡 Cảnh báo</span>';
+  return '<span class="badge ok">🟢 Bình thường</span>';
+}
 
-    // Nếu có patientIds → lọc chỉ bệnh nhân của bác sĩ
-    if(patientIds && patientIds.length > 0){
-      data = data.filter(r => patientIds.includes(r.patientId));
-      // Bổ sung patientName từ doctorPatients nếu thiếu
-      data = data.map(r=>{
-        if(!r.patientName || r.patientName.startsWith('ID:')){
-          const p = doctorPatients.find(dp=>dp.patientId===r.patientId);
-          if(p) return {...r, patientName: p.patientName};
-        }
-        return r;
-      });
-    }
+// SUMMARY
+function updSum(){
+  let ok=0,w=0,d=0;
+  pts.forEach(p=>{const hr=p.hr!=null?Number(p.hr):null,spo2=p.spo2!=null?Number(p.spo2):null;if(hr==null&&spo2==null){ok++;return;}if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45)))d++;else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50)))w++;else ok++;});
+  document.getElementById('s-ok').textContent=ok;
+  document.getElementById('s-warn').textContent=w;
+  document.getElementById('s-danger').textContent=d;
+  document.getElementById('s-total').textContent=pts.length;
+}
 
-    // Với bệnh nhân chưa có dữ liệu ngày này → vẫn tạo entry rỗng để hiển thị tab
-    if(patientIds && patientIds.length > 0){
-      const hasData = new Set(data.map(r=>r.patientId));
-      patientIds.forEach(pid=>{
-        if(!hasData.has(pid)){
-          const p = doctorPatients.find(dp=>dp.patientId===pid);
-          if(p && p.device){
-            // Không có data ngày này nhưng vẫn hiện tab trống
-            data.push({
-              deviceId:    p.device.deviceId,
-              patientId:   pid,
-              patientName: p.patientName,
-              heartRate:   null, spo2: null,
-              deltaHeartRate: null, deltaSpo2: null,
-              time: null,
-              _empty: true,
-            });
-          }
-        }
-      });
-    }
+// TOOLTIP
+let _tip=null;
+function showTip(e,pid){
+  _tip=document.getElementById('tip');
+  const p=pts.find(x=>x.id===pid);if(!p)return;
+  const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
+  const age=p.dob?Math.floor((Date.now()-new Date(p.dob))/31557600000):null;
+  _tip.innerHTML=`<div class="tn">${esc(p.name)}</div>
+    <div class="tr"><span class="tl">Mã BN</span><span class="tv">BN-${(p.id||'').slice(0,8).toUpperCase()}</span></div>
+    <div class="tr"><span class="tl">Ngày sinh</span><span class="tv">${dob}${age?' ('+age+' tuổi)':''}</span></div>
+    <div class="tr"><span class="tl">Giới tính</span><span class="tv">${p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':'—'}</span></div>
+    <div class="tr"><span class="tl">Thiết bị</span><span class="tv">${esc(p.serial)}</span></div>
+    <div class="tr"><span class="tl">Nhịp tim</span><span class="tv">${p.hr!=null?p.hr+' bpm':'—'}</span></div>
+    <div class="tr"><span class="tl">SpO₂</span><span class="tv">${p.spo2!=null?p.spo2+'%':'—'}</span></div>
+    ${p.blood?`<div class="tr"><span class="tl">Nhóm máu</span><span class="tv">${esc(p.blood)}</span></div>`:''}
+    ${p.disease?`<div class="tr"><span class="tl">Bệnh mãn</span><span class="tv" style="font-size:.66rem;max-width:130px;text-align:right">${esc(p.disease)}</span></div>`:''}`;
+  const x=e.clientX+14,y=e.clientY-10;
+  _tip.style.left=(x+250>innerWidth?x-264:x)+'px';
+  _tip.style.top=(y+280>innerHeight?y-280+20:y)+'px';
+  _tip.style.display='block';
+}
+function hideTip(){if(_tip)_tip.style.display='none';}
 
-    dayMap[dateKey] = data;
-    allData = data;
-    renderAllTables(data, document.getElementById('search-input').value);
-    updateSummary(data.filter(r=>!r._empty));
-  }catch(e){
-    document.getElementById('tables-container').innerHTML='<div id="tables-loading">⚠️ Không thể tải dữ liệu ngày này.</div>';
-    console.error(e);
+// CLICK PATIENT
+function clickPt(pid){
+  selPid=pid;
+  const p=pts.find(x=>x.id===pid);
+  if(p) document.getElementById('vtitle').textContent=`📈 Dữ liệu sinh tồn — ${p.name}`;
+  document.getElementById('vsec').classList.add('show');
+  renderPts(pts,document.getElementById('srch').value);
+  showV(pid);
+}
+
+async function showV(pid){
+  const body=document.getElementById('vbody');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  if(!vcache[pid]){
+    try {
+      const r=await fetch(`${API}/vitals/${pid}?limit=2000`);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const raw=await r.json();
+      const rows=raw.map(r=>({hr:r.heartRate??r.nhip_tim,spo2:r.spo2,dHR:r.deltaHeartRate??r.delta_nhip_tim,dS:r.deltaSpo2??r.delta_spo2,mode:r.samplingMode||r.che_do_lay_mau,time:r.time||r.thoi_gian_do})).filter(r=>r.time).sort((a,b)=>new Date(b.time)-new Date(a.time));
+      const byDate={};
+      rows.forEach(r=>{ const d=new Date(new Date(r.time).getTime()+7*3600000); const k=d.toISOString().slice(0,10); if(!byDate[k])byDate[k]=[]; byDate[k].push(r); });
+      const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+      vcache[pid]={byDate,dates};
+    } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; return; }
+  }
+  const c=vcache[pid]; const dates=c.dates;
+  const show=selDate&&c.byDate[selDate]?selDate:dates[0];
+  const tabs=document.getElementById('dtabs');
+  tabs.innerHTML=dates.map(d=>{const[y,m,day]=d.split('-');return`<button class="dtab${d===show?' active':''}" onclick="switchDTab('${pid}','${d}',this)">${day}/${m}/${y}</button>`;}).join('');
+  renderVT(c.byDate[show]||[]);
+}
+
+function switchDTab(pid,date,btn){
+  document.querySelectorAll('.dtab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const c=vcache[pid];
+  if(c) renderVT(c.byDate[date]||[]);
+}
+
+function renderVT(rows){
+  const body=document.getElementById('vbody');
+  if(!rows.length){body.innerHTML='<div class="loading">Không có dữ liệu trong ngày này</div>';return;}
+  const mL={nghi_ngoi:'Nghỉ ngơi',thay_doi:'Thay đổi',canh_bao:'Cảnh báo'};
+  body.innerHTML=`<div class="vcount">Hiển thị ${Math.min(rows.length,500)}/${rows.length} bản ghi</div>
+  <div class="vtw"><table class="vt">
+    <thead><tr><th>Thời gian</th><th>Nhịp tim</th><th>Δ HR</th><th>SpO₂</th><th>Δ SpO₂</th><th>Chế độ</th></tr></thead>
+    <tbody>${rows.slice(0,500).map(r=>{
+      const hr=r.hr,spo2=r.spo2;
+      const hc=hr!=null&&(hr>100||hr<50)?'var(--danger)':hr!=null?'var(--green)':'var(--muted)';
+      const sc=spo2!=null&&spo2<93?'var(--danger)':'var(--navy)';
+      const ts=r.time?new Date(r.time).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+      const dHR=r.dHR!=null?(r.dHR>0?'+':'')+r.dHR:'—';
+      const dS=r.dS!=null?(r.dS>0?'+':'')+Number(r.dS).toFixed(1):'—';
+      return`<tr><td>${ts}</td><td style="color:${hc};font-weight:700">${hr!=null?hr+' bpm':'—'}</td><td style="color:${r.dHR>0?'var(--danger)':r.dHR<0?'var(--green)':'var(--muted)'}">${dHR}</td><td style="color:${sc};font-weight:700">${spo2!=null?spo2+'%':'—'}</td><td style="color:${r.dS>0?'var(--navy)':r.dS<0?'var(--warn)':'var(--muted)'}">${dS}</td><td><span style="background:var(--mint);color:var(--navy);padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700">${mL[r.mode]||r.mode||'—'}</span></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+}
+
+document.getElementById('srch').addEventListener('input',function(){renderPts(pts,this.value);});
+
+// SIDEBAR DOCTOR
+async function loadSbDoc(){
+  try { const r=await fetch(`${API}/doctor/${DID}`); if(!r.ok)return; const d=await r.json(); const i=(d.name||'BS').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase(); document.getElementById('sb-av').textContent=i; document.getElementById('sb-name').textContent=d.name||'Bác sĩ'; document.getElementById('sb-role').textContent=d.hospital?.name||'Bác sĩ'; } catch(_){}
+}
+
+// SLIDE PANELS
+function openSlide(t){
+  document.getElementById('slide-bg').classList.add('open');
+  const tt={devices:'📱 Thiết bị',links:'👨‍👩‍👧 Liên kết người nhà',records:'🗂️ Hồ sơ bệnh án'};
+  document.getElementById('slide-ttl').textContent=tt[t]||t;
+  const b=document.getElementById('slide-body');
+  b.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  if(t==='devices') loadDevices();
+  else if(t==='links') loadLinks();
+  else loadRecords();
+}
+function closeSlide(){document.getElementById('slide-bg').classList.remove('open');}
+
+async function loadDevices(){
+  const b=document.getElementById('slide-body');
+  try { const r=await fetch(`${API}/doctor/${DID}/patients`); const l=r.ok?await r.json():[]; if(!l.length){b.innerHTML='<div class="loading">Không có dữ liệu</div>';return;} b.innerHTML=l.map(p=>{const d=p.device;return`<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:9px;border:1px solid var(--border)"><div style="font-size:.82rem;font-weight:700;color:var(--navy);margin-bottom:4px">${esc(p.patientName)}</div>${d?`<div style="display:flex;align-items:center;gap:8px;font-size:.73rem"><span style="font-family:'DM Mono',monospace;font-weight:700">${esc(d.serial)}</span><span style="color:${d.online?'var(--green)':'var(--muted)'}">● ${d.online?'Online':'Offline'}</span>${d.battery!=null?`<span>🔋 ${d.battery}%</span>`:''}</div>`:'<div style="font-size:.73rem;color:var(--muted)">Chưa có thiết bị</div>'}</div>`;}).join(''); } catch(e){b.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`;}
+}
+
+async function loadLinks(){
+  const b=document.getElementById('slide-body');
+  try { const r=await fetch(`${API}/doctor/${DID}/families`); const data=r.ok?await r.json():{}; const entries=Object.entries(data); if(!entries.length){b.innerHTML='<div class="loading">Chưa có liên kết người nhà</div>';return;} b.innerHTML=entries.map(([pid,info])=>`<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:9px;border:1px solid var(--border)"><div style="font-size:.82rem;font-weight:700;color:var(--navy);margin-bottom:7px">${esc(info.patientName||pid)}</div>${(info.families||[]).map(f=>`<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.73rem"><div style="width:25px;height:25px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.6rem;flex-shrink:0">${(f.name||'?').split(' ').map(w=>w[0]).slice(-2).join('')}</div><div><div style="font-weight:600">${esc(f.name)}</div><div style="color:var(--muted)">${f.relationship||''} ${f.phone?'· '+f.phone:''}</div></div>${f.isMain?'<span style="margin-left:auto;background:#e8f2fc;color:var(--navy);padding:2px 6px;border-radius:9px;font-size:.6rem;font-weight:700">Chính</span>':''}</div>`).join('')}${!(info.families||[]).length?'<div style="color:var(--muted);font-size:.73rem">Chưa có người nhà</div>':''}</div>`).join(''); } catch(e){b.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`;}
+}
+
+async function loadRecords(){
+  const b=document.getElementById('slide-body');
+  try { const r=await fetch(`${API}/doctor/${DID}/patients`); const l=r.ok?await r.json():[]; if(!l.length){b.innerHTML='<div class="loading">Không có dữ liệu</div>';return;} b.innerHTML=l.map(p=>`<div style="background:var(--bg);border-radius:10px;margin-bottom:9px;border:1px solid var(--border);overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer" onclick="togRec('${p.patientId}')"><div><div style="font-size:.82rem;font-weight:700;color:var(--navy)">${esc(p.patientName)}</div><div style="font-size:.64rem;color:var(--muted);font-family:'DM Mono',monospace">BN-${(p.patientId||'').slice(0,8).toUpperCase()}</div></div><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="arr-${p.patientId}"><polyline points="6 9 12 15 18 9"/></svg></div><div id="rec-${p.patientId}" style="display:none;padding:0 14px 13px"></div></div>`).join(''); } catch(e){b.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`;}
+}
+
+async function togRec(pid){
+  const el=document.getElementById('rec-'+pid),arr=document.getElementById('arr-'+pid);
+  if(!el)return;
+  const open=el.style.display!=='none';
+  el.style.display=open?'none':'block';
+  if(arr)arr.style.transform=open?'':'rotate(180deg)';
+  if(!open&&!el.dataset.loaded){
+    el.dataset.loaded='1';
+    el.innerHTML='<div class="loading"><span class="spin"></span></div>';
+    try {
+      const r=await fetch(`${API}/medical-record/${pid}`);
+      const rec=r.ok?await r.json():null;
+      const v=k=>rec?.[k]||'';
+      const fi=(id,type,val,opts=[])=>{
+        const sid=`rf-${pid}-${id}`;
+        const sty=`style="width:100%;padding:6px 9px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:.74rem;background:var(--bg);color:var(--text);outline:none"`;
+        if(type==='select')return`<select id="${sid}" ${sty}><option value="">—</option>${opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
+        return`<input id="${sid}" type="${type}" value="${esc(val)}" ${sty}/>`;
+      };
+      el.innerHTML=`<div style="display:flex;flex-direction:column;gap:6px">
+        <div><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Nhóm máu</div>${fi('nhom_mau','select',v('nhom_mau'),['A+','A-','B+','B-','O+','O-','AB+','AB-'])}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+          <div><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Chiều cao cm</div>${fi('chieu_cao_cm','number',v('chieu_cao_cm'))}</div>
+          <div><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Cân nặng kg</div>${fi('can_nang_kg','number',v('can_nang_kg'))}</div>
+        </div>
+        <div><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Bệnh mãn tính</div>${fi('benh_man_tinh','text',v('benh_man_tinh'))}</div>
+        <div><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Dị ứng</div>${fi('di_ung','text',v('di_ung'))}</div>
+        <div><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Tiền sử y tế</div>${fi('tien_su_y_te','text',v('tien_su_y_te'))}</div>
+        <div><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Người liên hệ khẩn</div>${fi('nguoi_lien_he_khan_ten','text',v('nguoi_lien_he_khan_ten'))}</div>
+        <div><div style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:2px">SĐT liên hệ khẩn</div>${fi('nguoi_lien_he_khan_sdt','text',v('nguoi_lien_he_khan_sdt'))}</div>
+        <div id="rmsg-${pid}" style="font-size:.7rem;text-align:center;min-height:13px"></div>
+        <button onclick="saveRec('${pid}')" style="padding:8px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">💾 Lưu hồ sơ</button>
+      </div>`;
+    } catch(e){el.innerHTML=`<div style="color:var(--danger);font-size:.72rem">⚠️ ${esc(e.message)}</div>`;}
   }
 }
 
-// ── NGÀY XEM — lọc dữ liệu theo ngày ──
-// dayKeys: mảng các ngày có data ['2026-04-09','2026-04-08',...]
-// selectedGlobalDate: ngày đang chọn ở toolbar (lọc summary + vitals)
-let selectedGlobalDate = null;
-let allVitalsCache = {}; // { patientId: { byDate } } — cache từ loadPatientVitals
-
-function renderDayPicker(){
-  const dp = document.getElementById('datepicker-date');
-  const trigger = document.getElementById('datepicker-trigger');
-  if(!dayKeys.length){
-    dp.textContent = '—';
-    return;
-  }
-  const key = dayKeys[currentDayIdx] || dayKeys[0];
-  selectedGlobalDate = key;
-  const [y,m,d] = key.split('-');
-  dp.textContent = `${d}/${m}/${y}`;
-  // Cập nhật summary theo ngày
-  updateSummaryForDate(key);
-  // Nếu đang xem bệnh nhân nào đó thì reload vitals theo ngày mới
-  if(selectedPatientId){
-    showVitalsForSelectedDate();
-  }
+async function saveRec(pid){
+  const m=document.getElementById('rmsg-'+pid);
+  const g=f=>{const e=document.getElementById(`rf-${pid}-${f}`);return e?e.value.trim()||null:null;};
+  const p={};
+  ['nhom_mau','benh_man_tinh','di_ung','tien_su_y_te','nguoi_lien_he_khan_ten','nguoi_lien_he_khan_sdt'].forEach(f=>{const v=g(f);if(v)p[f]=v;});
+  ['chieu_cao_cm','can_nang_kg'].forEach(f=>{const v=g(f);if(v)p[f]=parseFloat(v);});
+  m.style.color='var(--muted)';m.textContent='Đang lưu...';
+  try { const r=await fetch(`${API}/medical-record/${pid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}); const d=await r.json(); if(r.ok){m.style.color='var(--green)';m.textContent='✅ Lưu thành công!';setTimeout(()=>m.textContent='',3000);}else{m.style.color='var(--danger)';m.textContent='⚠️ '+(d.error||'Lỗi');} } catch(e){m.style.color='var(--danger)';m.textContent='⚠️ Không thể kết nối';}
 }
 
-function selectDay(idx){
-  currentDayIdx = idx;
-  renderDayPicker();
-  closeCalendar();
+// CHAT
+function toggleChat(){const b=document.getElementById('cbox');b.classList.toggle('open');if(b.classList.contains('open'))renderCList();}
+function renderCList(){
+  document.getElementById('cv-list').style.display='flex';
+  document.getElementById('cv-chat').style.display='none';
+  const l=document.getElementById('clist'),em=document.getElementById('cempty');
+  if(!pts.length){l.innerHTML='';em.style.display='flex';document.getElementById('csub').textContent='Không có bệnh nhân';return;}
+  em.style.display='none';document.getElementById('csub').textContent=`${pts.length} bệnh nhân`;
+  l.innerHTML=pts.map(p=>{const i=(p.name||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();const msgs=ccache[p.id]||[];const last=msgs[msgs.length-1];return`<div class="citem" onclick="openChat('${p.id}','${esc(p.name)}')"><div class="cav2">${i}</div><div style="flex:1;min-width:0"><div class="cn">${esc(p.name)}</div><div class="cp">${last?esc(last.content.slice(0,40)):'Chưa có ghi chú'}</div></div></div>`;}).join('');
 }
-
-function showVitalsForSelectedDate(){
-  if(!selectedPatientId) return;
-  const cache = vitalsCache[selectedPatientId];
-  if(!cache) return;
-  if(selectedGlobalDate && cache.byDate[selectedGlobalDate]){
-    renderVitalsDates(selectedPatientId, Object.keys(cache.byDate).sort((a,b)=>b.localeCompare(a)));
-    selectedVitalsDate = selectedGlobalDate;
-    renderVitalsForDate(selectedPatientId, selectedGlobalDate);
-  }
+async function openChat(pid,name){
+  curCPid=pid;
+  const i=(name||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+  document.getElementById('cav').textContent=i;
+  document.getElementById('cpname').textContent=name;
+  document.getElementById('cv-list').style.display='none';
+  document.getElementById('cv-chat').style.display='flex';
+  const m=document.getElementById('cmsgs');
+  m.innerHTML='<div style="text-align:center;padding:20px"><span class="spin"></span></div>';
+  try{const r=await fetch(`${API}/chat/${pid}`);ccache[pid]=r.ok?await r.json():[];}catch(_){ccache[pid]=[];}
+  renderCMsgs();
 }
-
-// Đếm trạng thái bệnh nhân trong ngày đã chọn
-function updateSummaryForDate(dateKey){
-  let ok=0, warn=0, danger=0, total=0;
-
-  // Duyệt cache vitals của từng bệnh nhân
-  doctorPatients.forEach(dp=>{
-    const pid = dp.patientId;
-    const cache = vitalsCache[pid];
-    let hr = dp.live?.heartRate;
-    let spo2 = dp.live?.spo2;
-
-    if(cache && dateKey && cache.byDate[dateKey]){
-      // Dùng bản ghi mới nhất trong ngày đó
-      const rows = cache.byDate[dateKey];
-      if(rows.length){
-        hr   = rows[0].heartRate;
-        spo2 = rows[0].spo2;
-      }
-    }
-
-    total++;
-    if(hr==null && spo2==null){ ok++; return; } // không có data → coi là ok
-    if(spo2<90 || hr>120 || hr<45) danger++;
-    else if(spo2<94 || hr>100 || hr<50) warn++;
-    else ok++;
-  });
-
-  document.getElementById('s-ok').textContent     = ok;
-  document.getElementById('s-warn').textContent   = warn;
-  document.getElementById('s-danger').textContent = danger;
-  document.getElementById('s-total').textContent  = total;
+function renderCMsgs(){
+  const m=document.getElementById('cmsgs'),h=ccache[curCPid]||[];
+  const tl={don_thuoc:'💊',khuyen_nghi:'📋',theo_doi:'👁️',tai_kham:'📅'};
+  if(!h.length){m.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:.76rem">Chưa có ghi chú</div>';return;}
+  m.innerHTML=h.map(x=>{const ts=new Date(x.createdAt).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});return`<div class="cmsg"><div class="cbbl">${tl[x.type]||''} ${esc(x.content)}</div><div class="cts">${ts}</div></div>`;}).join('');
+  m.scrollTop=m.scrollHeight;
 }
-
-function renderCalGrid(){
-  const g = document.getElementById('cal-grid');
-  if(!g) return;
-  const todK = new Date().toISOString().slice(0,10);
-  const selK = dayKeys[currentDayIdx] || '';
-  const dim  = new Date(calVY, calVM, 0).getDate();
-  const fdow = new Date(calVY, calVM-1, 1).getDay(); // 0=Sun
-  const off  = fdow === 0 ? 6 : fdow - 1; // Monday-first
-  let html = '';
-  for(let i=0; i<off; i++) html += `<div class="cal-day empty"></div>`;
-  for(let d=1; d<=dim; d++){
-    const key = `${calVY}-${String(calVM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const has = dayKeys.includes(key);
-    const cls = ['cal-day', has?'has-data':'no-data', key===todK?'is-today':'', key===selK?'selected':''].filter(Boolean).join(' ');
-    html += `<div class="${cls}" ${has?`onclick="calSel('${key}')"`:''}>${d}</div>`;
-  }
-  g.innerHTML = html;
+function backChat(){document.getElementById('cv-list').style.display='flex';document.getElementById('cv-chat').style.display='none';renderCList();}
+async function sendNote(){
+  const inp=document.getElementById('cinp'),txt=inp.value.trim();
+  if(!txt||!curCPid)return;
+  const type=document.getElementById('ctype').value;
+  inp.value='';inp.style.height='auto';
+  try{const r=await fetch(`${API}/chat/${curCPid}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({doctorId:DID,content:txt,type})});if(r.ok){if(!ccache[curCPid])ccache[curCPid]=[];ccache[curCPid].push(await r.json());renderCMsgs();}}catch(_){}
 }
+document.getElementById('cinp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendNote();}});
+document.getElementById('cinp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,68)+'px';});
 
-function calSel(key){
-  const idx = dayKeys.indexOf(key);
-  if(idx !== -1){ selectDay(idx); closeCalendar(); }
-}
-
-function todayBtn(){
-  const today = new Date().toISOString().slice(0,10);
-  const idx = dayKeys.indexOf(today);
-  if(idx !== -1){ selectDay(idx); }
-  else { calVY = new Date().getFullYear(); calVM = new Date().getMonth()+1; renderCalSels(); renderCalGrid(); }
-}
-
-function renderCalSels(){
-  const ms = document.getElementById('cal-month');
-  const ys = document.getElementById('cal-year');
-  if(!ms || !ys) return;
-  const months = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
-  ms.innerHTML = months.map((m,i)=>`<option value="${i+1}" ${i+1===calVM?'selected':''}>${m}</option>`).join('');
-  const curY = new Date().getFullYear();
-  ys.innerHTML = [curY-2,curY-1,curY,curY+1].map(y=>`<option value="${y}" ${y===calVY?'selected':''}>${y}</option>`).join('');
-  ms.onchange = ()=>{ calVM=+ms.value; renderCalGrid(); };
-  ys.onchange = ()=>{ calVY=+ys.value; renderCalGrid(); };
-}
-
-function toggleCalendar(){
-  const popup = document.getElementById('cal-popup');
-  const trigger = document.getElementById('datepicker-trigger');
-  const isOpen = popup.classList.contains('open');
-  if(!isOpen){
-    renderCalSels();
-    renderCalGrid();
-  }
-  popup.classList.toggle('open', !isOpen);
-  trigger.classList.toggle('open', !isOpen);
-}
-
-function closeCalendar(){
-  document.getElementById('cal-popup').classList.remove('open');
-  document.getElementById('datepicker-trigger').classList.remove('open');
-}
-
-document.getElementById('search-input').addEventListener('input',function(){
-  renderPatientList(allPatients, this.value);
-});
 loadData();
-
-// ── ALARM ──
-function startAlarm(){
-  stopAlarm();
-  const ctx=new(window.AudioContext||window.webkitAudioContext)();
-  function beep(){
-    const now=ctx.currentTime;
-    [880,660].forEach((freq,idx)=>{
-      const osc=ctx.createOscillator(),gain=ctx.createGain();
-      osc.type='sawtooth';osc.frequency.setValueAtTime(freq,now+idx*0.25);
-      gain.gain.setValueAtTime(0,now+idx*0.25);gain.gain.linearRampToValueAtTime(0.3,now+idx*0.25+0.02);gain.gain.linearRampToValueAtTime(0,now+idx*0.25+0.22);
-      osc.connect(gain);gain.connect(ctx.destination);osc.start(now+idx*0.25);osc.stop(now+idx*0.25+0.23);
-      alarmOscs.push({osc,ctx});
-    });
-  }
-  beep();
-  const iv=setInterval(()=>{if(!document.getElementById('alert-overlay').classList.contains('active')){clearInterval(iv);ctx.close();return;}beep();},700);
-  alarmOscs.push({interval:iv,ctx});
-}
-function stopAlarm(){alarmOscs.forEach(x=>{try{if(x.osc)x.osc.stop();}catch(e){}try{if(x.interval)clearInterval(x.interval);}catch(e){}try{if(x.ctx)x.ctx.close();}catch(e){}});alarmOscs=[];}
-function dismissAlert(){document.getElementById('alert-overlay').classList.remove('active');stopAlarm();alertDismissed=true;localStorage.setItem('alertDismissed','true');localStorage.setItem('alertDismissedDate',todayStr);}
-function checkAlerts(alerts){
-  if(alertDismissed)return;
-  const active=(alerts||[]).filter(a=>a.status==='cho_xac_nhan');
-  if(active.length>0)showAlert(active);
-}
-function showAlert(items){
-  const loai={nhip_tim_cao:'⬆️ Nhịp tim cao',nhip_tim_thap:'⬇️ Nhịp tim thấp',spo2_thap:'🫁 SpO₂ thấp',bat_thuong_kep:'⚠️ HR+SpO₂',mat_tin_hieu:'📡 Mất tín hiệu'};
-  const muc={canh_bao:'🟡 Cảnh báo',nguy_hiem:'🔴 Nguy hiểm'};
-  document.getElementById('alert-list').innerHTML=items.map(a=>`
-    <div class="alert-list-item">
-      <span class="pid">${a.patientName??'—'}</span>
-      <span>${a.heartRate??'—'} bpm | SpO₂ ${a.spo2??'—'}%</span>
-      <span class="stag">${loai[a.alertType]??a.alertType??'—'} ${muc[a.severity]??''}</span>
-    </div>`).join('');
-  document.getElementById('alert-overlay').classList.add('active');startAlarm();
-}
-
-// ── DEVICE PANEL ──
-// ── DOCTOR PANEL ──
-
-async function openDevicePanel(){
-  document.getElementById('panel-overlay').classList.add('open');
-  await loadDoctorPanel();
-}
-function closeDevicePanel(){document.getElementById('panel-overlay').classList.remove('open');}
-function closePanelBg(e){if(e.target===document.getElementById('panel-overlay'))closeDevicePanel();}
-
-async function loadDoctorPanel(){
-  const body=document.getElementById('panel-body');
-
-  if(!DOCTOR_ID){
-    body.innerHTML=`<div class="pempty" style="padding:32px 20px;text-align:center">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border);margin-bottom:12px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <div style="font-weight:700;color:var(--navy);margin-bottom:6px">Chưa đăng nhập</div>
-      <div style="font-size:0.75rem;color:var(--muted)">Thêm <code>?doctor=UUID</code> vào URL để xem thông tin</div>
-    </div>`;
-    return;
-  }
-
-  body.innerHTML='<div style="text-align:center;padding:40px"><div class="spinner"></div></div>';
-  try{
-    const [rDoc, rPat, rFam] = await Promise.all([
-      fetch(`${API}/doctor/${DOCTOR_ID}`),
-      fetch(`${API}/doctor/${DOCTOR_ID}/patients`),
-      fetch(`${API}/doctor/${DOCTOR_ID}/families`),
-    ]);
-
-    if(!rDoc.ok || !rPat.ok){
-      const status = !rDoc.ok ? rDoc.status : rPat.status;
-      const text   = !rDoc.ok ? await rDoc.text() : await rPat.text();
-      let errMsg = text;
-      try { errMsg = JSON.parse(text).error || text; } catch(_){}
-      if(text.trim().startsWith('<')){
-        body.innerHTML=`<div class="pempty">⚠️ Backend chưa có endpoint /doctor/:id (HTTP ${status}).<br>Vui lòng deploy backend mới.</div>`;
-      } else if(status === 404){
-        body.innerHTML=`<div class="pempty">⚠️ Không tìm thấy bác sĩ.<br><small style="font-family:'DM Mono',monospace">${DOCTOR_ID}</small></div>`;
-      } else {
-        body.innerHTML=`<div class="pempty">⚠️ Lỗi ${status}: ${errMsg}</div>`;
-      }
-      return;
-    }
-
-    const doctor   = await rDoc.json();
-    const patients = await rPat.json();
-    const families = rFam.ok ? await rFam.json() : {};
-
-    renderDoctorPanel(doctor, patients, families);
-  }catch(e){
-    body.innerHTML=`<div class="pempty">⚠️ ${e.message}</div>`;
-  }
-}
-
-
-function renderDoctorPanel(doctor, patients, families){
-  const target = document.getElementById('panel-body');
-
-  // Nhãn vai trò
-  const roleLabels = {
-    'user_bs':   '👨‍⚕️ Bác sĩ',
-    'sub_admin': '🔧 Sub Admin',
-    'admin':     '⚙️ Admin',
-    'user_tb':   '🧑‍🦯 Bệnh nhân',
-    'user_lq':   '👨‍👩‍👦 Người liên quan',
-  };
-  const roleStr = (doctor.roles||[]).map(r=>roleLabels[r]||r).join(' · ') || '—';
-
-  // ── Thẻ thông tin bác sĩ ──
-  const initials = (doctor.name||'BS').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-  let html = `
-    <div class="dp-info-card">
-      <div class="dp-avatar">${initials}</div>
-      <div style="flex:1">
-        <div class="dp-doc-name">${doctor.name||'—'}</div>
-        <div style="font-size:0.7rem;color:var(--navy);font-weight:600;margin-top:2px">${roleStr}</div>
-        <div class="dp-doc-hospital">
-          🏥 ${doctor.hospital?.name||'Chưa có cơ sở y tế'}
-          ${doctor.hospital?.address?`<br><span style="font-size:0.68rem">📍 ${doctor.hospital.address}</span>`:''}
-        </div>
-        ${doctor.phone?`<div class="dp-doc-meta">📞 ${doctor.phone}</div>`:''}
-        ${doctor.email?`<div class="dp-doc-meta">✉️ ${doctor.email}</div>`:''}
-      </div>
-    </div>`;
-
-  // ── Tiêu đề section ──
-  html += `<div class="psec-title">Bệnh nhân đang theo dõi (${patients.length})</div>`;
-
-  if(patients.length === 0){
-    html += `<div class="pempty">Chưa có bệnh nhân nào được phân công.</div>`;
-  }
-
-  // ── Từng bệnh nhân ──
-  patients.forEach((p, idx)=>{
-    const fams     = families[p.patientId] || [];
-    const dev      = p.device;
-    const live     = p.live;
-    const pInit    = (p.patientName||'BN').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-    const now      = Date.now();
-    const devOnline= dev?.online;
-    const liveTime = live?.updatedAt ? new Date(live.updatedAt).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}) : null;
-
-    // Badge chỉ số live
-    const hrColor  = live?.heartRate ? (live.heartRate > 100 || live.heartRate < 60 ? 'var(--warn)' : 'var(--navy)') : 'var(--muted)';
-    const spo2Color= live?.spo2 ? (live.spo2 < 90 ? 'var(--danger)' : live.spo2 < 95 ? 'var(--warn)' : 'var(--green)') : 'var(--muted)';
-
-    html += `
-      <div class="dp-patient-card" id="dpc-${p.patientId}">
-        <div class="dp-patient-header" onclick="dpTogglePatient('${p.patientId}')">
-          <div class="dp-patient-left">
-            <div class="dp-patient-avatar">${pInit}</div>
-            <div>
-              <div class="dp-patient-name">${p.patientName}</div>
-              <div class="dp-patient-sub">
-                ${dev ? `📟 ${dev.serial}` : '⚠️ Chưa có thiết bị'}
-                ${p.monitoringLevel ? ` · ${p.monitoringLevel}` : ''}
-              </div>
-            </div>
-          </div>
-          <div class="dp-patient-right">
-            ${live?.heartRate ? `<span style="font-family:'DM Mono',monospace;font-size:0.78rem;font-weight:700;color:${hrColor}">${live.heartRate} bpm</span>` : ''}
-            ${live?.spo2 ? `<span style="font-family:'DM Mono',monospace;font-size:0.78rem;font-weight:700;color:${spo2Color}">${live.spo2}%</span>` : ''}
-            ${fams.length > 0 ? `<span style="font-size:0.68rem;color:var(--muted)">👨‍👩‍👦 ${fams.length}</span>` : ''}
-            <svg class="dp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-        </div>
-
-        <div class="dp-patient-body">
-          ${live ? `
-          <div class="dp-section-label">Chỉ số mới nhất${liveTime?' · '+liveTime:''}</div>
-          <div class="dp-live-row">
-            <div class="dp-live-stat">
-              <div class="dp-live-val" style="color:${hrColor}">${live.heartRate||'—'}</div>
-              <div class="dp-live-label">Nhịp tim (bpm)</div>
-            </div>
-            <div class="dp-live-stat">
-              <div class="dp-live-val" style="color:${spo2Color}">${live.spo2||'—'}</div>
-              <div class="dp-live-label">SpO₂ (%)</div>
-            </div>
-          </div>` : ''}
-
-          <div class="dp-section-label" style="margin-top:${live?'14px':'0'}">Thiết bị theo dõi</div>
-          ${dev ? `
-          <div class="dp-device-row">
-            <div class="dp-device-icon">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-            </div>
-            <div style="flex:1">
-              <div class="dp-device-serial">${dev.serial||dev.deviceId?.slice(0,14)}</div>
-              <div class="dp-device-sub">Gán từ: ${dev.assignedAt?new Date(dev.assignedAt).toLocaleDateString('vi-VN'):'—'}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-              <span class="dp-dbadge ${devOnline?'on':'off'}">${devOnline?'● Online':'○ Offline'}</span>
-              ${dev.battery!=null?`<span class="dp-dbadge bat">🔋 ${dev.battery}%</span>`:''}
-            </div>
-          </div>` : `<div class="dp-no-device">Chưa có thiết bị nào được gán cho bệnh nhân này.</div>`}
-
-          <div class="dp-section-label">Người liên quan (${fams.length})</div>
-          ${fams.length === 0
-            ? `<div style="font-size:0.78rem;color:var(--muted);font-style:italic">Chưa có người liên quan.</div>`
-            : fams.map(f=>{
-                const fInit=(f.name||'LQ').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-                return`<div class="dp-family-item">
-                  <div class="dp-family-av">${fInit}</div>
-                  <div style="flex:1">
-                    <div style="display:flex;align-items:center;gap:6px">
-                      <span class="dp-family-name">${f.name||'—'}</span>
-                      ${f.isPrimary?'<span class="dp-primary-badge">★ Chính</span>':''}
-                    </div>
-                    <div class="dp-family-rel">${f.relation||'—'}</div>
-                    ${f.phone?`<div class="dp-family-contact">📞 ${f.phone}</div>`:''}
-                  </div>
-                </div>`;
-              }).join('')
-          }
-
-          ${p.phone||p.email?`
-          <div class="dp-section-label">Liên hệ bệnh nhân</div>
-          <div style="font-size:0.75rem;color:var(--text);font-family:'DM Mono',monospace">
-            ${p.phone?`<div>📞 ${p.phone}</div>`:''}
-            ${p.email?`<div>✉️ ${p.email}</div>`:''}
-          </div>`:``}
-        </div>
-      </div>`;
-  });
-
-  target.innerHTML = html;
-}
-
-function dpTogglePatient(pid){
-  const card = document.getElementById(`dpc-${pid}`);
-  if(!card) return;
-  // Đóng các card khác
-  document.querySelectorAll('.dp-patient-card.open').forEach(c=>{
-    if(c.id !== `dpc-${pid}`) c.classList.remove('open');
-  });
-  card.classList.toggle('open');
-}
-
-// ── CHAT — Ghi chú y tế bác sĩ → bệnh nhân ──
-const TYPE_LABELS = {
-  don_thuoc:  '💊 Đơn thuốc',
-  khuyen_nghi:'📋 Khuyến nghị',
-  theo_doi:   '👁️ Theo dõi',
-  tai_kham:   '📅 Tái khám',
-};
-
-let chatPatients = [];
-let curPatient   = null;
-let chatCache    = {};
-
-function initChatContacts(){
-  const list  = document.getElementById('contact-list');
-  const empty = document.getElementById('cempty');
-  const sub   = document.getElementById('csub');
-
-  chatPatients = (doctorPatients || []).filter(p => p.patientId);
-  if(chatPatients.length === 0){
-    list.innerHTML = '';
-    empty.style.display = 'flex';
-    sub.textContent = 'Không có bệnh nhân';
-    return;
-  }
-  empty.style.display = 'none';
-  sub.textContent = `${chatPatients.length} bệnh nhân`;
-
-  list.innerHTML = chatPatients.map(p => {
-    const init = p.patientName.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-    const cached = chatCache[p.patientId] || [];
-    const last = cached[cached.length - 1];
-    const preview = last ? last.content.slice(0,40) + (last.content.length>40?'…':'') : 'Chưa có ghi chú';
-    return `<div class="contact-item" onclick="openPatientChat('${p.patientId}','${p.patientName.replace(/'/g,"\'")}')">
-      <div class="cav">${init}</div>
-      <div class="cinfo">
-        <div class="cname">${p.patientName}</div>
-        <div class="crole">${p.device?.serial || 'Chưa có thiết bị'}</div>
-        <div class="cpreview">${preview}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-async function openPatientChat(patientId, patientName){
-  curPatient = { patientId, patientName };
-  const init = patientName.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-  document.getElementById('chav').textContent   = init;
-  document.getElementById('chname').textContent = patientName;
-  document.getElementById('chrole').textContent = 'Bệnh nhân';
-  document.getElementById('chrole').style.color = 'var(--sky)';
-  document.getElementById('vc').style.display   = 'none';
-  document.getElementById('vch').style.display  = 'flex';
-  document.getElementById('chat-msgs').innerHTML = `<div style="flex:1;display:flex;align-items:center;justify-content:center"><div class="spinner"></div></div>`;
-  try {
-    const res = await fetch(`${API}/chat/${patientId}`);
-    chatCache[patientId] = res.ok ? await res.json() : [];
-  } catch(_){ chatCache[patientId] = []; }
-  renderChatMsgs();
-  setTimeout(()=>{ scrollChatBottom(); document.getElementById('chat-inp').focus(); }, 40);
-}
-
-function backToContacts(){
-  curPatient = null;
-  document.getElementById('vch').style.display = 'none';
-  document.getElementById('vc').style.display  = 'flex';
-  initChatContacts();
-}
-
-function renderChatMsgs(){
-  const msgs = document.getElementById('chat-msgs');
-  const hist = chatCache[curPatient?.patientId] || [];
-  if(hist.length === 0){
-    msgs.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:var(--muted);font-size:0.78rem;text-align:center;padding:18px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chưa có ghi chú nào.</div>`;
-    return;
-  }
-  let lastDate = '';
-  msgs.innerHTML = hist.map(m => {
-    const d  = new Date(m.createdAt);
-    const ds = d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const ts = d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
-    const dateDiv = ds !== lastDate ? `<div class="cdate-div"><span>${ds}</span></div>` : '';
-    lastDate = ds;
-    const typeLabel = TYPE_LABELS[m.type] || m.type || '';
-    return `${dateDiv}<div class="cmsg me"><div class="cbubble">${typeLabel ? `<div style="font-size:0.68rem;opacity:0.75;margin-bottom:4px">${typeLabel}</div>` : ''}${escHtml(m.content)}</div><div class="ctime">${ts}</div></div>`;
-  }).join('');
-}
-
-async function sendMsg(){
-  const inp  = document.getElementById('chat-inp');
-  const txt  = inp.value.trim();
-  const type = document.getElementById('chat-type-select')?.value || 'theo_doi';
-  if(!txt || !curPatient || !DOCTOR_ID) return;
-  const btn = document.querySelector('.chat-send');
-  btn.disabled = true;
-  inp.value = ''; inp.style.height = 'auto';
-  try {
-    const res = await fetch(`${API}/chat/${curPatient.patientId}`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ doctorId: DOCTOR_ID, content: txt, type }),
-    });
-    if(res.ok){
-      const newMsg = await res.json();
-      if(!chatCache[curPatient.patientId]) chatCache[curPatient.patientId] = [];
-      chatCache[curPatient.patientId].push(newMsg);
-      renderChatMsgs(); scrollChatBottom();
-    } else {
-      const err = await res.json();
-      alert('Lỗi: ' + (err.error || 'Không xác định'));
-      inp.value = txt;
-    }
-  } catch(e){ alert('Không thể kết nối'); inp.value = txt; }
-  btn.disabled = false;
-}
-
-function scrollChatBottom(){ const m=document.getElementById('chat-msgs'); m.scrollTop=m.scrollHeight; }
-
-function updFabBadge(){
-  const b = document.getElementById('fab-badge');
-  const cnt = (doctorPatients||[]).length;
-  b.style.display = cnt > 0 ? 'flex' : 'none';
-  b.textContent   = cnt > 9 ? '9+' : String(cnt);
-}
-
-function toggleChat(){
-  const box=document.getElementById('chat-box'), fab=document.getElementById('chat-fab');
-  box.classList.toggle('open'); fab.classList.toggle('open');
-  if(box.classList.contains('open')) initChatContacts();
-}
-
-document.getElementById('chat-inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
-document.getElementById('chat-inp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,75)+'px';});
-
-
-// ── SETTINGS ──
-function openSettings(){ document.getElementById('settings-overlay').classList.add('open'); }
-function closeSettings(){ document.getElementById('settings-overlay').classList.remove('open'); }
-
-function toggleDark(){
-  const html = document.documentElement;
-  const isDark = html.getAttribute('data-theme') === 'dark';
-  html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-  const btn = document.getElementById('dark-toggle');
-  btn.classList.toggle('on', !isDark);
-  localStorage.setItem('hm_theme', isDark ? 'light' : 'dark');
-}
-
-function setFont(size){
-  document.documentElement.style.setProperty('--fs', size+'px');
-  localStorage.setItem('hm_font', size);
-  document.querySelectorAll('.font-btn').forEach(b=>{
-    b.classList.toggle('active', b.textContent.includes(size===12?'Nhỏ':size===14?'Vừa':'Lớn'));
-  });
-}
-
-async function changePassword(){
-  const oldPw  = document.getElementById('pw-old').value;
-  const newPw  = document.getElementById('pw-new').value;
-  const conPw  = document.getElementById('pw-confirm').value;
-  const msg    = document.getElementById('pw-msg');
-  msg.style.color = 'var(--danger)';
-  if(!oldPw || !newPw || !conPw){ msg.textContent='Vui lòng điền đầy đủ'; return; }
-  if(newPw.length < 6){ msg.textContent='Mật khẩu mới phải ≥ 6 ký tự'; return; }
-  if(newPw !== conPw){ msg.textContent='Mật khẩu xác nhận không khớp'; return; }
-  if(oldPw === newPw){ msg.textContent='Mật khẩu mới phải khác mật khẩu cũ'; return; }
-  msg.style.color = 'var(--muted)'; msg.textContent = 'Đang xử lý...';
-  try {
-    const res = await fetch(`${API}/auth/change-password`,{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ userId: DOCTOR_ID, newPassword: newPw }),
-    });
-    const data = await res.json();
-    if(res.ok){
-      msg.style.color='var(--ok)'; msg.textContent='✅ Đổi mật khẩu thành công!';
-      document.getElementById('pw-old').value='';
-      document.getElementById('pw-new').value='';
-      document.getElementById('pw-confirm').value='';
-    } else {
-      msg.style.color='var(--danger)'; msg.textContent=data.error||'Lỗi không xác định';
-    }
-  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='Không thể kết nối'; }
-}
-
-// Restore settings from localStorage
-(function restoreSettings(){
-  const theme = localStorage.getItem('hm_theme');
-  if(theme==='dark'){ document.documentElement.setAttribute('data-theme','dark'); document.getElementById('dark-toggle').classList.add('on'); }
-  const font = parseInt(localStorage.getItem('hm_font'));
-  if(font){ setFont(font); }
-})();
-
-// ── SLIDE PANELS ──
-let currentSlide = null;
-function openSlide(type){
-  currentSlide = type;
-  const overlay = document.getElementById('slide-overlay');
-  const body = document.getElementById('slide-body');
-  const title = document.getElementById('slide-title');
-  overlay.classList.add('open');
-  const icons = {
-    devices:  '📱 Thiết bị',
-    links:    '👨‍👩‍👧 Liên kết người nhà',
-    records:  '🗂️ Hồ sơ bệnh án',
-  };
-  title.textContent = icons[type] || type;
-  body.innerHTML = '<div class="tables-loading"><div class="spinner"></div><br>Đang tải...</div>';
-  if(type==='devices') loadSlideDevices();
-  else if(type==='links') loadSlideLinks();
-  else if(type==='records') loadSlideRecords();
-}
-function closeSlide(){ document.getElementById('slide-overlay').classList.remove('open'); currentSlide=null; }
-
-async function loadSlideDevices(){
-  const body = document.getElementById('slide-body');
-  try {
-    const [rPat, rDev] = await Promise.all([
-      fetch(`${API}/doctor/${DOCTOR_ID}/patients`),
-      fetch(`${API}/devices`),
-    ]);
-    const patients = rPat.ok ? await rPat.json() : [];
-    const devices  = rDev.ok ? await rDev.json() : [];
-    const devMap = {};
-    devices.forEach(d=>{ devMap[d.id]=d; });
-
-    if(!patients.length){ body.innerHTML='<div class="tables-loading">Chưa có dữ liệu</div>'; return; }
-
-    body.innerHTML = patients.map(p=>{
-      const dev = p.device ? devMap[p.device.deviceId] || p.device : null;
-      const serial = dev?.serial || dev?.so_seri || 'Chưa gán';
-      const battery= dev?.battery ?? dev?.phan_tram_pin;
-      const online = dev?.online;
-      return `<div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">
-        <div style="font-size:0.82rem;font-weight:700;color:var(--navy);margin-bottom:6px">${p.patientName}</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:4px">Mã: <code style="font-family:'DM Mono',monospace">${p.patientId?.slice(0,8)}</code></div>
-        <div style="display:flex;align-items:center;gap:8px;font-size:0.75rem">
-          <span style="background:${online?'var(--mint)':'#f0f0f0'};color:${online?'var(--navy)':'#888'};padding:2px 10px;border-radius:20px;font-weight:700">
-            ${serial}
-          </span>
-          ${battery!=null?`<span>🔋 ${battery}%</span>`:''}
-          <span style="color:${online?'var(--ok)':'var(--muted)'}">● ${online?'Online':'Offline'}</span>
-        </div>
-      </div>`;
-    }).join('');
-  } catch(e){ body.innerHTML=`<div class="tables-loading">⚠️ ${e.message}</div>`; }
-}
-
-async function loadSlideLinks(){
-  const body = document.getElementById('slide-body');
-  try {
-    const res = await fetch(`${API}/doctor/${DOCTOR_ID}/families`);
-    const data = res.ok ? await res.json() : {};
-    const entries = Object.entries(data);
-    if(!entries.length){ body.innerHTML='<div class="tables-loading">Chưa có liên kết người nhà</div>'; return; }
-    body.innerHTML = entries.map(([patId, info])=>{
-      const fams = info.families || [];
-      return `<div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">
-        <div style="font-size:0.82rem;font-weight:700;color:var(--navy);margin-bottom:8px">🧑 ${info.patientName||'Bệnh nhân'}</div>
-        ${fams.map(f=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:0.75rem">
-            <div style="width:28px;height:28px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.65rem;flex-shrink:0">
-              ${(f.name||'?').split(' ').map(w=>w[0]).slice(-2).join('')}
-            </div>
-            <div>
-              <div style="font-weight:600;color:var(--text)">${f.name}</div>
-              <div style="color:var(--muted)">${f.relationship||''} · ${f.phone||''}</div>
-            </div>
-            ${f.isMain?'<span style="margin-left:auto;background:#e8f2fc;color:var(--navy);padding:2px 8px;border-radius:10px;font-size:0.62rem;font-weight:700">Chính</span>':''}
-          </div>`).join('')}
-        ${!fams.length?'<div style="color:var(--muted);font-size:0.75rem">Chưa có người nhà</div>':''}
-      </div>`;
-    }).join('');
-  } catch(e){ body.innerHTML=`<div class="tables-loading">⚠️ ${e.message}</div>`; }
-}
-
-async function loadSlideRecords(){
-  const body = document.getElementById('slide-body');
-  try {
-    const res = await fetch(`${API}/doctor/${DOCTOR_ID}/patients`);
-    const patients = res.ok ? await res.json() : [];
-    if(!patients.length){ body.innerHTML='<div class="tables-loading">Chưa có dữ liệu</div>'; return; }
-
-    body.innerHTML = patients.map(p=>`
-      <div style="background:var(--bg);border-radius:10px;margin-bottom:10px;border:1px solid var(--border);overflow:hidden">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;cursor:pointer"
-          onclick="toggleRecord('rec-${p.patientId}')">
-          <div>
-            <div style="font-size:0.85rem;font-weight:700;color:var(--navy)">${escHtml(p.patientName)}</div>
-            <div style="font-size:0.68rem;color:var(--muted);font-family:'DM Mono',monospace">BN-${(p.patientId||'').slice(0,8).toUpperCase()}</div>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="arrow-${p.patientId}"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div id="rec-${p.patientId}" style="display:none;padding:0 16px 16px">
-          <div style="text-align:center;color:var(--muted);font-size:0.75rem;padding:12px 0" id="rec-loading-${p.patientId}">
-            <div class="spinner"></div>
-          </div>
-        </div>
-      </div>`).join('');
-  } catch(e){ body.innerHTML=`<div class="tables-loading">⚠️ ${e.message}</div>`; }
-}
-
-async function toggleRecord(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  const isOpen = el.style.display !== 'none';
-  el.style.display = isOpen ? 'none' : 'block';
-
-  // Extract patientId from id string: "rec-UUID"
-  const patientId = id.replace('rec-','');
-  const arrow = document.getElementById('arrow-'+patientId);
-  if(arrow) arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
-
-  if(!isOpen && el.dataset.loaded !== 'true'){
-    el.dataset.loaded = 'true';
-    await loadMedicalRecord(patientId, el);
-  }
-}
-
-async function loadMedicalRecord(patientId, container){
-  const loading = document.getElementById('rec-loading-'+patientId);
-  try {
-    const res = await fetch(`${API}/medical-record/${patientId}`);
-    const rec = res.ok ? await res.json() : null;
-
-    const val = (v) => v || '';
-    container.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:8px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          ${recField('Nhóm máu', 'nhom_mau', val(rec?.nhom_mau), patientId, 'select', ['A+','A-','B+','B-','O+','O-','AB+','AB-'])}
-          ${recField('Chiều cao (cm)', 'chieu_cao_cm', val(rec?.chieu_cao_cm), patientId, 'number')}
-          ${recField('Cân nặng (kg)', 'can_nang_kg', val(rec?.can_nang_kg), patientId, 'number')}
-        </div>
-        ${recField('Bệnh mãn tính', 'benh_man_tinh', val(rec?.benh_man_tinh), patientId, 'textarea')}
-        ${recField('Dị ứng', 'di_ung', val(rec?.di_ung), patientId, 'text')}
-        ${recField('Tiền sử y tế', 'tien_su_y_te', val(rec?.tien_su_y_te), patientId, 'textarea')}
-        ${recField('Người liên hệ khẩn', 'nguoi_lien_he_khan_ten', val(rec?.nguoi_lien_he_khan_ten), patientId, 'text')}
-        ${recField('SĐT liên hệ khẩn', 'nguoi_lien_he_khan_sdt', val(rec?.nguoi_lien_he_khan_sdt), patientId, 'text')}
-        <div id="rec-msg-${patientId}" style="font-size:0.72rem;min-height:16px;text-align:center"></div>
-        <button onclick="saveMedicalRecord('${patientId}')"
-          style="width:100%;padding:9px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:0.78rem;font-weight:700;cursor:pointer;transition:background 0.15s"
-          onmouseover="this.style.background='#1e4a72'" onmouseout="this.style.background='var(--navy)'">
-          💾 Lưu hồ sơ
-        </button>
-      </div>`;
-  } catch(e){
-    container.innerHTML = `<div style="color:var(--danger);font-size:0.75rem">⚠️ ${e.message}</div>`;
-  }
-}
-
-function recField(label, field, value, patientId, type='text', options=[]){
-  const id = `rec-field-${patientId}-${field}`;
-  if(type === 'textarea'){
-    return `<div>
-      <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">${label}</div>
-      <textarea id="${id}" rows="2"
-        style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:0.76rem;background:var(--bg);color:var(--text);resize:vertical;outline:none"
-        onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
-      >${escHtml(value)}</textarea>
-    </div>`;
-  }
-  if(type === 'select'){
-    return `<div>
-      <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">${label}</div>
-      <select id="${id}"
-        style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:0.76rem;background:var(--bg);color:var(--text);outline:none;cursor:pointer">
-        <option value="">—</option>
-        ${options.map(o=>`<option value="${o}" ${value===o?'selected':''}>${o}</option>`).join('')}
-      </select>
-    </div>`;
-  }
-  return `<div>
-    <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px">${label}</div>
-    <input type="${type}" id="${id}" value="${escHtml(value)}"
-      style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:0.76rem;background:var(--bg);color:var(--text);outline:none"
-      onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--border)'"
-    />
-  </div>`;
-}
-
-async function saveMedicalRecord(patientId){
-  const msg = document.getElementById('rec-msg-'+patientId);
-  const getVal = (field) => {
-    const el = document.getElementById(`rec-field-${patientId}-${field}`);
-    return el ? el.value.trim() || null : null;
-  };
-
-  const payload = {
-    nhom_mau:                 getVal('nhom_mau'),
-    chieu_cao_cm:             getVal('chieu_cao_cm') ? parseFloat(getVal('chieu_cao_cm')) : null,
-    can_nang_kg:              getVal('can_nang_kg')  ? parseFloat(getVal('can_nang_kg'))  : null,
-    benh_man_tinh:            getVal('benh_man_tinh'),
-    di_ung:                   getVal('di_ung'),
-    tien_su_y_te:             getVal('tien_su_y_te'),
-    nguoi_lien_he_khan_ten:   getVal('nguoi_lien_he_khan_ten'),
-    nguoi_lien_he_khan_sdt:   getVal('nguoi_lien_he_khan_sdt'),
-  };
-
-  // Remove null keys
-  Object.keys(payload).forEach(k=>{ if(payload[k]===null) delete payload[k]; });
-
-  msg.style.color = 'var(--muted)'; msg.textContent = 'Đang lưu...';
-
-  try {
-    const res = await fetch(`${API}/medical-record/${patientId}`, {
-      method: 'PATCH',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(payload),
-    });
-    const data = await res.json();
-    if(res.ok){
-      msg.style.color = 'var(--ok)'; msg.textContent = '✅ Lưu thành công!';
-      setTimeout(()=>{ msg.textContent=''; }, 3000);
-    } else {
-      msg.style.color = 'var(--danger)'; msg.textContent = '⚠️ ' + (data.error||'Lỗi không xác định');
-    }
-  } catch(e){
-    msg.style.color = 'var(--danger)'; msg.textContent = '⚠️ Không thể kết nối';
-  }
-}
-
-// ── VIEW SWITCHING ──
-function setView(view){
-  document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
-  document.getElementById('nav-'+view)?.classList.add('active');
-}
-
-// ── PATIENT LIST RENDERING ──
-let allPatients = []; // normalized patient list with latest vitals
-
-function renderPatientList(patients, searchQ=''){
-  const list = document.getElementById('patient-list');
-  if(!list) return;
-
-  try {
-    const q = (searchQ||'').toLowerCase().trim();
-    const filtered = q ? patients.filter(p=>
-      (p.name||'').toLowerCase().includes(q) ||
-      (p.id||'').toLowerCase().includes(q)
-    ) : patients;
-
-    if(!filtered.length){
-      list.innerHTML='<div class="tables-loading">Không có bệnh nhân nào</div>';
-      return;
-    }
-
-    list.innerHTML = filtered.map(p=>{
-      const hr   = p.hr   != null ? Number(p.hr)   : null;
-      const spo2 = p.spo2 != null ? Number(p.spo2) : null;
-      const hrColor   = hr!=null   && (hr>100||hr<50)   ? 'var(--danger)' : hr!=null && hr>90 ? 'var(--warn)' : 'var(--ok)';
-      const spo2Color = spo2!=null && spo2<93 ? 'var(--danger)' : spo2!=null && spo2<95 ? 'var(--warn)' : 'var(--navy)';
-      const statusHtml = getStatusBadge(hr, spo2);
-      const dobStr  = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
-      const shortId = (p.id||'').slice(0,8).toUpperCase();
-      const name    = escHtml(p.name||'—');
-      const device  = escHtml(p.deviceSerial||'—');
-      const isSelected = selectedPatientId === p.id;
-
-      return `<div class="pt-row${isSelected?' selected':''}"
-        onclick="selectPatient('${p.id}')"
-        onmouseenter="showTooltip(event,'${p.id}')"
-        onmouseleave="hideTooltip()">
-        <div class="pt-id">BN-${shortId}</div>
-        <div class="pt-name">${name}</div>
-        <div class="pt-dob">${dobStr}</div>
-        <div class="pt-device">${device}</div>
-        <div class="pt-hr" style="color:${hrColor}">${hr!=null ? hr+'<small style="font-size:0.6rem;opacity:0.7"> bpm</small>' : '—'}</div>
-        <div class="pt-spo2" style="color:${spo2Color}">${spo2!=null ? spo2+'<small style="font-size:0.6rem;opacity:0.7">%</small>' : '—'}</div>
-        <div class="pt-status">${statusHtml}</div>
-      </div>`;
-    }).join('');
-
-  } catch(err) {
-    console.error('[renderPatientList] Error:', err);
-    list.innerHTML = `<div class="tables-loading">⚠️ Lỗi hiển thị: ${err.message}</div>`;
-  }
-}
-
-function getStatusBadge(hr, spo2){
-  if(hr==null && spo2==null) return '<span class="status-offline">⚫ Offline</span>';
-  if(spo2<90 || hr>120 || hr<45) return '<span class="status-danger">🔴 Nguy hiểm</span>';
-  if(spo2<94 || hr>100 || hr<50) return '<span class="status-warn">🟡 Cảnh báo</span>';
-  return '<span class="status-ok">🟢 Bình thường</span>';
-}
-
-// Tooltip — khởi tạo sau DOM
-let tooltip = null;
-let tooltipTimeout = null;
-
-function getTooltip(){
-  if(!tooltip) tooltip = document.getElementById('pt-tooltip');
-  return tooltip;
-}
-
-function showTooltip(e, patientId){
-  const tt = getTooltip();
-  if(!tt) return;
-  const p = allPatients.find(x=>x.id===patientId);
-  if(!p) return;
-  const dobStr = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
-  const age = p.dob ? Math.floor((Date.now()-new Date(p.dob))/31557600000) : null;
-  const lastTime = p.lastTime ? new Date(p.lastTime).toLocaleString('vi-VN') : '—';
-
-  tt.innerHTML = `
-    <div class="tt-name">🧑 ${escHtml(p.name)}</div>
-    <div class="tt-row"><span class="tt-label">Mã BN</span><span class="tt-val">BN-${(p.id||'').slice(0,8).toUpperCase()}</span></div>
-    <div class="tt-row"><span class="tt-label">Ngày sinh</span><span class="tt-val">${dobStr}${age?' ('+age+' tuổi)':''}</span></div>
-    <div class="tt-row"><span class="tt-label">Giới tính</span><span class="tt-val">${p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':'—'}</span></div>
-    <div class="tt-row"><span class="tt-label">Thiết bị</span><span class="tt-val">${p.deviceSerial||'—'}</span></div>
-    <div class="tt-row"><span class="tt-label">Nhịp tim</span><span class="tt-val" style="color:var(--danger)">${p.hr!=null?p.hr+' bpm':'—'}</span></div>
-    <div class="tt-row"><span class="tt-label">SpO₂</span><span class="tt-val" style="color:var(--navy)">${p.spo2!=null?p.spo2+'%':'—'}</span></div>
-    <div class="tt-row"><span class="tt-label">Chế độ đo</span><span class="tt-val">${p.mode||'—'}</span></div>
-    <div class="tt-row"><span class="tt-label">Cập nhật lúc</span><span class="tt-val">${lastTime}</span></div>
-    ${p.bloodType?`<div class="tt-row"><span class="tt-label">Nhóm máu</span><span class="tt-val">${p.bloodType}</span></div>`:''}
-    ${p.disease?`<div class="tt-row"><span class="tt-label">Bệnh mãn tính</span><span class="tt-val" style="font-size:0.68rem;max-width:160px;text-align:right">${escHtml(p.disease)}</span></div>`:''}
-  `;
-
-  // Position tooltip near cursor
-  const x = e.clientX + 16;
-  const y = e.clientY - 20;
-  const tw = 300, th = 300;
-  tt.style.left = (x + tw > window.innerWidth ? x - tw - 32 : x) + 'px';
-  tt.style.top  = (y + th > window.innerHeight ? y - th + 40 : y) + 'px';
-  tt.style.display = 'block';
-}
-
-function hideTooltip(){
-  const tt2 = getTooltip(); if(tt2) tt2.style.display = 'none';
-}
-
-// ── SELECT PATIENT → SHOW VITALS ──
-let selectedPatientId = null;
-
-// Cache vitals theo patientId
-let vitalsCache = {}; // { patientId: { allRows, byDate } }
-let selectedVitalsDate = null; // ngày đang chọn trong vitals
-
-function selectPatient(patientId){
-  selectedPatientId = patientId;
-  sessionStorage.setItem('hm_selected_patient', patientId);
-
-  const p = allPatients.find(x=>x.id===patientId);
-  if(p){
-    document.getElementById('vitals-title').textContent = `📈 Dữ liệu sinh tồn — ${p.name}`;
-    document.getElementById('vitals-section').classList.add('visible');
-  }
-
-  renderPatientList(allPatients, document.getElementById('search-input').value);
-  loadPatientVitals(patientId);
-}
-
-async function loadPatientVitals(patientId){
-  const container = document.getElementById('tables-container');
-  container.innerHTML = '<div class="tables-loading"><div class="spinner"></div><br>Đang tải dữ liệu sinh tồn...</div>';
-
-  try{
-    // Fetch toàn bộ vitals của bệnh nhân (limit 2000)
-    const res = await fetch(`${API}/vitals/${patientId}?limit=2000`);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const raw = await res.json();
-
-    if(!raw.length){
-      container.innerHTML = '<div class="tables-loading">Bệnh nhân này chưa có dữ liệu sinh tồn</div>';
-      document.getElementById('device-tabs-bar').style.display = 'none';
-      return;
-    }
-
-    // Normalize
-    const allRows = raw.map(r=>({
-      id:        r.id,
-      deviceId:  r.deviceId || r.thiet_bi_id,
-      heartRate: r.heartRate != null ? r.heartRate : r.nhip_tim,
-      spo2:      r.spo2,
-      deltaHR:   r.deltaHeartRate != null ? r.deltaHeartRate : r.delta_nhip_tim,
-      deltaSpo2: r.deltaSpo2 != null ? r.deltaSpo2 : r.delta_spo2,
-      mode:      r.samplingMode || r.che_do_lay_mau,
-      time:      r.time || r.thoi_gian_do,
-    })).sort((a,b)=> new Date(b.time) - new Date(a.time));
-
-    // Group theo ngày (UTC+7)
-    const byDate = {};
-    allRows.forEach(r=>{
-      if(!r.time) return;
-      const d = new Date(new Date(r.time).getTime() + 7*3600*1000);
-      const key = d.toISOString().slice(0,10);
-      if(!byDate[key]) byDate[key] = [];
-      byDate[key].push(r);
-    });
-
-    // Lưu cache (dùng cho updateSummaryForDate)
-    vitalsCache[patientId] = { allRows, byDate };
-    allVitalsCache[patientId] = { allRows, byDate };
-
-    // Cập nhật summary nếu đang có ngày được chọn
-    if(selectedGlobalDate) updateSummaryForDate(selectedGlobalDate);
-
-    // Ngày mặc định: mới nhất
-    const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
-    selectedVitalsDate = dates[0];
-
-    // Render date tabs + bảng
-    renderVitalsDates(patientId, dates);
-    renderVitalsForDate(patientId, selectedVitalsDate);
-
-  }catch(e){
-    container.innerHTML = `<div class="tables-loading">⚠️ Lỗi tải dữ liệu: ${e.message}</div>`;
-  }
-}
-
-function renderVitalsDates(patientId, dates){
-  const tabBar = document.getElementById('device-tabs-bar');
-  tabBar.style.display = 'flex';
-  tabBar.style.flexWrap = 'wrap';
-  tabBar.style.gap = '6px';
-  tabBar.innerHTML = dates.map(d=>{
-    const [y,m,day] = d.split('-');
-    const label = `${day}/${m}/${y}`;
-    const isActive = d === selectedVitalsDate;
-    return `<button class="dev-tab ${isActive?'active':''}"
-      onclick="selectVitalsDate('${patientId}','${d}')">
-      📅 ${label}
-    </button>`;
-  }).join('');
-}
-
-function selectVitalsDate(patientId, dateKey){
-  selectedVitalsDate = dateKey;
-  const cache = vitalsCache[patientId];
-  if(!cache) return;
-  const dates = Object.keys(cache.byDate).sort((a,b)=>b.localeCompare(a));
-  renderVitalsDates(patientId, dates);
-  renderVitalsForDate(patientId, dateKey);
-}
-
-function renderVitalsForDate(patientId, dateKey){
-  const cache = vitalsCache[patientId];
-  if(!cache){ return; }
-  const rows = (cache.byDate[dateKey] || []);
-
-  if(!rows.length){
-    document.getElementById('tables-container').innerHTML =
-      '<div class="tables-loading">Không có dữ liệu trong ngày này</div>';
-    return;
-  }
-
-  renderVitalsTable(rows);
-  currentDayData = rows;
-}
-
-function renderVitalsTable(rows){
-  if(!rows.length){
-    document.getElementById('tables-container').innerHTML =
-      '<div class="tables-loading">Không có dữ liệu</div>';
-    return;
-  }
-  const modeLabel = {nghi_ngoi:'Nghỉ ngơi', thay_doi:'Thay đổi', canh_bao:'Cảnh báo'};
-  const modeClass  = {nghi_ngoi:'mode-badge', thay_doi:'mode-badge mode-warn', canh_bao:'mode-badge mode-danger'};
-
-  document.getElementById('tables-container').innerHTML = `
-    <div style="padding:8px 18px;font-size:0.7rem;color:var(--muted);border-bottom:1px solid var(--border)">
-      Hiển thị <strong>${Math.min(rows.length,500)}</strong>/${rows.length} bản ghi
-    </div>
-    <div class="vitals-table-wrap">
-      <table class="vitals-table">
-        <thead>
-          <tr>
-            <th>Thời gian</th>
-            <th>Nhịp tim</th>
-            <th>Δ HR</th>
-            <th>SpO₂</th>
-            <th>Δ SpO₂</th>
-            <th>Chế độ</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows.slice(0,500).map(r=>{
-            const hr   = r.heartRate;
-            const spo2 = r.spo2;
-            const hrClass   = hr!=null && (hr>100||hr<50) ? 'hr-val' : 'hr-ok';
-            const spo2Class = spo2!=null && spo2<93 ? 'hr-val' : 'spo2-val';
-            const mode  = r.mode || '—';
-            const ts    = r.time ? new Date(r.time).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
-            const dHR   = r.deltaHR   != null ? (r.deltaHR   > 0 ? '+' : '') + r.deltaHR                      : '—';
-            const dSpo2 = r.deltaSpo2 != null ? (r.deltaSpo2 > 0 ? '+' : '') + Number(r.deltaSpo2).toFixed(1)  : '—';
-            return `<tr>
-              <td style="font-family:'DM Mono',monospace;font-size:0.8rem">${ts}</td>
-              <td class="${hrClass}">${hr!=null ? hr+' <small style="font-size:0.62rem;opacity:0.7">bpm</small>' : '—'}</td>
-              <td style="color:${r.deltaHR>0?'var(--danger)':r.deltaHR<0?'var(--ok)':'var(--muted)'};font-family:'DM Mono',monospace">${dHR}</td>
-              <td class="${spo2Class}">${spo2!=null ? spo2+'<small style="font-size:0.62rem;opacity:0.7">%</small>' : '—'}</td>
-              <td style="color:${r.deltaSpo2>0?'var(--navy)':r.deltaSpo2<0?'var(--warn)':'var(--muted)'};font-family:'DM Mono',monospace">${dSpo2}</td>
-              <td><span class="${modeClass[mode]||'mode-badge'}">${modeLabel[mode]||mode}</span></td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
-    </div>`;
-}
-}
-
-function filterPatients(q){
-  renderPatientList(allPatients, q);
-}
-
-// ── OVERRIDE renderAllTables to build patient list ──
-function renderAllTables(data, searchQ){
-  // Build normalized patient list from doctorPatients + vitals data
-  const latestMap = {};
-  (data||[]).forEach(r=>{
-    const pid = r.patientId;
-    if(!latestMap[pid] || new Date(r.time) > new Date(latestMap[pid].time)){
-      latestMap[pid] = r;
-    }
-  });
-
-  allPatients = doctorPatients.map(dp=>{
-    const latest = latestMap[dp.patientId] || {};
-    // Fallback: dùng live data nếu chưa có vitals
-    const liveHR   = dp.live?.heartRate;
-    const liveSpo2 = dp.live?.spo2;
-    return {
-      id:           dp.patientId,
-      name:         dp.patientName,
-      dob:          dp.dob,
-      gender:       dp.gender,
-      deviceSerial: dp.device?.serial || '—',
-      deviceId:     dp.device?.deviceId,
-      hr:           latest.heartRate   != null ? latest.heartRate   : (liveHR   != null ? liveHR   : null),
-      spo2:         latest.spo2        != null ? latest.spo2        : (liveSpo2 != null ? liveSpo2 : null),
-      mode:         latest.samplingMode,
-      lastTime:     latest.time || dp.live?.updatedAt,
-      bloodType:    dp.profile?.nhom_mau,
-      disease:      dp.profile?.benh_man_tinh,
-    };
-  });
-
-  renderPatientList(allPatients, searchQ||'');
-
-  // Restore selected patient
-  const saved = sessionStorage.getItem('hm_selected_patient');
-  if(saved && allPatients.find(p=>p.id===saved)){
-    selectPatient(saved);
-  }
-}
-
-// ── OVERRIDE updateSummary ──
-function updateSummary(data){
-  // Delegate sang updateSummaryForDate nếu có ngày được chọn
-  if(selectedGlobalDate){
-    updateSummaryForDate(selectedGlobalDate);
-    return;
-  }
-  // Fallback: dùng live data từ allPatients
-  let ok=0, warn=0, danger=0;
-  allPatients.forEach(p=>{
-    const hr=p.hr, spo2=p.spo2;
-    if(hr==null && spo2==null){ ok++; return; }
-    if(spo2<90||hr>120||hr<45) danger++;
-    else if(spo2<94||hr>100||hr<50) warn++;
-    else ok++;
-  });
-  document.getElementById('s-ok').textContent     = ok;
-  document.getElementById('s-warn').textContent   = warn;
-  document.getElementById('s-danger').textContent = danger;
-  document.getElementById('s-total').textContent  = doctorPatients.length;
-}
-
-// ── SIDEBAR DOCTOR INFO ──
-async function loadSidebarDoctor(){
-  if(!DOCTOR_ID) return;
-  try {
-    const res = await fetch(`${API}/doctor/${DOCTOR_ID}`);
-    if(!res.ok) return;
-    const d = await res.json();
-    const init = (d.name||'BS').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-    document.getElementById('sb-av').textContent = init;
-    document.getElementById('sb-dname').textContent = d.name || 'Bác sĩ';
-    document.getElementById('sb-drole').textContent = d.hospital?.name || 'Bác sĩ';
-  } catch(_){}
-}
-loadSidebarDoctor();
-
 </script>
 </body>
 </html>
