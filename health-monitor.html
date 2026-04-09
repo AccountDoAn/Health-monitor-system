@@ -521,7 +521,7 @@ function getClsCls(row){const s=classify(row);return s.cls==='critical'?'danger'
 
 // ── DEVICE INFO MAP + TAB STATE ──
 let deviceInfoMap = {};
-let currentDeviceId = null;   // tab đang chọn
+let currentDeviceId = sessionStorage.getItem('hm_tab') || null; // giữ tab sau refresh
 let currentDayData  = [];     // toàn bộ data của ngày đang xem
 
 // ── GROUP BY DEVICE ──
@@ -537,9 +537,10 @@ function renderDeviceTabs(byDevice){
   const devIds = Object.keys(byDevice).sort();
   if(devIds.length === 0){ bar.style.display='none'; return; }
 
-  // Chọn tab đầu tiên nếu chưa có hoặc không còn tồn tại
+  // Khôi phục tab đã chọn; nếu không còn tồn tại thì chọn tab đầu tiên
   if(!currentDeviceId || !byDevice[currentDeviceId]){
     currentDeviceId = devIds[0];
+    sessionStorage.setItem('hm_tab', currentDeviceId);
   }
 
   bar.style.display = 'flex';
@@ -567,10 +568,11 @@ function renderDeviceTabs(byDevice){
 // ── CHỌN TAB ──
 function selectDeviceTab(devId){
   currentDeviceId = devId;
+  sessionStorage.setItem('hm_tab', devId); // lưu lại để khôi phục sau refresh
   const byDevice  = groupByDevice(currentDayData);
   renderDeviceTabs(byDevice);
   renderSingleTable(byDevice[devId]||[], devId, document.getElementById('search-input').value);
-  updateSummary(currentDayData); // summary vẫn tính toàn bộ ngày
+  updateSummary(currentDayData);
 }
 
 // ── RENDER 1 BẢNG (thiết bị đang chọn) ──
