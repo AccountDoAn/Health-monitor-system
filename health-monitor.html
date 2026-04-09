@@ -1857,97 +1857,131 @@ function hideTooltip(){
 // ── SELECT PATIENT → SHOW VITALS ──
 let selectedPatientId = null;
 
+// Cache vitals theo patientId
+let vitalsCache = {}; // { patientId: { allRows, byDate } }
+let selectedVitalsDate = null; // ngày đang chọn trong vitals
+
 function selectPatient(patientId){
   selectedPatientId = patientId;
   sessionStorage.setItem('hm_selected_patient', patientId);
 
-  // Update patient list highlight
   const p = allPatients.find(x=>x.id===patientId);
   if(p){
     document.getElementById('vitals-title').textContent = `📈 Dữ liệu sinh tồn — ${p.name}`;
     document.getElementById('vitals-section').classList.add('visible');
   }
 
-  // Re-render patient list to show selection
   renderPatientList(allPatients, document.getElementById('search-input').value);
-
-  // Load vitals for this patient
   loadPatientVitals(patientId);
 }
 
 async function loadPatientVitals(patientId){
-  document.getElementById('tables-container').innerHTML =
-    '<div class="tables-loading"><div class="spinner"></div><br>Đang tải dữ liệu sinh tồn...</div>';
+  const container = document.getElementById('tables-container');
+  container.innerHTML = '<div class="tables-loading"><div class="spinner"></div><br>Đang tải dữ liệu sinh tồn...</div>';
 
-  // If we have date-filtered data, use it
-  let data = [];
-  const dateKey = dayKeys[currentDayIdx];
-  if(dateKey && dayMap[dateKey]){
-    data = (dayMap[dateKey]||[]).filter(r=>r.patientId===patientId);
-  } else {
-    // Fallback: fetch from API
-    try {
-      const res = await fetch(`${API}/vitals/${patientId}?limit=200`);
-      if(res.ok) data = await res.json();
-    } catch(_){}
+  try{
+    // Fetch toàn bộ vitals của bệnh nhân (limit 2000)
+    const res = await fetch(`${API}/vitals/${patientId}?limit=2000`);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const raw = await res.json();
+
+    if(!raw.length){
+      container.innerHTML = '<div class="tables-loading">Bệnh nhân này chưa có dữ liệu sinh tồn</div>';
+      document.getElementById('device-tabs-bar').style.display = 'none';
+      return;
+    }
+
+    // Normalize
+    const allRows = raw.map(r=>({
+      id:        r.id,
+      deviceId:  r.deviceId || r.thiet_bi_id,
+      heartRate: r.heartRate != null ? r.heartRate : r.nhip_tim,
+      spo2:      r.spo2,
+      deltaHR:   r.deltaHeartRate != null ? r.deltaHeartRate : r.delta_nhip_tim,
+      deltaSpo2: r.deltaSpo2 != null ? r.deltaSpo2 : r.delta_spo2,
+      mode:      r.samplingMode || r.che_do_lay_mau,
+      time:      r.time || r.thoi_gian_do,
+    })).sort((a,b)=> new Date(b.time) - new Date(a.time));
+
+    // Group theo ngày (UTC+7)
+    const byDate = {};
+    allRows.forEach(r=>{
+      if(!r.time) return;
+      const d = new Date(new Date(r.time).getTime() + 7*3600*1000);
+      const key = d.toISOString().slice(0,10);
+      if(!byDate[key]) byDate[key] = [];
+      byDate[key].push(r);
+    });
+
+    // Lưu cache
+    vitalsCache[patientId] = { allRows, byDate };
+
+    // Ngày mặc định: mới nhất
+    const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+    selectedVitalsDate = dates[0];
+
+    // Render date tabs + bảng
+    renderVitalsDates(patientId, dates);
+    renderVitalsForDate(patientId, selectedVitalsDate);
+
+  }catch(e){
+    container.innerHTML = `<div class="tables-loading">⚠️ Lỗi tải dữ liệu: ${e.message}</div>`;
   }
+}
 
-  if(!data.length){
+function renderVitalsDates(patientId, dates){
+  const tabBar = document.getElementById('device-tabs-bar');
+  tabBar.style.display = 'flex';
+  tabBar.style.flexWrap = 'wrap';
+  tabBar.style.gap = '6px';
+  tabBar.innerHTML = dates.map(d=>{
+    const [y,m,day] = d.split('-');
+    const label = `${day}/${m}/${y}`;
+    const isActive = d === selectedVitalsDate;
+    return `<button class="dev-tab ${isActive?'active':''}"
+      onclick="selectVitalsDate('${patientId}','${d}')">
+      📅 ${label}
+    </button>`;
+  }).join('');
+}
+
+function selectVitalsDate(patientId, dateKey){
+  selectedVitalsDate = dateKey;
+  const cache = vitalsCache[patientId];
+  if(!cache) return;
+  const dates = Object.keys(cache.byDate).sort((a,b)=>b.localeCompare(a));
+  renderVitalsDates(patientId, dates);
+  renderVitalsForDate(patientId, dateKey);
+}
+
+function renderVitalsForDate(patientId, dateKey){
+  const cache = vitalsCache[patientId];
+  if(!cache){ return; }
+  const rows = (cache.byDate[dateKey] || []);
+
+  if(!rows.length){
     document.getElementById('tables-container').innerHTML =
-      '<div class="tables-loading">Không có dữ liệu sinh tồn cho bệnh nhân này trong ngày đã chọn</div>';
-    document.getElementById('device-tabs-bar').style.display = 'none';
+      '<div class="tables-loading">Không có dữ liệu trong ngày này</div>';
     return;
   }
 
-  // Normalize
-  const rows = data.map(r=>({
-    id:        r.id,
-    deviceId:  r.deviceId || r.thiet_bi_id,
-    heartRate: r.heartRate || r.nhip_tim,
-    spo2:      r.spo2,
-    deltaHR:   r.deltaHeartRate || r.delta_nhip_tim,
-    deltaSpo2: r.deltaSpo2 || r.delta_spo2,
-    mode:      r.samplingMode || r.che_do_lay_mau,
-    time:      r.time || r.thoi_gian_do,
-  }));
-
-  // Group by device
-  const byDev = {};
-  rows.forEach(r=>{ const k=r.deviceId||'unknown'; if(!byDev[k])byDev[k]=[]; byDev[k].push(r); });
-  const devIds = Object.keys(byDev);
-
-  // Render tabs
-  const tabBar = document.getElementById('device-tabs-bar');
-  if(devIds.length > 1){
-    tabBar.style.display = 'flex';
-    tabBar.innerHTML = devIds.map(did=>{
-      const info = deviceInfoMap[did]||{};
-      const serial = info.serial || did.slice(-6);
-      return `<button class="dev-tab ${did===currentDeviceId?'active':''}" onclick="selectDeviceTab('${did}')">
-        <span class="dot ${info.online?'online':''}"></span>
-        ${serial}
-      </button>`;
-    }).join('');
-  } else {
-    tabBar.style.display = 'none';
-  }
-
-  // Auto-select first device
-  if(!currentDeviceId || !byDev[currentDeviceId]) currentDeviceId = devIds[0];
-  renderVitalsTable(byDev[currentDeviceId]||[]);
+  renderVitalsTable(rows);
   currentDayData = rows;
 }
 
 function renderVitalsTable(rows){
   if(!rows.length){
     document.getElementById('tables-container').innerHTML =
-      '<div class="tables-loading">Không có dữ liệu cho thiết bị này</div>';
+      '<div class="tables-loading">Không có dữ liệu</div>';
     return;
   }
   const modeLabel = {nghi_ngoi:'Nghỉ ngơi', thay_doi:'Thay đổi', canh_bao:'Cảnh báo'};
-  const modeClass = {nghi_ngoi:'mode-badge', thay_doi:'mode-badge mode-warn', canh_bao:'mode-badge mode-danger'};
+  const modeClass  = {nghi_ngoi:'mode-badge', thay_doi:'mode-badge mode-warn', canh_bao:'mode-badge mode-danger'};
 
   document.getElementById('tables-container').innerHTML = `
+    <div style="padding:8px 18px;font-size:0.7rem;color:var(--muted);border-bottom:1px solid var(--border)">
+      Hiển thị <strong>${Math.min(rows.length,500)}</strong>/${rows.length} bản ghi
+    </div>
     <div class="vitals-table-wrap">
       <table class="vitals-table">
         <thead>
@@ -1961,28 +1995,28 @@ function renderVitalsTable(rows){
           </tr>
         </thead>
         <tbody>
-          ${rows.slice(0,200).map(r=>{
-            const hr = r.heartRate;
+          ${rows.slice(0,500).map(r=>{
+            const hr   = r.heartRate;
             const spo2 = r.spo2;
-            const hrClass = hr>100||hr<50 ? 'hr-val' : 'hr-ok';
-            const spo2Class = spo2<93 ? 'hr-val' : 'spo2-val';
-            const mode = r.mode||'—';
-            const ts = r.time ? new Date(r.time).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
-            const date = r.time ? new Date(r.time).toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit'}) : '';
-            const dHR = r.deltaHR!=null ? (r.deltaHR>0?'+':'')+r.deltaHR : '—';
-            const dSpo2 = r.deltaSpo2!=null ? (r.deltaSpo2>0?'+':'')+Number(r.deltaSpo2).toFixed(1) : '—';
+            const hrClass   = hr!=null && (hr>100||hr<50) ? 'hr-val' : 'hr-ok';
+            const spo2Class = spo2!=null && spo2<93 ? 'hr-val' : 'spo2-val';
+            const mode  = r.mode || '—';
+            const ts    = r.time ? new Date(r.time).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
+            const dHR   = r.deltaHR   != null ? (r.deltaHR   > 0 ? '+' : '') + r.deltaHR                      : '—';
+            const dSpo2 = r.deltaSpo2 != null ? (r.deltaSpo2 > 0 ? '+' : '') + Number(r.deltaSpo2).toFixed(1)  : '—';
             return `<tr>
-              <td><span style="font-size:0.65rem;color:var(--muted)">${date}</span> ${ts}</td>
-              <td class="${hrClass}">${hr!=null?hr+' bpm':'—'}</td>
-              <td style="color:${r.deltaHR>0?'var(--danger)':r.deltaHR<0?'var(--ok)':'var(--muted)'}">${dHR}</td>
-              <td class="${spo2Class}">${spo2!=null?spo2+'%':'—'}</td>
-              <td style="color:${r.deltaSpo2>0?'var(--navy)':r.deltaSpo2<0?'var(--warn)':'var(--muted)'}">${dSpo2}</td>
+              <td style="font-family:'DM Mono',monospace;font-size:0.8rem">${ts}</td>
+              <td class="${hrClass}">${hr!=null ? hr+' <small style="font-size:0.62rem;opacity:0.7">bpm</small>' : '—'}</td>
+              <td style="color:${r.deltaHR>0?'var(--danger)':r.deltaHR<0?'var(--ok)':'var(--muted)'};font-family:'DM Mono',monospace">${dHR}</td>
+              <td class="${spo2Class}">${spo2!=null ? spo2+'<small style="font-size:0.62rem;opacity:0.7">%</small>' : '—'}</td>
+              <td style="color:${r.deltaSpo2>0?'var(--navy)':r.deltaSpo2<0?'var(--warn)':'var(--muted)'};font-family:'DM Mono',monospace">${dSpo2}</td>
               <td><span class="${modeClass[mode]||'mode-badge'}">${modeLabel[mode]||mode}</span></td>
             </tr>`;
           }).join('')}
         </tbody>
       </table>
     </div>`;
+}
 }
 
 function filterPatients(q){
