@@ -924,16 +924,21 @@ async function loadData(){
   document.getElementById('patient-list').innerHTML='<div class="tables-loading"><div class="spinner"></div><br>Đang tải danh sách bệnh nhân...</div>';
 
   try{
+    console.log('[loadData] Fetching patients for:', DOCTOR_ID);
     // 1. Fetch bệnh nhân của bác sĩ
     const rPat = await fetch(`${API}/doctor/${DOCTOR_ID}/patients`);
+    console.log('[loadData] rPat status:', rPat.status, rPat.ok);
     if(rPat.ok){
       doctorPatients = await rPat.json();
     } else {
+      const errText = await rPat.text();
+      console.error('[loadData] patients error:', errText);
       doctorPatients = [];
     }
 
-    console.log('[loadData] doctorPatients:', doctorPatients.length, doctorPatients);
+    console.log('[loadData] doctorPatients count:', doctorPatients.length);
 
+    console.log('[loadData] Calling renderPatientList with', doctorPatients.length, 'patients');
     // 2. Hiện danh sách bệnh nhân ngay
     renderPatientList(doctorPatients.map(p=>({
       id:           p.patientId,
@@ -948,6 +953,7 @@ async function loadData(){
       bloodType:    p.profile?.nhom_mau,
       disease:      p.profile?.benh_man_tinh,
     })), '');
+    console.log('[loadData] renderPatientList done');
 
     // Cập nhật allPatients để tooltip dùng
     allPatients = doctorPatients.map(p=>({
