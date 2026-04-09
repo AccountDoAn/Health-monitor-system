@@ -1207,7 +1207,7 @@ function closeCalendar(){
 document.getElementById('search-input').addEventListener('input',function(){
   renderPatientList(allPatients, this.value);
 });
-loadData();setInterval(loadData,30000);
+loadData();
 
 // ── ALARM ──
 function startAlarm(){
@@ -1875,36 +1875,50 @@ let allPatients = []; // normalized patient list with latest vitals
 
 function renderPatientList(patients, searchQ=''){
   const list = document.getElementById('patient-list');
-  const q = searchQ.toLowerCase().trim();
-  const filtered = q ? patients.filter(p=>
-    (p.name||'').toLowerCase().includes(q) ||
-    (p.id||'').toLowerCase().includes(q)
-  ) : patients;
+  if(!list) return;
 
-  if(!filtered.length){
-    list.innerHTML='<div class="tables-loading">Không có dữ liệu</div>'; return;
+  try {
+    const q = (searchQ||'').toLowerCase().trim();
+    const filtered = q ? patients.filter(p=>
+      (p.name||'').toLowerCase().includes(q) ||
+      (p.id||'').toLowerCase().includes(q)
+    ) : patients;
+
+    if(!filtered.length){
+      list.innerHTML='<div class="tables-loading">Không có bệnh nhân nào</div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(p=>{
+      const hr   = p.hr   != null ? Number(p.hr)   : null;
+      const spo2 = p.spo2 != null ? Number(p.spo2) : null;
+      const hrColor   = hr!=null   && (hr>100||hr<50)   ? 'var(--danger)' : hr!=null && hr>90 ? 'var(--warn)' : 'var(--ok)';
+      const spo2Color = spo2!=null && spo2<93 ? 'var(--danger)' : spo2!=null && spo2<95 ? 'var(--warn)' : 'var(--navy)';
+      const statusHtml = getStatusBadge(hr, spo2);
+      const dobStr  = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+      const shortId = (p.id||'').slice(0,8).toUpperCase();
+      const name    = escHtml(p.name||'—');
+      const device  = escHtml(p.deviceSerial||'—');
+      const isSelected = selectedPatientId === p.id;
+
+      return `<div class="pt-row${isSelected?' selected':''}"
+        onclick="selectPatient('${p.id}')"
+        onmouseenter="showTooltip(event,'${p.id}')"
+        onmouseleave="hideTooltip()">
+        <div class="pt-id">BN-${shortId}</div>
+        <div class="pt-name">${name}</div>
+        <div class="pt-dob">${dobStr}</div>
+        <div class="pt-device">${device}</div>
+        <div class="pt-hr" style="color:${hrColor}">${hr!=null ? hr+'<small style="font-size:0.6rem;opacity:0.7"> bpm</small>' : '—'}</div>
+        <div class="pt-spo2" style="color:${spo2Color}">${spo2!=null ? spo2+'<small style="font-size:0.6rem;opacity:0.7">%</small>' : '—'}</div>
+        <div class="pt-status">${statusHtml}</div>
+      </div>`;
+    }).join('');
+
+  } catch(err) {
+    console.error('[renderPatientList] Error:', err);
+    list.innerHTML = `<div class="tables-loading">⚠️ Lỗi hiển thị: ${err.message}</div>`;
   }
-
-  list.innerHTML = filtered.map(p=>{
-    const hrColor = p.hr>100||p.hr<50 ? 'var(--danger)' : p.hr>90 ? 'var(--warn)' : 'var(--ok)';
-    const spo2Color = p.spo2<93 ? 'var(--danger)' : p.spo2<95 ? 'var(--warn)' : 'var(--navy)';
-    const statusHtml = getStatusBadge(p.hr, p.spo2);
-    const dobStr = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
-    const shortId = (p.id||'').slice(0,8).toUpperCase();
-
-    return `<div class="pt-row ${selectedPatientId===p.id?'selected':''}"
-      onclick="selectPatient('${p.id}')"
-      onmouseenter="showTooltip(event,'${p.id}')"
-      onmouseleave="hideTooltip()">
-      <div class="pt-id">BN-${shortId}</div>
-      <div class="pt-name">${escHtml(p.name)}</div>
-      <div class="pt-dob">${dobStr}</div>
-      <div class="pt-device">${p.deviceSerial||'—'}</div>
-      <div class="pt-hr" style="color:${hrColor}">${p.hr!=null?p.hr+'<small style="font-size:0.6rem;opacity:0.7"> bpm</small>':'—'}</div>
-      <div class="pt-spo2" style="color:${spo2Color}">${p.spo2!=null?p.spo2+'<small style="font-size:0.6rem;opacity:0.7">%</small>':'—'}</div>
-      <div class="pt-status">${statusHtml}</div>
-    </div>`;
-  }).join('');
 }
 
 function getStatusBadge(hr, spo2){
@@ -1914,18 +1928,25 @@ function getStatusBadge(hr, spo2){
   return '<span class="status-ok">🟢 Bình thường</span>';
 }
 
-// Tooltip
-const tooltip = document.getElementById('pt-tooltip');
+// Tooltip — khởi tạo sau DOM
+let tooltip = null;
 let tooltipTimeout = null;
 
+function getTooltip(){
+  if(!tooltip) tooltip = document.getElementById('pt-tooltip');
+  return tooltip;
+}
+
 function showTooltip(e, patientId){
+  const tt = getTooltip();
+  if(!tt) return;
   const p = allPatients.find(x=>x.id===patientId);
   if(!p) return;
   const dobStr = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
   const age = p.dob ? Math.floor((Date.now()-new Date(p.dob))/31557600000) : null;
   const lastTime = p.lastTime ? new Date(p.lastTime).toLocaleString('vi-VN') : '—';
 
-  tooltip.innerHTML = `
+  tt.innerHTML = `
     <div class="tt-name">🧑 ${escHtml(p.name)}</div>
     <div class="tt-row"><span class="tt-label">Mã BN</span><span class="tt-val">BN-${(p.id||'').slice(0,8).toUpperCase()}</span></div>
     <div class="tt-row"><span class="tt-label">Ngày sinh</span><span class="tt-val">${dobStr}${age?' ('+age+' tuổi)':''}</span></div>
@@ -1943,13 +1964,13 @@ function showTooltip(e, patientId){
   const x = e.clientX + 16;
   const y = e.clientY - 20;
   const tw = 300, th = 300;
-  tooltip.style.left = (x + tw > window.innerWidth ? x - tw - 32 : x) + 'px';
-  tooltip.style.top  = (y + th > window.innerHeight ? y - th + 40 : y) + 'px';
-  tooltip.style.display = 'block';
+  tt.style.left = (x + tw > window.innerWidth ? x - tw - 32 : x) + 'px';
+  tt.style.top  = (y + th > window.innerHeight ? y - th + 40 : y) + 'px';
+  tt.style.display = 'block';
 }
 
 function hideTooltip(){
-  tooltip.style.display = 'none';
+  const tt2 = getTooltip(); if(tt2) tt2.style.display = 'none';
 }
 
 // ── SELECT PATIENT → SHOW VITALS ──
