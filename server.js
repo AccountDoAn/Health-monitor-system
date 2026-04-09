@@ -129,6 +129,102 @@ app.get("/vitals", async (req, res) => {
 });
 
 // GET /vitals/:patientId — sinh tồn theo bệnh nhân
+// GET /vitals/days — danh sách các ngày có dữ liệu (UTC+7)
+app.get("/vitals/days", async (req, res) => {
+  try {
+    // Thử RPC trước (nếu đã tạo function get_distinct_dates() trong Supabase)
+    try {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('get_distinct_dates');
+      if (!rpcErr && Array.isArray(rpcData) && rpcData.length > 0) {
+        const days = rpcData
+          .map(r => (typeof r === 'string' ? r : r.ngay || r.date || String(r)))
+          .filter(Boolean)
+          .sort((a, b) => b.localeCompare(a));
+        return res.json(days);
+      }
+    } catch (_) { /* RPC chưa tồn tại, bỏ qua */ }
+
+    // Fallback: lấy cột thoi_gian_do, deduplicate theo ngày UTC+7
+    const { data: raw, error: rawErr } = await supabase
+      .from("du_lieu_sinh_ton")
+      .select("thoi_gian_do")
+      .order("thoi_gian_do", { ascending: false })
+      .limit(100000);
+
+    if (rawErr) throw rawErr;
+
+    const dateSet = new Set();
+    (raw || []).forEach((r) => {
+      if (!r.thoi_gian_do) return;
+      const local = new Date(new Date(r.thoi_gian_do).getTime() + 7 * 3600 * 1000);
+      dateSet.add(local.toISOString().slice(0, 10));
+    });
+
+    res.json([...dateSet].sort((a, b) => b.localeCompare(a)));
+  } catch (err) {
+    console.error("[GET /vitals/days]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /vitals/by-date/:date — tất cả bản ghi của 1 ngày cụ thể (YYYY-MM-DD, UTC+7)
+app.get("/vitals/by-date/:date", async (req, res) => {
+  try {
+    const { date } = req.params; // VD: 2026-03-31
+
+    // Tính khoảng [00:00, 23:59:59] theo UTC+7 → convert sang UTC
+    const startUTC = new Date(`${date}T00:00:00+07:00`).toISOString();
+    const endUTC   = new Date(`${date}T23:59:59+07:00`).toISOString();
+
+    const { data: vitals, error: vitalsError } = await supabase
+      .from("du_lieu_sinh_ton")
+      .select(`
+        id, thiet_bi_id, nguoi_dung_tb_id,
+        nhip_tim, spo2, delta_nhip_tim, delta_spo2,
+        che_do_lay_mau, thoi_gian_do
+      `)
+      .gte("thoi_gian_do", startUTC)
+      .lte("thoi_gian_do", endUTC)
+      .order("thoi_gian_do", { ascending: false })
+      .limit(2000);
+
+    if (vitalsError) throw vitalsError;
+    if (!vitals || vitals.length === 0) return res.json([]);
+
+    // Lấy tên bệnh nhân
+    const uniqueIds = [...new Set(vitals.map((v) => v.nguoi_dung_tb_id).filter(Boolean))];
+    const userMap = {};
+    if (uniqueIds.length > 0) {
+      const { data: users } = await supabase
+        .from("nguoi_dung")
+        .select("id, ho_ten")
+        .in("id", uniqueIds)
+        .limit(uniqueIds.length);
+      (users || []).forEach((u) => {
+        if (uniqueIds.includes(u.id)) userMap[u.id] = u.ho_ten;
+      });
+    }
+
+    const result = vitals.map((v) => ({
+      id:             v.id,
+      deviceId:       v.thiet_bi_id,
+      patientId:      v.nguoi_dung_tb_id,
+      patientName:    userMap[v.nguoi_dung_tb_id] || `ID:${v.nguoi_dung_tb_id?.slice(0, 8)}`,
+      heartRate:      v.nhip_tim,
+      spo2:           v.spo2,
+      deltaHeartRate: v.delta_nhip_tim,
+      deltaSpo2:      v.delta_spo2,
+      samplingMode:   v.che_do_lay_mau,
+      time:           v.thoi_gian_do,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error("[GET /vitals/by-date/:date]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/vitals/:patientId", async (req, res) => {
   try {
     const { patientId } = req.params;
@@ -955,102 +1051,6 @@ app.get("/users", async (req, res) => {
 // ============================================================
 // THÊM: DỮ LIỆU THEO NGÀY
 // ============================================================
-
-// GET /vitals/days — danh sách các ngày có dữ liệu (UTC+7)
-app.get("/vitals/days", async (req, res) => {
-  try {
-    // Thử RPC trước (nếu đã tạo function get_distinct_dates() trong Supabase)
-    try {
-      const { data: rpcData, error: rpcErr } = await supabase.rpc('get_distinct_dates');
-      if (!rpcErr && Array.isArray(rpcData) && rpcData.length > 0) {
-        const days = rpcData
-          .map(r => (typeof r === 'string' ? r : r.ngay || r.date || String(r)))
-          .filter(Boolean)
-          .sort((a, b) => b.localeCompare(a));
-        return res.json(days);
-      }
-    } catch (_) { /* RPC chưa tồn tại, bỏ qua */ }
-
-    // Fallback: lấy cột thoi_gian_do, deduplicate theo ngày UTC+7
-    const { data: raw, error: rawErr } = await supabase
-      .from("du_lieu_sinh_ton")
-      .select("thoi_gian_do")
-      .order("thoi_gian_do", { ascending: false })
-      .limit(100000);
-
-    if (rawErr) throw rawErr;
-
-    const dateSet = new Set();
-    (raw || []).forEach((r) => {
-      if (!r.thoi_gian_do) return;
-      const local = new Date(new Date(r.thoi_gian_do).getTime() + 7 * 3600 * 1000);
-      dateSet.add(local.toISOString().slice(0, 10));
-    });
-
-    res.json([...dateSet].sort((a, b) => b.localeCompare(a)));
-  } catch (err) {
-    console.error("[GET /vitals/days]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /vitals/by-date/:date — tất cả bản ghi của 1 ngày cụ thể (YYYY-MM-DD, UTC+7)
-app.get("/vitals/by-date/:date", async (req, res) => {
-  try {
-    const { date } = req.params; // VD: 2026-03-31
-
-    // Tính khoảng [00:00, 23:59:59] theo UTC+7 → convert sang UTC
-    const startUTC = new Date(`${date}T00:00:00+07:00`).toISOString();
-    const endUTC   = new Date(`${date}T23:59:59+07:00`).toISOString();
-
-    const { data: vitals, error: vitalsError } = await supabase
-      .from("du_lieu_sinh_ton")
-      .select(`
-        id, thiet_bi_id, nguoi_dung_tb_id,
-        nhip_tim, spo2, delta_nhip_tim, delta_spo2,
-        che_do_lay_mau, thoi_gian_do
-      `)
-      .gte("thoi_gian_do", startUTC)
-      .lte("thoi_gian_do", endUTC)
-      .order("thoi_gian_do", { ascending: false })
-      .limit(2000);
-
-    if (vitalsError) throw vitalsError;
-    if (!vitals || vitals.length === 0) return res.json([]);
-
-    // Lấy tên bệnh nhân
-    const uniqueIds = [...new Set(vitals.map((v) => v.nguoi_dung_tb_id).filter(Boolean))];
-    const userMap = {};
-    if (uniqueIds.length > 0) {
-      const { data: users } = await supabase
-        .from("nguoi_dung")
-        .select("id, ho_ten")
-        .in("id", uniqueIds)
-        .limit(uniqueIds.length);
-      (users || []).forEach((u) => {
-        if (uniqueIds.includes(u.id)) userMap[u.id] = u.ho_ten;
-      });
-    }
-
-    const result = vitals.map((v) => ({
-      id:             v.id,
-      deviceId:       v.thiet_bi_id,
-      patientId:      v.nguoi_dung_tb_id,
-      patientName:    userMap[v.nguoi_dung_tb_id] || `ID:${v.nguoi_dung_tb_id?.slice(0, 8)}`,
-      heartRate:      v.nhip_tim,
-      spo2:           v.spo2,
-      deltaHeartRate: v.delta_nhip_tim,
-      deltaSpo2:      v.delta_spo2,
-      samplingMode:   v.che_do_lay_mau,
-      time:           v.thoi_gian_do,
-    }));
-
-    res.json(result);
-  } catch (err) {
-    console.error("[GET /vitals/by-date/:date]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // ============================================================
 // MODULE AUTH: ĐĂNG NHẬP & ĐỔI MẬT KHẨU
