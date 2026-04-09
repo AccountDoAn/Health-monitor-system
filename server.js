@@ -1,7 +1,6 @@
 const express    = require("express");
 const cors       = require("cors");
 const { createClient } = require("@supabase/supabase-js");
-const nodemailer = require("nodemailer");
 const crypto     = require("crypto");
 
 const app = express();
@@ -1215,17 +1214,50 @@ app.post("/auth/change-password", async (req, res) => {
 // MODULE AUTH: QUÊN MẬT KHẨU
 // ============================================================
 
-// Cấu hình email (Gmail SMTP — dùng App Password)
-// Set biến môi trường trên Render: EMAIL_USER, EMAIL_PASS
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // App Password từ Google Account
-  },
-});
-
 const FRONTEND_URL = "https://accountdoan.github.io/Health-monitor-system";
+
+// Gửi email qua Resend HTTP API (không dùng SMTP — tránh bị Render chặn)
+async function sendEmail({ to, subject, html }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("Thiếu RESEND_API_KEY trong biến môi trường");
+
+  const fromEmail = process.env.EMAIL_FROM || "Health Monitor <onboarding@resend.dev>";
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from: fromEmail, to, subject, html }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.message || data.error || `Resend error ${res.status}`);
+  }
+  return data;
+}
+
+// GET /auth/test-email — kiểm tra cấu hình email (xóa sau khi test xong)
+app.get("/auth/test-email", async (req, res) => {
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASS;
+  if (!user || !pass) {
+    return res.json({
+      ok: false,
+      error: "Thiếu biến môi trường",
+      EMAIL_USER: user ? "✅ có" : "❌ thiếu",
+      EMAIL_PASS: pass ? "✅ có" : "❌ thiếu",
+    });
+  }
+  try {
+    await transporter.verify();
+    res.json({ ok: true, message: "Kết nối Gmail OK", EMAIL_USER: user });
+  } catch (e) {
+    res.json({ ok: false, error: e.message, code: e.code, EMAIL_USER: user });
+  }
+});
 
 // POST /auth/forgot-password
 // Body: { email }
@@ -1278,22 +1310,20 @@ app.post("/auth/forgot-password", async (req, res) => {
     // 5. Gửi email
     const resetLink = `${FRONTEND_URL}/reset-password.html?token=${token}`;
 
-    // Kiểm tra cấu hình email
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      console.error("[forgot-password] Thiếu EMAIL_USER hoặc EMAIL_PASS trong biến môi trường");
+    if (!process.env.RESEND_API_KEY) {
+      console.error("[forgot-password] Thiếu RESEND_API_KEY");
       return res.status(500).json({ error: "Server chưa cấu hình email. Liên hệ quản trị viên." });
     }
 
     try {
-      const info = await transporter.sendMail({
-        from:    `"Health Monitor" <${process.env.EMAIL_USER}>`,
+      const info = await sendEmail({
         to:      user.email,
         subject: "🔐 Đặt lại mật khẩu — Health Monitor",
         html: `
           <div style="font-family:'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f0f7f4;border-radius:16px">
             <div style="text-align:center;margin-bottom:24px">
               <div style="background:#2b5f8e;display:inline-block;padding:12px 20px;border-radius:12px">
-                <span style="color:#85c8ee;font-size:1.3rem;font-weight:800;letter-spacing:-0.02em">Health<span style="color:#5ab52a">Monitor</span></span>
+                <span style="color:#85c8ee;font-size:1.3rem;font-weight:800">Health<span style="color:#5ab52a">Monitor</span></span>
               </div>
             </div>
             <div style="background:#fff;border-radius:12px;padding:28px 24px;border:1px solid #d0e8da">
@@ -1301,31 +1331,26 @@ app.post("/auth/forgot-password", async (req, res) => {
               <p style="color:#6b8f7a;margin:0 0 20px">Xin chào <strong style="color:#1a2e1e">${user.ho_ten}</strong>,</p>
               <p style="color:#1a2e1e;line-height:1.6;margin:0 0 24px">
                 Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
-                Nhấn vào nút bên dưới để tiếp tục. Link này có hiệu lực trong <strong>1 giờ</strong>.
+                Nhấn vào nút bên dưới để tiếp tục. Link có hiệu lực trong <strong>1 giờ</strong>.
               </p>
               <div style="text-align:center;margin-bottom:24px">
-                <a href="${resetLink}" style="display:inline-block;background:#2b5f8e;color:#fff;padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.95rem;letter-spacing:0.02em">
+                <a href="${resetLink}" style="display:inline-block;background:#2b5f8e;color:#fff;padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.95rem">
                   ✅ Đặt lại mật khẩu
                 </a>
               </div>
-              <p style="color:#6b8f7a;font-size:0.82rem;margin:0 0 8px">Nếu nút không hoạt động, copy link sau vào trình duyệt:</p>
+              <p style="color:#6b8f7a;font-size:0.82rem;margin:0 0 8px">Nếu nút không hoạt động, copy link sau:</p>
               <p style="color:#2b5f8e;font-size:0.78rem;word-break:break-all;margin:0 0 20px">${resetLink}</p>
               <hr style="border:none;border-top:1px solid #d0e8da;margin:20px 0"/>
-              <p style="color:#6b8f7a;font-size:0.78rem;margin:0">
-                Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.
-              </p>
+              <p style="color:#6b8f7a;font-size:0.78rem;margin:0">Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
             </div>
           </div>
         `,
       });
-      console.log("[forgot-password] Email sent OK:", info.messageId, "→", user.email);
+      console.log("[forgot-password] Email sent OK:", info.id, "→", user.email);
       res.json({ message: "Nếu email tồn tại trong hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu." });
     } catch (mailErr) {
       console.error("[forgot-password] Lỗi gửi email:", mailErr.message);
-      console.error("[forgot-password] Chi tiết:", mailErr.code, mailErr.responseCode);
-      return res.status(500).json({
-        error: "Không thể gửi email. Kiểm tra cấu hình EMAIL_USER và EMAIL_PASS (App Password) trên Render.",
-      });
+      return res.status(500).json({ error: "Không thể gửi email: " + mailErr.message });
     }
   } catch (err) {
     console.error("[POST /auth/forgot-password]", err.message);
