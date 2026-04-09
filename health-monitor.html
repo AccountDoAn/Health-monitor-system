@@ -1577,8 +1577,7 @@ function toggleChat(){
 
 document.getElementById('chat-inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
 document.getElementById('chat-inp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,75)+'px';});
-</script>
-<script>
+
 
 // ── SETTINGS ──
 function openSettings(){ document.getElementById('settings-overlay').classList.add('open'); }
