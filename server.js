@@ -1309,6 +1309,65 @@ app.post("/auth/change-password", async (req, res) => {
 });
 
 // ============================================================
+// MODULE HỒ SƠ BỆNH ÁN
+// ============================================================
+
+// GET /medical-record/:patientId
+app.get("/medical-record/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { data, error } = await supabase
+      .from("ho_so_benh_nhan")
+      .select("*")
+      .eq("nguoi_dung_tb_id", patientId)
+      .maybeSingle();
+    if (error) throw error;
+    res.json(data || null);
+  } catch (err) {
+    console.error("[GET /medical-record]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /medical-record/:patientId — tạo mới hoặc cập nhật
+app.patch("/medical-record/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const fields = req.body;
+
+    const { data: existing } = await supabase
+      .from("ho_so_benh_nhan")
+      .select("nguoi_dung_tb_id")
+      .eq("nguoi_dung_tb_id", patientId)
+      .maybeSingle();
+
+    let result;
+    if (existing) {
+      const { data, error } = await supabase
+        .from("ho_so_benh_nhan")
+        .update(fields)
+        .eq("nguoi_dung_tb_id", patientId)
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      result = data;
+    } else {
+      const { data, error } = await supabase
+        .from("ho_so_benh_nhan")
+        .insert({ ...fields, nguoi_dung_tb_id: patientId })
+        .select("*")
+        .maybeSingle();
+      if (error) throw error;
+      result = data;
+    }
+    res.json(result);
+  } catch (err) {
+    console.error("[PATCH /medical-record]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
 // MODULE AUTH: QUÊN MẬT KHẨU
 // ============================================================
 
