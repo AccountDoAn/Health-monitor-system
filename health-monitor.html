@@ -914,147 +914,106 @@ let doctorPatients = []; // [{ patientId, patientName, device }]
 async function loadData(){
   const btn=document.getElementById('refresh-btn');btn.disabled=true;
 
-  // Chưa có DOCTOR_ID → hiển thị hướng dẫn
   if(!DOCTOR_ID){
-    document.getElementById('tables-container').innerHTML=`
-      <div id="tables-loading" style="padding:40px 20px;text-align:center">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border);margin-bottom:16px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <div style="font-size:0.95rem;font-weight:700;color:var(--navy);margin-bottom:8px">Chưa xác định tài khoản bác sĩ</div>
-        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:16px">Vui lòng thêm tham số <code style="background:#e8f2fc;color:var(--navy);padding:2px 7px;border-radius:5px">?doctor=UUID</code> vào URL</div>
-        <div style="font-size:0.75rem;color:var(--muted)">Ví dụ:<br>
-          <code style="background:#f0f0f0;padding:4px 10px;border-radius:6px;display:inline-block;margin-top:6px">
-            ...github.io/Health-monitor-system/?doctor=a1b2c3d4-...
-          </code>
-        </div>
-      </div>`;
-    document.getElementById('s-ok').textContent = '—';
-    document.getElementById('s-warn').textContent = '—';
-    document.getElementById('s-danger').textContent = '—';
-    document.getElementById('datepicker-date').textContent = '—';
+    document.getElementById('patient-list').innerHTML='<div class="tables-loading">Chưa xác định tài khoản bác sĩ</div>';
     btn.disabled=false;
     return;
   }
-  document.getElementById('tables-container').innerHTML='<div id="tables-loading"><div class="spinner"></div><br>Đang tải dữ liệu...</div>';
+
+  document.getElementById('patient-list').innerHTML='<div class="tables-loading"><div class="spinner"></div><br>Đang tải danh sách bệnh nhân...</div>';
+
   try{
-    // 1. Fetch song song: bệnh nhân của bác sĩ + cảnh báo + thiết bị
-    const[rPat, ra, rd] = await Promise.all([
-      fetch(`${API}/doctor/${DOCTOR_ID}/patients`),
-      fetch(`${API}/alerts`),
-      fetch(`${API}/devices`),
-    ]);
-
-    const alertsData = await ra.json();
-    const devicesRaw = await rd.json();
-
-    // Build deviceInfoMap từ /devices
-    const now = Date.now();
-    deviceInfoMap = {};
-    devicesRaw.forEach(d=>{
-      deviceInfoMap[d.id] = {
-        serial:  d.so_seri,
-        online:  d.lan_online_cuoi ? now-new Date(d.lan_online_cuoi).getTime()<60000 : false,
-        battery: d.phan_tram_pin,
-      };
-    });
-
-    // 2. Lấy danh sách bệnh nhân của bác sĩ
+    // 1. Fetch bệnh nhân của bác sĩ
+    const rPat = await fetch(`${API}/doctor/${DOCTOR_ID}/patients`);
     if(rPat.ok){
       doctorPatients = await rPat.json();
     } else {
       doctorPatients = [];
     }
 
-    // Hiện danh sách bệnh nhân ngay lập tức (không cần chờ vitals)
-    renderAllTables([], '');
+    console.log('[loadData] doctorPatients:', doctorPatients.length, doctorPatients);
+
+    // 2. Hiện danh sách bệnh nhân ngay
+    renderPatientList(doctorPatients.map(p=>({
+      id:           p.patientId,
+      name:         p.patientName,
+      dob:          p.dob,
+      gender:       p.gender,
+      deviceSerial: p.device?.serial || '—',
+      deviceId:     p.device?.deviceId,
+      hr:           p.live?.heartRate ?? null,
+      spo2:         p.live?.spo2 ?? null,
+      lastTime:     p.live?.updatedAt,
+      bloodType:    p.profile?.nhom_mau,
+      disease:      p.profile?.benh_man_tinh,
+    })), '');
+
+    // Cập nhật allPatients để tooltip dùng
+    allPatients = doctorPatients.map(p=>({
+      id:           p.patientId,
+      name:         p.patientName,
+      dob:          p.dob,
+      gender:       p.gender,
+      deviceSerial: p.device?.serial || '—',
+      deviceId:     p.device?.deviceId,
+      hr:           p.live?.heartRate ?? null,
+      spo2:         p.live?.spo2 ?? null,
+      lastTime:     p.live?.updatedAt,
+      bloodType:    p.profile?.nhom_mau,
+      disease:      p.profile?.benh_man_tinh,
+    }));
+
+    // 3. Cập nhật summary
     updateSummary([]);
 
-    // Các patientId bác sĩ phụ trách
-    const patientIds = doctorPatients.map(p=>p.patientId).filter(Boolean);
-
-    // Đồng bộ deviceInfoMap với thông tin thiết bị từ doctor/patients
-    doctorPatients.forEach(p=>{
-      if(p.device && p.device.deviceId){
-        const did = p.device.deviceId;
-        if(!deviceInfoMap[did]){
-          deviceInfoMap[did] = {
-            serial:  p.device.serial,
-            online:  p.device.online,
-            battery: p.device.battery,
+    // 4. Fetch thiết bị để build deviceInfoMap
+    try{
+      const rd = await fetch(`${API}/devices`);
+      if(rd.ok){
+        const devicesRaw = await rd.json();
+        const now = Date.now();
+        deviceInfoMap = {};
+        devicesRaw.forEach(d=>{
+          deviceInfoMap[d.id]={
+            serial: d.so_seri,
+            online: d.lan_online_cuoi ? now-new Date(d.lan_online_cuoi).getTime()<60000 : false,
+            battery: d.phan_tram_pin,
           };
+        });
+      }
+    }catch(_){}
+
+    // 5. Build calendar từ /vitals/days
+    try{
+      const rDays = await fetch(`${API}/vitals/days`);
+      if(rDays.ok){
+        const allDays = await rDays.json();
+        if(allDays.length > 0){
+          dayKeys = allDays.sort((a,b)=>b.localeCompare(a));
+          dayMap  = {};
+          dayKeys.forEach(k=>{ dayMap[k]=null; });
+          currentDayIdx = 0;
+          renderDayPicker();
         }
       }
-    });
+    }catch(_){}
 
-    // 3. Thử /vitals/days để build calendar
-    let allDays = [];
-    try {
-      const rDays = await fetch(`${API}/vitals/days`);
-      if(rDays.ok) allDays = await rDays.json();
-    } catch(_){}
-
-    if(allDays.length > 0){
-      // Có /vitals/days → build calendar, fetch ngày mới nhất
-      dayKeys = allDays.sort((a,b)=>b.localeCompare(a));
-      dayMap  = {};
-      dayKeys.forEach(k=>{ dayMap[k]=null; });
-      currentDayIdx = 0;
-      renderDayPicker();
-      // Fetch ngày mới nhất — lọc chỉ bệnh nhân của bác sĩ
-      await loadDayData(dayKeys[0], patientIds);
-    } else {
-      // Fallback: fetch /vitals/:patientId cho từng bệnh nhân của bác sĩ
-      let bigData = [];
-      for(const pid of patientIds){
-        try{
-          const r = await fetch(`${API}/vitals/${pid}?limit=500`);
-          if(r.ok){
-            const rows = await r.json();
-            // Tìm tên bệnh nhân
-            const pInfo = doctorPatients.find(p=>p.patientId===pid);
-            const pName = pInfo?.patientName || '—';
-            const devId = pInfo?.device?.deviceId;
-            rows.forEach(row=>{
-              bigData.push({
-                id:             row.id,
-                deviceId:       row.thiet_bi_id || devId,
-                patientId:      pid,
-                patientName:    pName,
-                heartRate:      row.nhip_tim,
-                spo2:           row.spo2,
-                deltaHeartRate: row.delta_nhip_tim,
-                deltaSpo2:      row.delta_spo2,
-                time:           row.thoi_gian_do,
-              });
-            });
-          }
-        }catch(_){}
-      }
-
-      // Deduplicate
-      const seen = new Set();
-      allData = bigData.filter(r=>{ const k=r.id||JSON.stringify(r); if(seen.has(k))return false; seen.add(k); return true; });
-
-      // Group theo ngày
-      dayMap = {};
-      allData.forEach(r=>{
-        const k = toDateKey(r.time);
-        if(!dayMap[k]) dayMap[k] = [];
-        dayMap[k].push(r);
-      });
-      dayKeys = Object.keys(dayMap).filter(k=>k!=='unknown').sort((a,b)=>b.localeCompare(a));
-      currentDayIdx = 0;
-      renderDayPicker();
-      const td = dayMap[dayKeys[0]] || [];
-      renderAllTables(td, '');
-      updateSummary(td);
-    }
+    // 6. Cảnh báo
+    try{
+      const ra = await fetch(`${API}/alerts`);
+      if(ra.ok) checkAlerts(await ra.json());
+    }catch(_){}
 
     document.getElementById('last-updated').textContent = 'Cập nhật lúc ' + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-    checkAlerts(alertsData);
-    updFabBadge(); // cập nhật badge chat sau khi có doctorPatients
+    updFabBadge();
+
+    // Restore patient selection
+    const saved = sessionStorage.getItem('hm_selected_patient');
+    if(saved && allPatients.find(p=>p.id===saved)) selectPatient(saved);
+
   }catch(e){
-    document.getElementById('tables-container').innerHTML='<div id="tables-loading">⚠️ Không thể kết nối tới máy chủ.</div>';
-    console.error(e);
+    document.getElementById('patient-list').innerHTML=`<div class="tables-loading">⚠️ Lỗi: ${e.message}</div>`;
+    console.error('[loadData]', e);
   }
   btn.disabled=false;
 }
