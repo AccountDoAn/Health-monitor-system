@@ -808,15 +808,13 @@ function redirectByRole(role, userId, name){
   saveSession(userId, role, name);
   if(role === 'user_bs'){
     window.location.replace('health-monitor.html?doctor=' + userId);
-  } else if(role === 'admin' || role === 'sub_admin'){
-    document.getElementById('cs-role-name').textContent =
-      role === 'admin' ? 'Admin' : 'Sub Admin';
-    document.getElementById('cs-role-chip-text').textContent =
-      `${name || ''} · ${role === 'admin' ? 'Quản trị viên' : 'Quản trị phụ'}`;
-    showView('view-coming-soon');
+  } else if(role === 'admin'){
+    window.location.replace('admin.html');
+  } else if(role === 'sub_admin'){
+    window.location.replace('sub-admin.html');
   } else {
     clearSession();
-    showBanner('login-error', `Tài khoản vai trò "${role}" không có quyền truy cập hệ thống này.`)
+    showBanner('login-error', `Tài khoản vai trò "${role}" không có quyền truy cập hệ thống này.`);
     showView('view-login');
   }
 }
@@ -867,19 +865,17 @@ function doLogout(){
   document.getElementById('login-pass').value  = '';
 }
 
-// Restore coming-soon nếu admin/subadmin quay lại trang
+// Restore session nếu admin/subadmin quay lại trang login
 window.addEventListener('DOMContentLoaded', function(){
   try {
     const sess = localStorage.getItem('hm_session');
     if(!sess) return;
     const s = JSON.parse(sess);
     if(!s || !s.userId || !s.role) return;
-    if(s.role === 'admin' || s.role === 'sub_admin'){
-      document.getElementById('cs-role-name').textContent =
-        s.role === 'admin' ? 'Admin' : 'Sub Admin';
-      document.getElementById('cs-role-chip-text').textContent =
-        `${s.name || ''} · ${s.role === 'admin' ? 'Quản trị viên' : 'Quản trị phụ'}`;
-      showView('view-coming-soon');
+    if(s.role === 'admin'){
+      window.location.replace('admin.html');
+    } else if(s.role === 'sub_admin'){
+      window.location.replace('sub-admin.html');
     }
     // user_bs đã được redirect ở session check script trên đầu trang
   } catch(_){}
