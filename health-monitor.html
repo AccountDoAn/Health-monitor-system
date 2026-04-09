@@ -903,80 +903,6 @@ function renderSingleTable(rows, devId, searchQ){
 }
 
 // ── RENDER ALL (entry point sau khi có data) ──
-function renderAllTables(data, searchQ){
-  currentDayData = data || [];
-  const container = document.getElementById('tables-container');
-  if(!currentDayData.length){
-    document.getElementById('device-tabs-bar').style.display='none';
-    container.innerHTML='<div id="tables-loading">Không có dữ liệu.</div>';
-    return;
-  }
-  const byDevice = groupByDevice(currentDayData);
-  renderDeviceTabs(byDevice);
-  renderSingleTable(byDevice[currentDeviceId]||[], currentDeviceId, searchQ);
-}
-
-function updateSummary(data){
-  document.getElementById('s-ok').textContent    =data.filter(r=>getClsCls(r)==='ok').length;
-  document.getElementById('s-warn').textContent  =data.filter(r=>getClsCls(r)==='warning').length;
-  document.getElementById('s-danger').textContent=data.filter(r=>['danger','critical'].includes(getClsCls(r))).length;
-}
-
-// ── DAY GROUPING ──
-function groupByDay(data){
-  const map={};
-  data.forEach(r=>{const k=toDateKey(r.time);if(!map[k])map[k]=[];map[k].push(r);});
-  dayKeys=Object.keys(map).filter(k=>k!=='unknown').sort((a,b)=>b.localeCompare(a));
-  return map;
-}
-
-// ── DAY PICKER ──
-function renderDayPicker(){
-  const key=dayKeys[currentDayIdx]||'';
-  const todK=toDateKey(new Date().toISOString());
-  const isT=key===todK, cnt=(dayMap[key]||[]).length;
-  if(key&&key!=='unknown'){
-    const[y,m,d]=key.split('-');
-    const el=document.getElementById('datepicker-date');
-    el.textContent=`${d}/${m}/${y}`;
-    el.className='datepicker-date'+(isT?' today-val':'');
-  }
-  document.getElementById('today-badge').style.display=isT?'inline-flex':'none';
-  document.getElementById('day-count').textContent=cnt?`${cnt} bản ghi`:'Không có dữ liệu';
-  if(document.getElementById('cal-popup').classList.contains('open')) renderCalGrid();
-}
-
-function toggleCalendar(){
-  const p=document.getElementById('cal-popup'),t=document.getElementById('datepicker-trigger');
-  if(p.classList.contains('open')){p.classList.remove('open');t.classList.remove('open');}
-  else{
-    const k=dayKeys[currentDayIdx]||'';
-    if(k&&k!=='unknown'){const[y,m]=k.split('-').map(Number);calVY=y;calVM=m;}
-    renderCalSels();renderCalGrid();
-    p.classList.add('open');t.classList.add('open');
-  }
-}
-function closeCalendar(){document.getElementById('cal-popup').classList.remove('open');document.getElementById('datepicker-trigger').classList.remove('open');}
-document.addEventListener('click',e=>{const n=document.getElementById('day-nav');if(!n.contains(e.target))closeCalendar();});
-
-function renderCalSels(){
-  const ms=document.getElementById('cal-m'),ys=document.getElementById('cal-y');
-  const mns=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
-  ms.innerHTML=mns.map((mn,i)=>`<option value="${i+1}" ${i+1===calVM?'selected':''}>${mn}</option>`).join('');
-  const yrs=dayKeys.filter(k=>k!=='unknown').map(k=>parseInt(k.split('-')[0])).filter(Boolean);
-  const minY=yrs.length?Math.min(...yrs):new Date().getFullYear(),maxY=new Date().getFullYear();
-  ys.innerHTML='';
-  for(let y=maxY;y>=minY;y--) ys.innerHTML+=`<option value="${y}" ${y===calVY?'selected':''}>${y}</option>`;
-}
-function calSel(key){const idx=dayKeys.indexOf(key);if(idx!==-1){selectDay(idx);closeCalendar();}}
-function calShift(d){calVM+=d;if(calVM>12){calVM=1;calVY++;}if(calVM<1){calVM=12;calVY--;}renderCalSels();renderCalGrid();}
-function calGoM(){calVM=parseInt(document.getElementById('cal-m').value);renderCalGrid();}
-function calGoY(){calVY=parseInt(document.getElementById('cal-y').value);renderCalSels();renderCalGrid();}
-function calToday(){
-  const tk=toDateKey(new Date().toISOString()),idx=dayKeys.indexOf(tk);
-  if(idx!==-1){selectDay(idx);closeCalendar();}
-  else{calVY=new Date().getFullYear();calVM=new Date().getMonth()+1;renderCalSels();renderCalGrid();}
-}
 
 // ── LOAD DATA ──
 // Nguồn dữ liệu chính: /doctor/:id/patients → lấy đúng bệnh nhân của bác sĩ
@@ -1037,6 +963,10 @@ async function loadData(){
     } else {
       doctorPatients = [];
     }
+
+    // Hiện danh sách bệnh nhân ngay lập tức (không cần chờ vitals)
+    renderAllTables([], '');
+    updateSummary([]);
 
     // Các patientId bác sĩ phụ trách
     const patientIds = doctorPatients.map(p=>p.patientId).filter(Boolean);
@@ -2102,9 +2032,9 @@ function filterPatients(q){
 
 // ── OVERRIDE renderAllTables to build patient list ──
 function renderAllTables(data, searchQ){
-  // Build normalized patient list from doctorPatients + latest vitals
+  // Build normalized patient list from doctorPatients + vitals data
   const latestMap = {};
-  data.forEach(r=>{
+  (data||[]).forEach(r=>{
     const pid = r.patientId;
     if(!latestMap[pid] || new Date(r.time) > new Date(latestMap[pid].time)){
       latestMap[pid] = r;
@@ -2113,6 +2043,9 @@ function renderAllTables(data, searchQ){
 
   allPatients = doctorPatients.map(dp=>{
     const latest = latestMap[dp.patientId] || {};
+    // Fallback: dùng live data nếu chưa có vitals
+    const liveHR   = dp.live?.heartRate;
+    const liveSpo2 = dp.live?.spo2;
     return {
       id:           dp.patientId,
       name:         dp.patientName,
@@ -2120,24 +2053,13 @@ function renderAllTables(data, searchQ){
       gender:       dp.gender,
       deviceSerial: dp.device?.serial || '—',
       deviceId:     dp.device?.deviceId,
-      hr:           latest.heartRate != null ? latest.heartRate : null,
-      spo2:         latest.spo2 != null ? latest.spo2 : null,
+      hr:           latest.heartRate   != null ? latest.heartRate   : (liveHR   != null ? liveHR   : null),
+      spo2:         latest.spo2        != null ? latest.spo2        : (liveSpo2 != null ? liveSpo2 : null),
       mode:         latest.samplingMode,
-      lastTime:     latest.time,
+      lastTime:     latest.time || dp.live?.updatedAt,
       bloodType:    dp.profile?.nhom_mau,
       disease:      dp.profile?.benh_man_tinh,
     };
-  });
-
-  // Add patients with no vitals data
-  data.forEach(r=>{
-    if(!allPatients.find(p=>p.id===r.patientId)){
-      allPatients.push({
-        id: r.patientId, name: r.patientName||'—',
-        hr: r.heartRate, spo2: r.spo2, mode: r.samplingMode,
-        lastTime: r.time, deviceSerial: '—',
-      });
-    }
   });
 
   renderPatientList(allPatients, searchQ||'');
@@ -2151,23 +2073,22 @@ function renderAllTables(data, searchQ){
 
 // ── OVERRIDE updateSummary ──
 function updateSummary(data){
-  const patMap = {};
-  data.filter(r=>!r._empty).forEach(r=>{
-    const pid = r.patientId;
-    if(!patMap[pid] || new Date(r.time)>new Date(patMap[pid].time)) patMap[pid]=r;
-  });
-  const rows = Object.values(patMap);
+  // Dùng allPatients nếu có (có cả live data), fallback về vitals data
+  const source = allPatients.length > 0 ? allPatients : [];
   let ok=0, warn=0, danger=0;
-  rows.forEach(r=>{
-    const hr=r.heartRate, spo2=r.spo2;
+
+  source.forEach(p=>{
+    const hr=p.hr, spo2=p.spo2;
+    if(hr==null && spo2==null) return; // offline, không tính
     if(spo2<90||hr>120||hr<45) danger++;
     else if(spo2<94||hr>100||hr<50) warn++;
     else ok++;
   });
-  document.getElementById('s-ok').textContent=ok;
-  document.getElementById('s-warn').textContent=warn;
-  document.getElementById('s-danger').textContent=danger;
-  document.getElementById('s-total').textContent=doctorPatients.length||rows.length;
+
+  document.getElementById('s-ok').textContent    = ok;
+  document.getElementById('s-warn').textContent  = warn;
+  document.getElementById('s-danger').textContent= danger;
+  document.getElementById('s-total').textContent = doctorPatients.length || source.length;
 }
 
 // ── SIDEBAR DOCTOR INFO ──
