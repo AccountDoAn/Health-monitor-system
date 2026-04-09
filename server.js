@@ -1053,8 +1053,106 @@ app.get("/users", async (req, res) => {
 // ============================================================
 
 // ============================================================
-// MODULE AUTH: ĐĂNG NHẬP & ĐỔI MẬT KHẨU
+// MODULE CHAT: GHI CHÚ Y TẾ (BÁC SĨ → BỆNH NHÂN / NGƯỜI NHÀ)
 // ============================================================
+
+// GET /chat/:patientId — lấy toàn bộ ghi chú của 1 bệnh nhân
+app.get("/chat/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const { data, error } = await supabase
+      .from("ghi_chu_y_te")
+      .select(`
+        id,
+        nguoi_dung_bs_id,
+        nguoi_dung_tb_id,
+        loai_ghi_chu,
+        noi_dung_ghi_chu,
+        ngay_tao,
+        bac_si:nguoi_dung_bs_id ( ho_ten, anh_dai_dien_url )
+      `)
+      .eq("nguoi_dung_tb_id", patientId)
+      .order("ngay_tao", { ascending: true });
+
+    if (error) throw error;
+
+    const result = (data || []).map(r => ({
+      id:          r.id,
+      doctorId:    r.nguoi_dung_bs_id,
+      doctorName:  r.bac_si?.ho_ten || "Bác sĩ",
+      doctorAvatar:r.bac_si?.anh_dai_dien_url || null,
+      patientId:   r.nguoi_dung_tb_id,
+      type:        r.loai_ghi_chu,
+      content:     r.noi_dung_ghi_chu,
+      createdAt:   r.ngay_tao,
+    }));
+
+    res.json(result);
+  } catch (err) {
+    console.error("[GET /chat/:patientId]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /chat/:patientId — bác sĩ gửi ghi chú mới
+// Body: { doctorId, content, type? }
+app.post("/chat/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { doctorId, content, type } = req.body;
+
+    if (!doctorId || !content?.trim()) {
+      return res.status(400).json({ error: "Thiếu thông tin" });
+    }
+
+    // Xác nhận doctorId có vai trò user_bs
+    const { data: pq } = await supabase
+      .from("phan_quyen_nguoi_dung")
+      .select("vai_tro(ten_vai_tro)")
+      .eq("nguoi_dung_id", doctorId)
+      .limit(5);
+
+    const roles = (pq || []).map(p => p.vai_tro?.ten_vai_tro);
+    if (!roles.includes("user_bs")) {
+      return res.status(403).json({ error: "Chỉ bác sĩ mới có thể gửi ghi chú" });
+    }
+
+    const { data, error } = await supabase
+      .from("ghi_chu_y_te")
+      .insert({
+        nguoi_dung_bs_id:  doctorId,
+        nguoi_dung_tb_id:  patientId,
+        loai_ghi_chu:      type || "theo_doi",
+        noi_dung_ghi_chu:  content.trim(),
+        ngay_tao:          new Date().toISOString(),
+      })
+      .select(`
+        id, nguoi_dung_bs_id, nguoi_dung_tb_id,
+        loai_ghi_chu, noi_dung_ghi_chu, ngay_tao,
+        bac_si:nguoi_dung_bs_id ( ho_ten, anh_dai_dien_url )
+      `)
+      .single();
+
+    if (error) throw error;
+
+    res.json({
+      id:          data.id,
+      doctorId:    data.nguoi_dung_bs_id,
+      doctorName:  data.bac_si?.ho_ten || "Bác sĩ",
+      doctorAvatar:data.bac_si?.anh_dai_dien_url || null,
+      patientId:   data.nguoi_dung_tb_id,
+      type:        data.loai_ghi_chu,
+      content:     data.noi_dung_ghi_chu,
+      createdAt:   data.ngay_tao,
+    });
+  } catch (err) {
+    console.error("[POST /chat/:patientId]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 // POST /auth/login
 // Body: { login, password, hospitalId? }
