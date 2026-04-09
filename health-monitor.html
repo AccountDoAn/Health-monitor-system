@@ -990,10 +990,8 @@ async function loadData(){
         const allDays = await rDays.json();
         if(allDays.length > 0){
           dayKeys = allDays.sort((a,b)=>b.localeCompare(a));
-          dayMap  = {};
-          dayKeys.forEach(k=>{ dayMap[k]=null; });
           currentDayIdx = 0;
-          renderDayPicker();
+          renderDayPicker(); // hiển thị ngày mới nhất + cập nhật summary
         }
       }
     }catch(_){}
@@ -1071,42 +1069,143 @@ async function loadDayData(dateKey, patientIds){
   }
 }
 
-function selectDay(idx){
-  currentDayIdx=idx;
-  renderDayPicker();
-  const key=dayKeys[idx];
-  if(!key)return;
-  const patientIds = doctorPatients.map(p=>p.patientId).filter(Boolean);
-  if(dayMap[key]&&dayMap[key].length>0){
-    // Đã cache — nhưng vẫn cần đảm bảo đủ bệnh nhân
-    renderAllTables(dayMap[key], document.getElementById('search-input').value);
-    updateSummary(dayMap[key].filter(r=>!r._empty));
-  }else{
-    loadDayData(key, patientIds);
+// ── NGÀY XEM — lọc dữ liệu theo ngày ──
+// dayKeys: mảng các ngày có data ['2026-04-09','2026-04-08',...]
+// selectedGlobalDate: ngày đang chọn ở toolbar (lọc summary + vitals)
+let selectedGlobalDate = null;
+let allVitalsCache = {}; // { patientId: { byDate } } — cache từ loadPatientVitals
+
+function renderDayPicker(){
+  const dp = document.getElementById('datepicker-date');
+  const trigger = document.getElementById('datepicker-trigger');
+  if(!dayKeys.length){
+    dp.textContent = '—';
+    return;
   }
+  const key = dayKeys[currentDayIdx] || dayKeys[0];
+  selectedGlobalDate = key;
+  const [y,m,d] = key.split('-');
+  dp.textContent = `${d}/${m}/${y}`;
+  // Cập nhật summary theo ngày
+  updateSummaryForDate(key);
+  // Nếu đang xem bệnh nhân nào đó thì reload vitals theo ngày mới
+  if(selectedPatientId){
+    showVitalsForSelectedDate();
+  }
+}
+
+function selectDay(idx){
+  currentDayIdx = idx;
+  renderDayPicker();
+  closeCalendar();
+}
+
+function showVitalsForSelectedDate(){
+  if(!selectedPatientId) return;
+  const cache = vitalsCache[selectedPatientId];
+  if(!cache) return;
+  if(selectedGlobalDate && cache.byDate[selectedGlobalDate]){
+    renderVitalsDates(selectedPatientId, Object.keys(cache.byDate).sort((a,b)=>b.localeCompare(a)));
+    selectedVitalsDate = selectedGlobalDate;
+    renderVitalsForDate(selectedPatientId, selectedGlobalDate);
+  }
+}
+
+// Đếm trạng thái bệnh nhân trong ngày đã chọn
+function updateSummaryForDate(dateKey){
+  let ok=0, warn=0, danger=0, total=0;
+
+  // Duyệt cache vitals của từng bệnh nhân
+  doctorPatients.forEach(dp=>{
+    const pid = dp.patientId;
+    const cache = vitalsCache[pid];
+    let hr = dp.live?.heartRate;
+    let spo2 = dp.live?.spo2;
+
+    if(cache && dateKey && cache.byDate[dateKey]){
+      // Dùng bản ghi mới nhất trong ngày đó
+      const rows = cache.byDate[dateKey];
+      if(rows.length){
+        hr   = rows[0].heartRate;
+        spo2 = rows[0].spo2;
+      }
+    }
+
+    total++;
+    if(hr==null && spo2==null){ ok++; return; } // không có data → coi là ok
+    if(spo2<90 || hr>120 || hr<45) danger++;
+    else if(spo2<94 || hr>100 || hr<50) warn++;
+    else ok++;
+  });
+
+  document.getElementById('s-ok').textContent     = ok;
+  document.getElementById('s-warn').textContent   = warn;
+  document.getElementById('s-danger').textContent = danger;
+  document.getElementById('s-total').textContent  = total;
 }
 
 function renderCalGrid(){
-  const g=document.getElementById('cal-grid');
-  const todK=toDateKey(new Date().toISOString()),selK=dayKeys[currentDayIdx]||'';
-  const dim=new Date(calVY,calVM,0).getDate(),fdow=new Date(calVY,calVM-1,1).getDay();
-  const off=(fdow+6)%7;
-  const dows=['T2','T3','T4','T5','T6','T7','CN'];
-  let html=dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
-  for(let i=0;i<off;i++) html+=`<div class="cal-day empty"></div>`;
-  for(let d=1;d<=dim;d++){
-    const key=`${calVY}-${String(calVM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const has=dayKeys.includes(key);
-    const cls=['cal-day',has?'has-data':'no-data',key===todK?'is-today':'',key===selK?'selected':''].filter(Boolean).join(' ');
-    html+=`<div class="${cls}" ${has?`onclick="calSel('${key}')"`:''}>${d}</div>`;
+  const g = document.getElementById('cal-grid');
+  if(!g) return;
+  const todK = new Date().toISOString().slice(0,10);
+  const selK = dayKeys[currentDayIdx] || '';
+  const dim  = new Date(calVY, calVM, 0).getDate();
+  const fdow = new Date(calVY, calVM-1, 1).getDay(); // 0=Sun
+  const off  = fdow === 0 ? 6 : fdow - 1; // Monday-first
+  let html = '';
+  for(let i=0; i<off; i++) html += `<div class="cal-day empty"></div>`;
+  for(let d=1; d<=dim; d++){
+    const key = `${calVY}-${String(calVM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const has = dayKeys.includes(key);
+    const cls = ['cal-day', has?'has-data':'no-data', key===todK?'is-today':'', key===selK?'selected':''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" ${has?`onclick="calSel('${key}')"`:''}>${d}</div>`;
   }
-  g.innerHTML=html;
+  g.innerHTML = html;
+}
+
+function calSel(key){
+  const idx = dayKeys.indexOf(key);
+  if(idx !== -1){ selectDay(idx); closeCalendar(); }
+}
+
+function todayBtn(){
+  const today = new Date().toISOString().slice(0,10);
+  const idx = dayKeys.indexOf(today);
+  if(idx !== -1){ selectDay(idx); }
+  else { calVY = new Date().getFullYear(); calVM = new Date().getMonth()+1; renderCalSels(); renderCalGrid(); }
+}
+
+function renderCalSels(){
+  const ms = document.getElementById('cal-month');
+  const ys = document.getElementById('cal-year');
+  if(!ms || !ys) return;
+  const months = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  ms.innerHTML = months.map((m,i)=>`<option value="${i+1}" ${i+1===calVM?'selected':''}>${m}</option>`).join('');
+  const curY = new Date().getFullYear();
+  ys.innerHTML = [curY-2,curY-1,curY,curY+1].map(y=>`<option value="${y}" ${y===calVY?'selected':''}>${y}</option>`).join('');
+  ms.onchange = ()=>{ calVM=+ms.value; renderCalGrid(); };
+  ys.onchange = ()=>{ calVY=+ys.value; renderCalGrid(); };
+}
+
+function toggleCalendar(){
+  const popup = document.getElementById('cal-popup');
+  const trigger = document.getElementById('datepicker-trigger');
+  const isOpen = popup.classList.contains('open');
+  if(!isOpen){
+    renderCalSels();
+    renderCalGrid();
+  }
+  popup.classList.toggle('open', !isOpen);
+  trigger.classList.toggle('open', !isOpen);
+}
+
+function closeCalendar(){
+  document.getElementById('cal-popup').classList.remove('open');
+  document.getElementById('datepicker-trigger').classList.remove('open');
 }
 
 document.getElementById('search-input').addEventListener('input',function(){
-  const q=this.value.toLowerCase().trim();
-  const byDevice=groupByDevice(currentDayData);
-  renderSingleTable(byDevice[currentDeviceId]||[], currentDeviceId, q);
+  renderPatientList(allPatients, this.value);
 });
 loadData();setInterval(loadData,30000);
 
@@ -1913,8 +2012,12 @@ async function loadPatientVitals(patientId){
       byDate[key].push(r);
     });
 
-    // Lưu cache
+    // Lưu cache (dùng cho updateSummaryForDate)
     vitalsCache[patientId] = { allRows, byDate };
+    allVitalsCache[patientId] = { allRows, byDate };
+
+    // Cập nhật summary nếu đang có ngày được chọn
+    if(selectedGlobalDate) updateSummaryForDate(selectedGlobalDate);
 
     // Ngày mặc định: mới nhất
     const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
@@ -2066,22 +2169,24 @@ function renderAllTables(data, searchQ){
 
 // ── OVERRIDE updateSummary ──
 function updateSummary(data){
-  // Dùng allPatients nếu có (có cả live data), fallback về vitals data
-  const source = allPatients.length > 0 ? allPatients : [];
+  // Delegate sang updateSummaryForDate nếu có ngày được chọn
+  if(selectedGlobalDate){
+    updateSummaryForDate(selectedGlobalDate);
+    return;
+  }
+  // Fallback: dùng live data từ allPatients
   let ok=0, warn=0, danger=0;
-
-  source.forEach(p=>{
+  allPatients.forEach(p=>{
     const hr=p.hr, spo2=p.spo2;
-    if(hr==null && spo2==null) return; // offline, không tính
+    if(hr==null && spo2==null){ ok++; return; }
     if(spo2<90||hr>120||hr<45) danger++;
     else if(spo2<94||hr>100||hr<50) warn++;
     else ok++;
   });
-
-  document.getElementById('s-ok').textContent    = ok;
-  document.getElementById('s-warn').textContent  = warn;
-  document.getElementById('s-danger').textContent= danger;
-  document.getElementById('s-total').textContent = doctorPatients.length || source.length;
+  document.getElementById('s-ok').textContent     = ok;
+  document.getElementById('s-warn').textContent   = warn;
+  document.getElementById('s-danger').textContent = danger;
+  document.getElementById('s-total').textContent  = doctorPatients.length;
 }
 
 // ── SIDEBAR DOCTOR INFO ──
