@@ -1216,25 +1216,31 @@ app.post("/auth/change-password", async (req, res) => {
 
 const FRONTEND_URL = "https://accountdoan.github.io/Health-monitor-system";
 
-// Gửi email qua Resend HTTP API (không dùng SMTP — tránh bị Render chặn)
+// Gửi email qua Brevo (SendinBlue) API — miễn phí, không cần verify domain
 async function sendEmail({ to, subject, html }) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("Thiếu RESEND_API_KEY trong biến môi trường");
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) throw new Error("Thiếu BREVO_API_KEY trong biến môi trường");
 
-  const fromEmail = process.env.EMAIL_FROM || "Health Monitor <onboarding@resend.dev>";
+  const fromEmail = process.env.EMAIL_FROM || "healthmonitor.noreply@gmail.com";
+  const fromName  = "Health Monitor";
 
-  const res = await fetch("https://api.resend.com/emails", {
+  const res = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${apiKey}`,
+      "api-key":      apiKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: fromEmail, to, subject, html }),
+    body: JSON.stringify({
+      sender:  { name: fromName, email: fromEmail },
+      to:      [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
   });
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.message || data.error || `Resend error ${res.status}`);
+    throw new Error(data.message || `Brevo error ${res.status}`);
   }
   return data;
 }
@@ -1310,8 +1316,8 @@ app.post("/auth/forgot-password", async (req, res) => {
     // 5. Gửi email
     const resetLink = `${FRONTEND_URL}/reset-password.html?token=${token}`;
 
-    if (!process.env.RESEND_API_KEY) {
-      console.error("[forgot-password] Thiếu RESEND_API_KEY");
+    if (!process.env.BREVO_API_KEY) {
+      console.error("[forgot-password] Thiếu BREVO_API_KEY");
       return res.status(500).json({ error: "Server chưa cấu hình email. Liên hệ quản trị viên." });
     }
 
