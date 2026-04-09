@@ -426,8 +426,16 @@
     </div>
     <div class="chat-msgs" id="chat-msgs"></div>
     <div class="chat-foot">
-      <textarea class="chat-inp" id="chat-inp" rows="1" placeholder="Nhập tin nhắn..."></textarea>
-      <button class="chat-send" onclick="sendMsg()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      <select id="chat-type-select" style="font-family:'Sora',sans-serif;font-size:0.72rem;border:1px solid var(--border);border-radius:7px;padding:5px 8px;color:var(--navy);background:var(--bg);outline:none;cursor:pointer;margin-bottom:6px;width:100%">
+        <option value="theo_doi">👁️ Theo dõi</option>
+        <option value="don_thuoc">💊 Đơn thuốc</option>
+        <option value="khuyen_nghi">📋 Khuyến nghị</option>
+        <option value="tai_kham">📅 Tái khám</option>
+      </select>
+      <div style="display:flex;gap:6px;align-items:flex-end">
+        <textarea class="chat-inp" id="chat-inp" rows="1" placeholder="Nhập ghi chú..."></textarea>
+        <button class="chat-send" onclick="sendMsg()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+      </div>
     </div>
   </div>
 </div>
@@ -847,6 +855,7 @@ async function loadData(){
 
     document.getElementById('last-updated').textContent = 'Cập nhật lúc ' + new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     checkAlerts(alertsData);
+    updFabBadge(); // cập nhật badge chat sau khi có doctorPatients
   }catch(e){
     document.getElementById('tables-container').innerHTML='<div id="tables-loading">⚠️ Không thể kết nối tới máy chủ.</div>';
     console.error(e);
@@ -1183,71 +1192,135 @@ function dpTogglePatient(pid){
   card.classList.toggle('open');
 }
 
-// ── CHAT ──
-const CONTACTS=[
-  {id:1,name:'BS. Nguyễn Văn Minh',role:'Bác sĩ điều trị',online:true,av:'BM'},
-  {id:2,name:'Trần Thị Lan',role:'Bệnh nhân',online:false,av:'TL'},
-];
-const chatHist={
-  1:[{text:'Nhịp tim BN001 có vẻ bất thường, anh xem giúp em với ạ.',side:'me',ts:Date.now()-7200000,read:true},{text:'SpO2 đang 91%, em cho bệnh nhân thở oxy hỗ trợ nhé.',side:'them',ts:Date.now()-7140000,read:true},{text:'Dạ em xử lý ngay ạ.',side:'me',ts:Date.now()-7080000,read:true},{text:'Cập nhật lại cho tôi sau 30 phút nhé.',side:'them',ts:Date.now()-3600000,read:false}],
-  2:[{text:'Chào bác sĩ, em thấy hơi khó thở ạ.',side:'them',ts:Date.now()-1800000,read:true},{text:'SpO2 của bạn hơi thấp. Bạn đang ở phòng nào?',side:'me',ts:Date.now()-1710000,read:true},{text:'Em ở phòng 204 ạ.',side:'them',ts:Date.now()-1650000,read:false}],
+// ── CHAT — Ghi chú y tế bác sĩ → bệnh nhân ──
+const TYPE_LABELS = {
+  don_thuoc:  '💊 Đơn thuốc',
+  khuyen_nghi:'📋 Khuyến nghị',
+  theo_doi:   '👁️ Theo dõi',
+  tai_kham:   '📅 Tái khám',
 };
-let curContact=null;
+
+let chatPatients = [];
+let curPatient   = null;
+let chatCache    = {};
+
+function initChatContacts(){
+  const list  = document.getElementById('contact-list');
+  const empty = document.getElementById('cempty');
+  const sub   = document.getElementById('csub');
+
+  chatPatients = (doctorPatients || []).filter(p => p.patientId);
+  if(chatPatients.length === 0){
+    list.innerHTML = '';
+    empty.style.display = 'flex';
+    sub.textContent = 'Không có bệnh nhân';
+    return;
+  }
+  empty.style.display = 'none';
+  sub.textContent = `${chatPatients.length} bệnh nhân`;
+
+  list.innerHTML = chatPatients.map(p => {
+    const init = p.patientName.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+    const cached = chatCache[p.patientId] || [];
+    const last = cached[cached.length - 1];
+    const preview = last ? last.content.slice(0,40) + (last.content.length>40?'…':'') : 'Chưa có ghi chú';
+    return `<div class="contact-item" onclick="openPatientChat('${p.patientId}','${p.patientName.replace(/'/g,"\'")}')">
+      <div class="cav">${init}</div>
+      <div class="cinfo">
+        <div class="cname">${p.patientName}</div>
+        <div class="crole">${p.device?.serial || 'Chưa có thiết bị'}</div>
+        <div class="cpreview">${preview}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openPatientChat(patientId, patientName){
+  curPatient = { patientId, patientName };
+  const init = patientName.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+  document.getElementById('chav').textContent   = init;
+  document.getElementById('chname').textContent = patientName;
+  document.getElementById('chrole').textContent = 'Bệnh nhân';
+  document.getElementById('chrole').style.color = 'var(--sky)';
+  document.getElementById('vc').style.display   = 'none';
+  document.getElementById('vch').style.display  = 'flex';
+  document.getElementById('chat-msgs').innerHTML = `<div style="flex:1;display:flex;align-items:center;justify-content:center"><div class="spinner"></div></div>`;
+  try {
+    const res = await fetch(`${API}/chat/${patientId}`);
+    chatCache[patientId] = res.ok ? await res.json() : [];
+  } catch(_){ chatCache[patientId] = []; }
+  renderChatMsgs();
+  setTimeout(()=>{ scrollChatBottom(); document.getElementById('chat-inp').focus(); }, 40);
+}
+
+function backToContacts(){
+  curPatient = null;
+  document.getElementById('vch').style.display = 'none';
+  document.getElementById('vc').style.display  = 'flex';
+  initChatContacts();
+}
+
+function renderChatMsgs(){
+  const msgs = document.getElementById('chat-msgs');
+  const hist = chatCache[curPatient?.patientId] || [];
+  if(hist.length === 0){
+    msgs.innerHTML = `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:var(--muted);font-size:0.78rem;text-align:center;padding:18px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chưa có ghi chú nào.</div>`;
+    return;
+  }
+  let lastDate = '';
+  msgs.innerHTML = hist.map(m => {
+    const d  = new Date(m.createdAt);
+    const ds = d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});
+    const ts = d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+    const dateDiv = ds !== lastDate ? `<div class="cdate-div"><span>${ds}</span></div>` : '';
+    lastDate = ds;
+    const typeLabel = TYPE_LABELS[m.type] || m.type || '';
+    return `${dateDiv}<div class="cmsg me"><div class="cbubble">${typeLabel ? `<div style="font-size:0.68rem;opacity:0.75;margin-bottom:4px">${typeLabel}</div>` : ''}${escHtml(m.content)}</div><div class="ctime">${ts}</div></div>`;
+  }).join('');
+}
+
+async function sendMsg(){
+  const inp  = document.getElementById('chat-inp');
+  const txt  = inp.value.trim();
+  const type = document.getElementById('chat-type-select')?.value || 'theo_doi';
+  if(!txt || !curPatient || !DOCTOR_ID) return;
+  const btn = document.querySelector('.chat-send');
+  btn.disabled = true;
+  inp.value = ''; inp.style.height = 'auto';
+  try {
+    const res = await fetch(`${API}/chat/${curPatient.patientId}`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ doctorId: DOCTOR_ID, content: txt, type }),
+    });
+    if(res.ok){
+      const newMsg = await res.json();
+      if(!chatCache[curPatient.patientId]) chatCache[curPatient.patientId] = [];
+      chatCache[curPatient.patientId].push(newMsg);
+      renderChatMsgs(); scrollChatBottom();
+    } else {
+      const err = await res.json();
+      alert('Lỗi: ' + (err.error || 'Không xác định'));
+      inp.value = txt;
+    }
+  } catch(e){ alert('Không thể kết nối'); inp.value = txt; }
+  btn.disabled = false;
+}
+
+function scrollChatBottom(){ const m=document.getElementById('chat-msgs'); m.scrollTop=m.scrollHeight; }
 
 function updFabBadge(){
-  const tot=CONTACTS.reduce((s,c)=>s+(chatHist[c.id]?.filter(m=>m.side==='them'&&!m.read).length||0),0);
-  const b=document.getElementById('fab-badge');b.style.display=tot>0?'flex':'none';b.textContent=tot>9?'9+':tot;
+  const b = document.getElementById('fab-badge');
+  const cnt = (doctorPatients||[]).length;
+  b.style.display = cnt > 0 ? 'flex' : 'none';
+  b.textContent   = cnt > 9 ? '9+' : String(cnt);
 }
-function initChat(){
-  const list=document.getElementById('contact-list'),empty=document.getElementById('cempty'),sub=document.getElementById('csub');
-  if(CONTACTS.length===0){list.innerHTML='';empty.style.display='flex';sub.textContent='Không có liên hệ';return;}
-  empty.style.display='none';sub.textContent=`${CONTACTS.length} liên hệ`;
-  list.innerHTML=CONTACTS.map(c=>{
-    const init=c.av||c.name.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-    const last=chatHist[c.id]?.slice(-1)[0];
-    const unr=chatHist[c.id]?.filter(m=>m.side==='them'&&!m.read).length||0;
-    return`<div class="contact-item" onclick="openChat(${c.id})"><div class="cav ${c.online?'online':''}">${init}</div><div class="cinfo"><div class="cname">${c.name}</div><div class="crole">${c.role}</div><div class="cpreview">${last?last.text:'Chưa có tin nhắn'}</div></div>${unr?`<div class="cunread">${unr}</div>`:''}</div>`;
-  }).join('');
-}
-function openChat(id){
-  curContact=CONTACTS.find(c=>c.id===id);if(!curContact)return;
-  if(!chatHist[id])chatHist[id]=[];
-  chatHist[id].forEach(m=>m.read=true);updFabBadge();
-  const init=curContact.av||curContact.name.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-  document.getElementById('chav').textContent=init;
-  document.getElementById('chname').textContent=curContact.name;
-  document.getElementById('chrole').textContent=curContact.online?'Đang hoạt động':curContact.role;
-  document.getElementById('chrole').style.color=curContact.online?'var(--mint)':'var(--sky)';
-  document.getElementById('vc').style.display='none';
-  document.getElementById('vch').style.display='flex';
-  renderMsgs();setTimeout(()=>{scrollCB();document.getElementById('chat-inp').focus();},40);
-}
-function backToContacts(){curContact=null;document.getElementById('vch').style.display='none';document.getElementById('vc').style.display='flex';initChat();}
-function renderMsgs(){
-  const msgs=document.getElementById('chat-msgs'),hist=chatHist[curContact?.id]||[];
-  if(hist.length===0){msgs.innerHTML=`<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:var(--muted);font-size:0.78rem;text-align:center;padding:18px"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--border)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chưa có tin nhắn.</div>`;return;}
-  let ld='';
-  msgs.innerHTML=hist.map(m=>{
-    const d=new Date(m.ts);
-    const ds=d.toLocaleDateString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric'});
-    const ts=d.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
-    const div=ds!==ld?`<div class="cdate-div"><span>${ds}</span></div>`:'';ld=ds;
-    return`${div}<div class="cmsg ${m.side}"><div class="cbubble">${escHtml(m.text)}</div><div class="ctime">${ts}</div></div>`;
-  }).join('');
-}
-function sendMsg(){
-  const inp=document.getElementById('chat-inp'),txt=inp.value.trim();
-  if(!txt||!curContact)return;
-  chatHist[curContact.id].push({text:txt,side:'me',ts:Date.now(),read:true});
-  renderMsgs();scrollCB();inp.value='';inp.style.height='auto';
-}
-function scrollCB(){const m=document.getElementById('chat-msgs');m.scrollTop=m.scrollHeight;}
+
 function toggleChat(){
-  const box=document.getElementById('chat-box'),fab=document.getElementById('chat-fab');
-  box.classList.toggle('open');fab.classList.toggle('open');
-  if(box.classList.contains('open')){initChat();updFabBadge();}
+  const box=document.getElementById('chat-box'), fab=document.getElementById('chat-fab');
+  box.classList.toggle('open'); fab.classList.toggle('open');
+  if(box.classList.contains('open')) initChatContacts();
 }
-updFabBadge();
+
 document.getElementById('chat-inp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}});
 document.getElementById('chat-inp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,75)+'px';});
 </script>
