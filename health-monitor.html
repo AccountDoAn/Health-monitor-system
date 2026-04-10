@@ -86,7 +86,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:7px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .vsec{display:none;}.vsec.show{display:block;}
- 
+
 .vtw{overflow-x:auto;}
 .vt{width:100%;border-collapse:collapse;}
 .vt th{padding:8px 14px;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;}
@@ -156,7 +156,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 </style>
 </head>
 <body>
- 
+
 <aside class="sb">
   <div class="sb-logo">
     <div class="sb-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
@@ -190,7 +190,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </button>
   </div>
 </aside>
- 
+
 <div class="main">
   <div class="topbar">
     <div class="topbar-title">Tổng quan bệnh nhân</div>
@@ -228,16 +228,16 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <div class="tip" id="tip"></div>
- 
+
 <div class="slide-bg" id="slide-bg" onclick="if(event.target===this)closeSlide()">
   <div class="slide-panel">
     <div class="slide-hd"><div class="slide-ttl" id="slide-ttl">—</div><button class="slide-x" onclick="closeSlide()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
     <div class="slide-body" id="slide-body"><div class="loading"><span class="spin"></span></div></div>
   </div>
 </div>
- 
+
 <div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeSettings()">
   <div class="modal">
     <button class="mclose" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -254,7 +254,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <button class="cfab" onclick="toggleChat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
 <div class="cbox" id="cbox">
   <div id="cv-list" style="display:flex;flex-direction:column;height:100%">
@@ -271,27 +271,34 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <script>
 // SESSION CHECK
 try {
   const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
   if(!s.userId || s.role !== 'user_bs'){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
 } catch(_){ location.replace('index.html'); }
- 
+
 const API = 'https://health-monitor-system-twts.onrender.com';
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const DID = SESS.userId;
- 
+
 let pts=[], vcache={}, selPid=null, selDate=null, allDates=[], curCPid=null, ccache={};
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
- 
+
 function doLogout(){ if(!confirm('Đăng xuất?')) return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
 function setNav(b){ document.querySelectorAll('.sb-btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); }
 function openSettings(){ document.getElementById('modal-bg').classList.add('open'); }
 function closeSettings(){ document.getElementById('modal-bg').classList.remove('open'); }
 function toggleDark(){ const h=document.documentElement; const d=h.getAttribute('data-theme')==='dark'; h.setAttribute('data-theme',d?'light':'dark'); document.getElementById('dark-tgl').classList.toggle('on',!d); localStorage.setItem('hm_theme',d?'light':'dark'); }
-function setFont(n,b){ document.documentElement.style.setProperty('--fs',n+'px'); document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on')); b.classList.add('on'); localStorage.setItem('hm_font',n); }
+function setFont(n,b){
+  // Thay đổi font-size của html → tất cả rem tự scale theo
+  const sizes = {12: '87.5%', 14: '100%', 16: '112.5%'};
+  document.documentElement.style.fontSize = sizes[n] || '100%';
+  localStorage.setItem('hm_font', n);
+  document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on'));
+  if(b) b.classList.add('on');
+}
 async function changePw(){
   const o=document.getElementById('pw-old').value, n=document.getElementById('pw-new').value, c=document.getElementById('pw-cf').value, m=document.getElementById('pwmsg');
   m.style.color='var(--danger)';
@@ -299,12 +306,25 @@ async function changePw(){
   m.style.color='var(--muted)'; m.textContent='Đang xử lý...';
   try { const r=await fetch(`${API}/auth/change-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:DID,newPassword:n})}); const d=await r.json(); if(r.ok){m.style.color='var(--green)';m.textContent='✅ Thành công!';['pw-old','pw-new','pw-cf'].forEach(id=>document.getElementById(id).value='');}else{m.textContent=d.error||'Lỗi';} } catch(e){m.textContent='Không thể kết nối';}
 }
-(()=>{ const t=localStorage.getItem('hm_theme'); if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('dark-tgl').classList.add('on');} const f=parseInt(localStorage.getItem('hm_font')); if(f)document.documentElement.style.setProperty('--fs',f+'px'); })();
- 
+(()=>{
+  const t=localStorage.getItem('hm_theme');
+  if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('dark-tgl').classList.add('on');}
+  const f=parseInt(localStorage.getItem('hm_font'));
+  if(f){
+    const sizes={12:'87.5%',14:'100%',16:'112.5%'};
+    document.documentElement.style.fontSize=sizes[f]||'100%';
+    // Highlight đúng nút
+    const labels={12:'Nhỏ',14:'Vừa',16:'Lớn'};
+    document.querySelectorAll('.fb').forEach(b=>{
+      b.classList.toggle('on', b.textContent.trim()===labels[f]);
+    });
+  }
+})();
+
 // DATE DROPDOWN
 // CALENDAR DATE PICKER
 let calY = new Date().getFullYear(), calM = new Date().getMonth(); // 0-based month
- 
+
 function toggleDD(e){
   if(e) e.stopPropagation();
   const dd = document.getElementById('date-dd');
@@ -322,14 +342,14 @@ function toggleDD(e){
   calInitSelects();
   calRender();
 }
- 
+
 document.addEventListener('mousedown', function(e){
   const dd = document.getElementById('date-dd');
   if(dd.style.display === 'none') return;
   if(e.target.closest('#date-dd') || e.target.closest('#date-trigger')) return;
   dd.style.display = 'none';
 });
- 
+
 function calInitSelects(){
   const ms = document.getElementById('cal-m-sel');
   const ys = document.getElementById('cal-y-sel');
@@ -343,7 +363,7 @@ function calInitSelects(){
   ms.onchange = ()=>{ calM=+ms.value; calRender(); };
   ys.onchange = ()=>{ calY=+ys.value; calRender(); };
 }
- 
+
 function calMove(dir){
   calM += dir;
   if(calM > 11){ calM=0; calY++; }
@@ -351,7 +371,7 @@ function calMove(dir){
   calInitSelects();
   calRender();
 }
- 
+
 function calRender(){
   const ms = document.getElementById('cal-m-sel');
   const ys = document.getElementById('cal-y-sel');
@@ -377,9 +397,9 @@ function calRender(){
   }
   grid.innerHTML = html;
 }
- 
+
 function buildDD(){ calRender(); } // Compat - called after allDates loads
- 
+
 function goToday(){
   const today = new Date();
   calY = today.getFullYear(); calM = today.getMonth();
@@ -387,7 +407,7 @@ function goToday(){
   const key = today.toISOString().slice(0,10);
   if(allDates.includes(key)) pickDate(key);
 }
- 
+
 function pickDate(d){
   selDate = d;
   document.getElementById('date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
@@ -396,7 +416,7 @@ function pickDate(d){
   if(selPid) showV(selPid);
   updSum();
 }
- 
+
 // LOAD DATA
 async function loadData(){
   const btn=document.getElementById('btn-ref'); btn.disabled=true;
@@ -414,7 +434,7 @@ async function loadData(){
   } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   btn.disabled=false;
 }
- 
+
 // RENDER PATIENTS
 function renderPts(list,q=''){
   const el=document.getElementById('pt-list');
@@ -444,7 +464,7 @@ function sbadge(hr,spo2){
   if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) return '<span class="badge warn">🟡 Cảnh báo</span>';
   return '<span class="badge ok">🟢 Bình thường</span>';
 }
- 
+
 // SUMMARY
 function updSum(){
   let ok=0,w=0,d=0;
@@ -454,7 +474,7 @@ function updSum(){
   document.getElementById('s-danger').textContent=d;
   document.getElementById('s-total').textContent=pts.length;
 }
- 
+
 // TOOLTIP
 let _tip=null;
 function showTip(e,pid){
@@ -477,7 +497,7 @@ function showTip(e,pid){
   _tip.style.display='block';
 }
 function hideTip(){if(_tip)_tip.style.display='none';}
- 
+
 // CLICK PATIENT
 function clickPt(pid){
   selPid=pid;
@@ -487,7 +507,7 @@ function clickPt(pid){
   renderPts(pts,document.getElementById('srch').value);
   showV(pid);
 }
- 
+
 async function showV(pid){
   const body=document.getElementById('vbody');
   body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
@@ -507,7 +527,7 @@ async function showV(pid){
   const show=selDate&&c.byDate[selDate]?selDate:dates[0];
   renderVT(c.byDate[show]||[]);
 }
- 
+
 function renderVT(rows){
   const body=document.getElementById('vbody');
   if(!rows.length){body.innerHTML='<div class="loading">Không có dữ liệu trong ngày này</div>';return;}
@@ -525,14 +545,14 @@ function renderVT(rows){
       return`<tr><td>${ts}</td><td style="color:${hc};font-weight:700">${hr!=null?hr+' bpm':'—'}</td><td style="color:${r.dHR>0?'var(--danger)':r.dHR<0?'var(--green)':'var(--muted)'}">${dHR}</td><td style="color:${sc};font-weight:700">${spo2!=null?spo2+'%':'—'}</td><td style="color:${r.dS>0?'var(--navy)':r.dS<0?'var(--warn)':'var(--muted)'}">${dS}</td><td><span style="background:var(--mint);color:var(--navy);padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700">${mL[r.mode]||r.mode||'—'}</span></td></tr>`;
     }).join('')}</tbody></table></div>`;
 }
- 
+
 document.getElementById('srch').addEventListener('input',function(){renderPts(pts,this.value);});
- 
+
 // SIDEBAR DOCTOR
 async function loadSbDoc(){
   try { const r=await fetch(`${API}/doctor/${DID}`); if(!r.ok)return; const d=await r.json(); const i=(d.name||'BS').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase(); document.getElementById('sb-av').textContent=i; document.getElementById('sb-name').textContent=d.name||'Bác sĩ'; document.getElementById('sb-role').textContent=d.hospital?.name||'Bác sĩ'; } catch(_){}
 }
- 
+
 // SLIDE PANELS
 function openSlide(t){
   document.getElementById('slide-bg').classList.add('open');
@@ -545,12 +565,12 @@ function openSlide(t){
   else loadRecords();
 }
 function closeSlide(){document.getElementById('slide-bg').classList.remove('open');}
- 
+
 async function loadDevices(){
   const b=document.getElementById('slide-body');
   try { const r=await fetch(`${API}/doctor/${DID}/patients`); const l=r.ok?await r.json():[]; if(!l.length){b.innerHTML='<div class="loading">Không có dữ liệu</div>';return;} b.innerHTML=l.map(p=>{const d=p.device;return`<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:9px;border:1px solid var(--border)"><div style="font-size:.82rem;font-weight:700;color:var(--navy);margin-bottom:4px">${esc(p.patientName)}</div>${d?`<div style="display:flex;align-items:center;gap:8px;font-size:.73rem"><span style="font-family:'DM Mono',monospace;font-weight:700">${esc(d.serial)}</span><span style="color:${d.online?'var(--green)':'var(--muted)'}">● ${d.online?'Online':'Offline'}</span>${d.battery!=null?`<span>🔋 ${d.battery}%</span>`:''}</div>`:'<div style="font-size:.73rem;color:var(--muted)">Chưa có thiết bị</div>'}</div>`;}).join(''); } catch(e){b.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`;}
 }
- 
+
 async function loadLinks(){
   const b=document.getElementById('slide-body');
   try {
@@ -558,7 +578,7 @@ async function loadLinks(){
     const data=r.ok?await r.json():{};
     const entries=Object.values(data);
     if(!entries.length){b.innerHTML='<div class="loading">Chưa có liên kết người nhà</div>';return;}
- 
+
     b.innerHTML = entries.map(info=>{
       const fams = info.families || [];
       const shortId = (info.patientId||'').slice(0,8).toUpperCase();
@@ -568,7 +588,7 @@ async function loadLinks(){
           <div style="font-size:.88rem;font-weight:700;color:var(--navy)">${esc(info.patientName)}</div>
           <div style="font-size:.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px">BN-${shortId}</div>
         </div>
- 
+
         <!-- Danh sách người nhà -->
         ${fams.length ? fams.map(f=>`
           <div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)">
@@ -586,12 +606,12 @@ async function loadLinks(){
     }).join('');
   } catch(e){ b.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
 }
- 
+
 async function loadRecords(){
   const b=document.getElementById('slide-body');
   try { const r=await fetch(`${API}/doctor/${DID}/patients`); const l=r.ok?await r.json():[]; if(!l.length){b.innerHTML='<div class="loading">Không có dữ liệu</div>';return;} b.innerHTML=l.map(p=>`<div style="background:var(--bg);border-radius:10px;margin-bottom:9px;border:1px solid var(--border);overflow:hidden"><div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;cursor:pointer" onclick="togRec('${p.patientId}')"><div><div style="font-size:.82rem;font-weight:700;color:var(--navy)">${esc(p.patientName)}</div><div style="font-size:.64rem;color:var(--muted);font-family:'DM Mono',monospace">BN-${(p.patientId||'').slice(0,8).toUpperCase()}</div></div><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="arr-${p.patientId}"><polyline points="6 9 12 15 18 9"/></svg></div><div id="rec-${p.patientId}" style="display:none;padding:0 14px 13px"></div></div>`).join(''); } catch(e){b.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`;}
 }
- 
+
 async function togRec(pid){
   const el=document.getElementById('rec-'+pid),arr=document.getElementById('arr-'+pid);
   if(!el)return;
@@ -628,7 +648,7 @@ async function togRec(pid){
     } catch(e){el.innerHTML=`<div style="color:var(--danger);font-size:.72rem">⚠️ ${esc(e.message)}</div>`;}
   }
 }
- 
+
 async function saveRec(pid){
   const m=document.getElementById('rmsg-'+pid);
   const g=f=>{const e=document.getElementById(`rf-${pid}-${f}`);return e?e.value.trim()||null:null;};
@@ -638,7 +658,7 @@ async function saveRec(pid){
   m.style.color='var(--muted)';m.textContent='Đang lưu...';
   try { const r=await fetch(`${API}/medical-record/${pid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}); const d=await r.json(); if(r.ok){m.style.color='var(--green)';m.textContent='✅ Lưu thành công!';setTimeout(()=>m.textContent='',3000);}else{m.style.color='var(--danger)';m.textContent='⚠️ '+(d.error||'Lỗi');} } catch(e){m.style.color='var(--danger)';m.textContent='⚠️ Không thể kết nối';}
 }
- 
+
 // CHAT
 function toggleChat(){const b=document.getElementById('cbox');b.classList.toggle('open');if(b.classList.contains('open'))renderCList();}
 function renderCList(){
@@ -678,7 +698,7 @@ async function sendNote(){
 }
 document.getElementById('cinp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendNote();}});
 document.getElementById('cinp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,68)+'px';});
- 
+
 loadData();
 </script>
 <!-- DATE PICKER POPUP — tách riêng khỏi trigger để tránh event bubble -->
@@ -704,6 +724,6 @@ loadData();
     <div style="width:10px;height:10px;border-radius:3px;outline:2px solid var(--green);outline-offset:-1px;flex-shrink:0;margin-left:8px"></div> Hôm nay
   </div>
 </div>
- 
+
 </body>
 </html>
