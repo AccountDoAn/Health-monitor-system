@@ -45,11 +45,24 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .tb-label{font-size:.74rem;font-weight:700;color:var(--muted);}
 .tb-date{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:.78rem;color:var(--navy);font-weight:500;position:relative;user-select:none;}
 .tb-date:hover{border-color:var(--navy);}
-.date-dd{position:absolute;top:calc(100% + 4px);left:0;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;min-width:180px;max-height:240px;overflow-y:auto;display:none;}
+.date-dd{position:absolute;top:calc(100% + 6px);left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.14);z-index:200;width:292px;display:none;padding:14px;}
 .date-dd.open{display:block;}
-.date-opt{padding:8px 14px;font-size:.76rem;cursor:pointer;font-family:'DM Mono',monospace;color:var(--text);border-bottom:1px solid var(--border);}
-.date-opt:last-child{border-bottom:none;}
-.date-opt:hover,.date-opt.sel{background:var(--mint);color:var(--navy);font-weight:700;}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.cal-nav-btn{background:none;border:1px solid var(--border);border-radius:7px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--navy);}
+.cal-nav-btn:hover{background:var(--mint);}
+.cal-month-lbl{font-size:.82rem;font-weight:700;color:var(--navy);}
+.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:3px;}
+.cal-dow{font-size:.6rem;font-weight:700;text-align:center;color:var(--muted);padding:3px 0;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-day{font-size:.72rem;text-align:center;padding:5px 2px;border-radius:6px;cursor:default;color:var(--muted);}
+.cal-day.has{background:var(--mint);color:var(--navy);cursor:pointer;font-weight:700;}
+.cal-day.has:hover{background:var(--sky);}
+.cal-day.active{background:var(--navy)!important;color:#fff!important;}
+.cal-day.today{outline:2px solid var(--green);outline-offset:-1px;}
+.cal-reset{width:100%;margin-top:8px;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;}
+.cal-reset:hover{background:var(--bg);}
+.cal-selects{display:flex;gap:6px;margin-bottom:8px;}
+.cal-sel{flex:1;border:1px solid var(--border);border-radius:7px;padding:4px 6px;font-family:'Sora',sans-serif;font-size:.72rem;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
 .btn-ref{display:flex;align-items:center;gap:6px;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:700;margin-left:auto;}
 .btn-ref:hover{background:#1e4a72;}
 .btn-ref:disabled{opacity:.5;cursor:not-allowed;}
@@ -200,7 +213,29 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span id="date-lbl">Tất cả ngày</span>
         <div class="date-dd" id="date-dd">
-          <div class="date-opt sel" onclick="pickDate(null,this)">📅 Tất cả ngày</div>
+          <div class="cal-selects">
+            <select class="cal-sel" id="cal-m-sel" onchange="calRender()"></select>
+            <select class="cal-sel" id="cal-y-sel" onchange="calRender()"></select>
+          </div>
+          <div class="cal-nav">
+            <button class="cal-nav-btn" onclick="calMove(-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <div class="cal-month-lbl" id="cal-lbl">—</div>
+            <button class="cal-nav-btn" onclick="calMove(1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+          <div class="cal-dow-row"><div class="cal-dow">CN</div><div class="cal-dow">T2</div><div class="cal-dow">T3</div><div class="cal-dow">T4</div><div class="cal-dow">T5</div><div class="cal-dow">T6</div><div class="cal-dow">T7</div></div>
+          <div class="cal-grid" id="cal-grid"></div>
+          <div style="display:flex;gap:6px;margin-top:8px">
+            <button class="cal-reset" onclick="pickDate(null)" style="flex:1">✕ Tất cả ngày</button>
+            <button class="cal-reset" onclick="goToday()" style="flex:1;color:var(--navy);font-weight:700">📅 Hôm nay</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+            <div style="width:10px;height:10px;border-radius:3px;background:var(--mint);flex-shrink:0"></div>
+            Ngày có dữ liệu
+            <div style="width:10px;height:10px;border-radius:3px;background:var(--navy);flex-shrink:0;margin-left:8px"></div>
+            Đang chọn
+            <div style="width:10px;height:10px;border-radius:3px;outline:2px solid var(--green);outline-offset:-1px;flex-shrink:0;margin-left:8px"></div>
+            Hôm nay
+          </div>
         </div>
       </div>
       <button class="btn-ref" id="btn-ref" onclick="loadData()">
@@ -296,14 +331,83 @@ async function changePw(){
 (()=>{ const t=localStorage.getItem('hm_theme'); if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('dark-tgl').classList.add('on');} const f=parseInt(localStorage.getItem('hm_font')); if(f)document.documentElement.style.setProperty('--fs',f+'px'); })();
 
 // DATE DROPDOWN
-function toggleDD(){ document.getElementById('date-dd').classList.toggle('open'); }
-document.addEventListener('click',e=>{ if(!document.getElementById('date-trigger').contains(e.target)) document.getElementById('date-dd').classList.remove('open'); });
-function buildDD(){
-  const dd=document.getElementById('date-dd');
-  dd.innerHTML=`<div class="date-opt${!selDate?' sel':''}" onclick="pickDate(null,this)">📅 Tất cả ngày</div>`;
-  allDates.forEach(d=>{ const[y,m,day]=d.split('-'); dd.innerHTML+=`<div class="date-opt${selDate===d?' sel':''}" onclick="pickDate('${d}',this)">${day}/${m}/${y}</div>`; });
+// CALENDAR DATE PICKER
+let calY = new Date().getFullYear(), calM = new Date().getMonth(); // 0-based month
+
+function toggleDD(){
+  const dd = document.getElementById('date-dd');
+  const open = dd.classList.contains('open');
+  dd.classList.toggle('open', !open);
+  if(!open){ calInitSelects(); calRender(); }
 }
-function pickDate(d,el){ selDate=d; document.getElementById('date-lbl').textContent=d?d.split('-').reverse().join('/'):'Tất cả ngày'; document.getElementById('date-dd').classList.remove('open'); document.querySelectorAll('.date-opt').forEach(e=>e.classList.remove('sel')); if(el)el.classList.add('sel'); if(selPid)showV(selPid); updSum(); }
+document.addEventListener('click',e=>{ if(!document.getElementById('date-trigger').contains(e.target)) document.getElementById('date-dd').classList.remove('open'); });
+
+function calInitSelects(){
+  const ms = document.getElementById('cal-m-sel');
+  const ys = document.getElementById('cal-y-sel');
+  const mNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  ms.innerHTML = mNames.map((m,i)=>`<option value="${i}" ${i===calM?'selected':''}>${m}</option>`).join('');
+  // Lấy năm từ allDates hoặc năm hiện tại
+  const years = [...new Set(allDates.map(d=>parseInt(d.slice(0,4))))];
+  if(!years.includes(new Date().getFullYear())) years.push(new Date().getFullYear());
+  years.sort();
+  ys.innerHTML = years.map(y=>`<option value="${y}" ${y===calY?'selected':''}>${y}</option>`).join('');
+  ms.onchange = ()=>{ calM=+ms.value; calRender(); };
+  ys.onchange = ()=>{ calY=+ys.value; calRender(); };
+}
+
+function calMove(dir){
+  calM += dir;
+  if(calM > 11){ calM=0; calY++; }
+  if(calM < 0){ calM=11; calY--; }
+  calInitSelects();
+  calRender();
+}
+
+function calRender(){
+  const ms = document.getElementById('cal-m-sel');
+  const ys = document.getElementById('cal-y-sel');
+  if(ms) calM = +ms.value;
+  if(ys) calY = +ys.value;
+  const lbl = document.getElementById('cal-lbl');
+  const mNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  if(lbl) lbl.textContent = mNames[calM] + ' ' + calY;
+  const grid = document.getElementById('cal-grid');
+  if(!grid) return;
+  const today = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(calY, calM, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calY, calM+1, 0).getDate();
+  let html = '';
+  for(let i=0; i<firstDay; i++) html += '<div class="cal-day"></div>';
+  for(let d=1; d<=daysInMonth; d++){
+    const key = `${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const has = allDates.includes(key);
+    const isToday = key===today;
+    const isActive = key===selDate;
+    const cls = ['cal-day', has?'has':'', isToday?'today':'', isActive?'active':''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" ${has?`onclick="pickDate('${key}')"`:''} title="${has?key:''}">${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
+
+function buildDD(){ calRender(); } // Compat - called after allDates loads
+
+function goToday(){
+  const today = new Date();
+  calY = today.getFullYear(); calM = today.getMonth();
+  calInitSelects(); calRender();
+  const key = today.toISOString().slice(0,10);
+  if(allDates.includes(key)) pickDate(key);
+}
+
+function pickDate(d){
+  selDate=d;
+  document.getElementById('date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
+  if(d) document.getElementById('date-dd').classList.remove('open');
+  calRender(); // refresh active state
+  if(selPid) showV(selPid);
+  updSum();
+}
 
 // LOAD DATA
 async function loadData(){
