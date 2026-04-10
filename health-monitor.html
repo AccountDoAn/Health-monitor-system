@@ -467,12 +467,31 @@ function sbadge(hr,spo2){
 
 // SUMMARY
 function updSum(){
-  let ok=0,w=0,d=0;
-  pts.forEach(p=>{const hr=p.hr!=null?Number(p.hr):null,spo2=p.spo2!=null?Number(p.spo2):null;if(hr==null&&spo2==null){ok++;return;}if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45)))d++;else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50)))w++;else ok++;});
-  document.getElementById('s-ok').textContent=ok;
-  document.getElementById('s-warn').textContent=w;
-  document.getElementById('s-danger').textContent=d;
-  document.getElementById('s-total').textContent=pts.length;
+  let ok=0, w=0, d=0;
+
+  pts.forEach(p=>{
+    let hr   = p.hr   != null ? Number(p.hr)   : null;
+    let spo2 = p.spo2 != null ? Number(p.spo2) : null;
+
+    // Nếu đang chọn ngày cụ thể → dùng bản ghi mới nhất trong ngày đó từ cache
+    if(selDate && vcache[p.id] && vcache[p.id].byDate[selDate]){
+      const rows = vcache[p.id].byDate[selDate];
+      if(rows.length){
+        hr   = rows[0].hr   != null ? Number(rows[0].hr)   : null;
+        spo2 = rows[0].spo2 != null ? Number(rows[0].spo2) : null;
+      }
+    }
+
+    if(hr==null && spo2==null){ ok++; return; }
+    if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
+    else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
+    else ok++;
+  });
+
+  document.getElementById('s-ok').textContent    = ok;
+  document.getElementById('s-warn').textContent  = w;
+  document.getElementById('s-danger').textContent= d;
+  document.getElementById('s-total').textContent  = pts.length;
 }
 
 // TOOLTIP
@@ -521,6 +540,7 @@ async function showV(pid){
       rows.forEach(r=>{ const d=new Date(new Date(r.time).getTime()+7*3600000); const k=d.toISOString().slice(0,10); if(!byDate[k])byDate[k]=[]; byDate[k].push(r); });
       const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
       vcache[pid]={byDate,dates};
+      updSum(); // cập nhật summary với data mới
     } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; return; }
   }
   const c=vcache[pid]; const dates=c.dates;
