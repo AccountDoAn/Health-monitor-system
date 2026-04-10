@@ -553,7 +553,38 @@ async function loadDevices(){
  
 async function loadLinks(){
   const b=document.getElementById('slide-body');
-  try { const r=await fetch(`${API}/doctor/${DID}/families`); const data=r.ok?await r.json():{}; const entries=Object.entries(data); if(!entries.length){b.innerHTML='<div class="loading">Chưa có liên kết người nhà</div>';return;} b.innerHTML=entries.map(([pid,info])=>`<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:9px;border:1px solid var(--border)"><div style="font-size:.82rem;font-weight:700;color:var(--navy);margin-bottom:7px">${esc(info.patientName||pid)}</div>${(info.families||[]).map(f=>`<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.73rem"><div style="width:25px;height:25px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.6rem;flex-shrink:0">${(f.name||'?').split(' ').map(w=>w[0]).slice(-2).join('')}</div><div><div style="font-weight:600">${esc(f.name)}</div><div style="color:var(--muted)">${f.relationship||''} ${f.phone?'· '+f.phone:''}</div></div>${f.isMain?'<span style="margin-left:auto;background:#e8f2fc;color:var(--navy);padding:2px 6px;border-radius:9px;font-size:.6rem;font-weight:700">Chính</span>':''}</div>`).join('')}${!(info.families||[]).length?'<div style="color:var(--muted);font-size:.73rem">Chưa có người nhà</div>':''}</div>`).join(''); } catch(e){b.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`;}
+  try {
+    const r=await fetch(`${API}/doctor/${DID}/families`);
+    const data=r.ok?await r.json():{};
+    const entries=Object.values(data);
+    if(!entries.length){b.innerHTML='<div class="loading">Chưa có liên kết người nhà</div>';return;}
+ 
+    b.innerHTML = entries.map(info=>{
+      const fams = info.families || [];
+      const shortId = (info.patientId||'').slice(0,8).toUpperCase();
+      return `<div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid var(--border)">
+        <!-- Tên + mã bệnh nhân -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:.88rem;font-weight:700;color:var(--navy)">${esc(info.patientName)}</div>
+          <div style="font-size:.65rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px">BN-${shortId}</div>
+        </div>
+ 
+        <!-- Danh sách người nhà -->
+        ${fams.length ? fams.map(f=>`
+          <div style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)">
+            <div style="width:30px;height:30px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.64rem;flex-shrink:0">
+              ${(f.name||'?').split(' ').map(w=>w[0]).slice(-2).join('')}
+            </div>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:.8rem;font-weight:600;color:var(--text)">${esc(f.name||'—')}</div>
+              <div style="font-size:.68rem;color:var(--muted)">${esc(f.relation||'—')}${f.phone?' · '+esc(f.phone):''}</div>
+            </div>
+            ${f.isPrimary?'<span style="background:#e8f2fc;color:var(--navy);padding:2px 8px;border-radius:10px;font-size:.62rem;font-weight:700;flex-shrink:0">Chính</span>':''}
+          </div>`).join('')
+        : `<div style="font-size:.74rem;color:var(--muted);font-style:italic">Chưa có người nhà</div>`}
+      </div>`;
+    }).join('');
+  } catch(e){ b.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
 }
  
 async function loadRecords(){
