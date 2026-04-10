@@ -45,8 +45,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .tb-label{font-size:.74rem;font-weight:700;color:var(--muted);}
 .tb-date{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:.78rem;color:var(--navy);font-weight:500;position:relative;user-select:none;}
 .tb-date:hover{border-color:var(--navy);}
-.date-dd{position:absolute;top:calc(100% + 6px);left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.14);z-index:200;width:292px;display:none;padding:14px;}
-.date-dd.open{display:block;}
+.date-dd-unused{display:none;}
 .cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
 .cal-nav-btn{background:none;border:1px solid var(--border);border-radius:7px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--navy);}
 .cal-nav-btn:hover{background:var(--mint);}
@@ -212,31 +211,6 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div class="tb-date" id="date-trigger" onclick="toggleDD(event)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span id="date-lbl">Tất cả ngày</span>
-        <div class="date-dd" id="date-dd">
-          <div class="cal-selects">
-            <select class="cal-sel" id="cal-m-sel" onchange="calRender()"></select>
-            <select class="cal-sel" id="cal-y-sel" onchange="calRender()"></select>
-          </div>
-          <div class="cal-nav">
-            <button class="cal-nav-btn" onclick="calMove(-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
-            <div class="cal-month-lbl" id="cal-lbl">—</div>
-            <button class="cal-nav-btn" onclick="calMove(1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
-          </div>
-          <div class="cal-dow-row"><div class="cal-dow">CN</div><div class="cal-dow">T2</div><div class="cal-dow">T3</div><div class="cal-dow">T4</div><div class="cal-dow">T5</div><div class="cal-dow">T6</div><div class="cal-dow">T7</div></div>
-          <div class="cal-grid" id="cal-grid"></div>
-          <div style="display:flex;gap:6px;margin-top:8px">
-            <button class="cal-reset" onclick="pickDate(null)" style="flex:1">✕ Tất cả ngày</button>
-            <button class="cal-reset" onclick="goToday()" style="flex:1;color:var(--navy);font-weight:700">📅 Hôm nay</button>
-          </div>
-          <div style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-            <div style="width:10px;height:10px;border-radius:3px;background:var(--mint);flex-shrink:0"></div>
-            Ngày có dữ liệu
-            <div style="width:10px;height:10px;border-radius:3px;background:var(--navy);flex-shrink:0;margin-left:8px"></div>
-            Đang chọn
-            <div style="width:10px;height:10px;border-radius:3px;outline:2px solid var(--green);outline-offset:-1px;flex-shrink:0;margin-left:8px"></div>
-            Hôm nay
-          </div>
-        </div>
       </div>
       <button class="btn-ref" id="btn-ref" onclick="loadData()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
@@ -335,17 +309,30 @@ async function changePw(){
 let calY = new Date().getFullYear(), calM = new Date().getMonth(); // 0-based month
 
 function toggleDD(e){
-  e && e.stopPropagation();
+  if(e) e.stopPropagation();
   const dd = document.getElementById('date-dd');
-  const open = dd.classList.contains('open');
-  dd.classList.toggle('open', !open);
-  if(!open){ calInitSelects(); calRender(); }
-}
-document.addEventListener('click',e=>{
+  const isOpen = dd.style.display !== 'none';
+  if(isOpen){
+    dd.style.display = 'none';
+    return;
+  }
+  // Định vị theo trigger
   const trigger = document.getElementById('date-trigger');
+  const rect = trigger.getBoundingClientRect();
+  dd.style.display = 'block';
+  dd.style.top = (rect.bottom + 6) + 'px';
+  dd.style.left = rect.left + 'px';
+  calInitSelects();
+  calRender();
+}
+
+document.addEventListener('click', function(e){
   const dd = document.getElementById('date-dd');
-  if(!trigger.contains(e.target) && !dd.contains(e.target))
-    dd.classList.remove('open');
+  const trigger = document.getElementById('date-trigger');
+  if(dd.style.display === 'none') return;
+  if(!dd.contains(e.target) && !trigger.contains(e.target)){
+    dd.style.display = 'none';
+  }
 });
 
 function calInitSelects(){
@@ -407,10 +394,10 @@ function goToday(){
 }
 
 function pickDate(d){
-  selDate=d;
+  selDate = d;
   document.getElementById('date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
-  if(d) document.getElementById('date-dd').classList.remove('open');
-  calRender(); // refresh active state
+  if(d) document.getElementById('date-dd').style.display = 'none';
+  calRender();
   if(selPid) showV(selPid);
   updSum();
 }
@@ -677,5 +664,29 @@ document.getElementById('cinp').addEventListener('input',function(){this.style.h
 
 loadData();
 </script>
+<!-- DATE PICKER POPUP — tách riêng khỏi trigger để tránh event bubble -->
+<div id="date-dd" style="display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:999;width:292px;padding:14px;">
+  <div class="cal-selects">
+    <select class="cal-sel" id="cal-m-sel" onchange="calRender()"></select>
+    <select class="cal-sel" id="cal-y-sel" onchange="calRender()"></select>
+  </div>
+  <div class="cal-nav">
+    <button class="cal-nav-btn" onclick="calMove(-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="cal-month-lbl" id="cal-lbl">—</div>
+    <button class="cal-nav-btn" onclick="calMove(1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+  </div>
+  <div class="cal-dow-row"><div class="cal-dow">CN</div><div class="cal-dow">T2</div><div class="cal-dow">T3</div><div class="cal-dow">T4</div><div class="cal-dow">T5</div><div class="cal-dow">T6</div><div class="cal-dow">T7</div></div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div style="display:flex;gap:6px;margin-top:8px">
+    <button class="cal-reset" onclick="pickDate(null)" style="flex:1">✕ Tất cả ngày</button>
+    <button class="cal-reset" onclick="goToday()" style="flex:1;color:var(--navy);font-weight:700">📅 Hôm nay</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+    <div style="width:10px;height:10px;border-radius:3px;background:var(--mint);flex-shrink:0"></div> Ngày có dữ liệu
+    <div style="width:10px;height:10px;border-radius:3px;background:var(--navy);flex-shrink:0;margin-left:8px"></div> Đang chọn
+    <div style="width:10px;height:10px;border-radius:3px;outline:2px solid var(--green);outline-offset:-1px;flex-shrink:0;margin-left:8px"></div> Hôm nay
+  </div>
+</div>
+
 </body>
 </html>
