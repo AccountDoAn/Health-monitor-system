@@ -86,9 +86,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:7px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .vsec{display:none;}.vsec.show{display:block;}
-.dtabs{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
-.dtab{padding:5px 12px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--muted);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;transition:all .12s;}
-.dtab:hover,.dtab.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+ 
 .vtw{overflow-x:auto;}
 .vt{width:100%;border-collapse:collapse;}
 .vt th{padding:8px 14px;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;}
@@ -226,8 +224,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
     <div class="sec-card vsec" id="vsec">
       <div class="sec-head"><div class="sec-title" id="vtitle">📈 Dữ liệu sinh tồn</div></div>
-      <div class="dtabs" id="dtabs"></div>
-      <div id="vbody"><div class="loading">Chọn ngày để xem dữ liệu</div></div>
+      <div id="vbody"><div class="loading">Chọn bệnh nhân để xem dữ liệu</div></div>
     </div>
   </div>
 </div>
@@ -508,16 +505,7 @@ async function showV(pid){
   }
   const c=vcache[pid]; const dates=c.dates;
   const show=selDate&&c.byDate[selDate]?selDate:dates[0];
-  const tabs=document.getElementById('dtabs');
-  tabs.innerHTML=dates.map(d=>{const[y,m,day]=d.split('-');return`<button class="dtab${d===show?' active':''}" onclick="switchDTab('${pid}','${d}',this)">${day}/${m}/${y}</button>`;}).join('');
   renderVT(c.byDate[show]||[]);
-}
- 
-function switchDTab(pid,date,btn){
-  document.querySelectorAll('.dtab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  const c=vcache[pid];
-  if(c) renderVT(c.byDate[date]||[]);
 }
  
 function renderVT(rows){
