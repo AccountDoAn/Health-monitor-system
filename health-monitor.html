@@ -199,10 +199,10 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
   </div>
   <div class="content">
     <div class="sum-row">
-      <div class="sum-card"><div class="sum-label">Bình thường</div><div class="sum-val" id="s-ok" style="color:var(--green)">—</div><div class="sum-sub">bệnh nhân</div></div>
-      <div class="sum-card"><div class="sum-label">Cảnh báo</div><div class="sum-val" id="s-warn" style="color:var(--warn)">—</div><div class="sum-sub">bệnh nhân</div></div>
-      <div class="sum-card"><div class="sum-label">Nguy hiểm</div><div class="sum-val" id="s-danger" style="color:var(--danger)">—</div><div class="sum-sub">bệnh nhân</div></div>
-      <div class="sum-card"><div class="sum-label">Tổng bệnh nhân</div><div class="sum-val" id="s-total">—</div><div class="sum-sub">đang theo dõi</div></div>
+      <div class="sum-card"><div class="sum-label">Bình thường</div><div class="sum-val" id="s-ok" style="color:var(--green)">—</div><div class="sum-sub" id="sub-ok">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Cảnh báo</div><div class="sum-val" id="s-warn" style="color:var(--warn)">—</div><div class="sum-sub" id="sub-warn">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Nguy hiểm</div><div class="sum-val" id="s-danger" style="color:var(--danger)">—</div><div class="sum-sub" id="sub-danger">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Tổng</div><div class="sum-val" id="s-total">—</div><div class="sum-sub" id="sub-total">bệnh nhân</div></div>
     </div>
     <div class="toolbar">
       <div class="tb-label">Ngày xem:</div>
@@ -465,33 +465,52 @@ function sbadge(hr,spo2){
   return '<span class="badge ok">🟢 Bình thường</span>';
 }
 
-// SUMMARY
+// SUMMARY — đếm số bản ghi theo trạng thái
 function updSum(){
   let ok=0, w=0, d=0;
 
-  pts.forEach(p=>{
-    let hr   = p.hr   != null ? Number(p.hr)   : null;
-    let spo2 = p.spo2 != null ? Number(p.spo2) : null;
+  if(selDate){
+    // Chọn ngày → đếm số bản ghi theo trạng thái trong ngày đó
+    pts.forEach(p=>{
+      if(!vcache[p.id] || !vcache[p.id].byDate[selDate]) return;
+      vcache[p.id].byDate[selDate].forEach(r=>{
+        const hr   = r.hr   != null ? Number(r.hr)   : null;
+        const spo2 = r.spo2 != null ? Number(r.spo2) : null;
+        if(hr==null && spo2==null) return;
+        if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
+        else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
+        else ok++;
+      });
+    });
+    document.getElementById('sub-ok').textContent    = 'bản ghi';
+    document.getElementById('sub-warn').textContent  = 'bản ghi';
+    document.getElementById('sub-danger').textContent= 'bản ghi';
+  } else {
+    // Không chọn ngày → đếm tất cả bản ghi từ mọi cache
+    pts.forEach(p=>{
+      if(!vcache[p.id]) return;
+      Object.values(vcache[p.id].byDate).forEach(rows=>{
+        rows.forEach(r=>{
+          const hr   = r.hr   != null ? Number(r.hr)   : null;
+          const spo2 = r.spo2 != null ? Number(r.spo2) : null;
+          if(hr==null && spo2==null) return;
+          if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
+          else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
+          else ok++;
+        });
+      });
+    });
+    document.getElementById('sub-ok').textContent    = 'bản ghi';
+    document.getElementById('sub-warn').textContent  = 'bản ghi';
+    document.getElementById('sub-danger').textContent= 'bản ghi';
+  }
 
-    // Nếu đang chọn ngày cụ thể → dùng bản ghi mới nhất trong ngày đó từ cache
-    if(selDate && vcache[p.id] && vcache[p.id].byDate[selDate]){
-      const rows = vcache[p.id].byDate[selDate];
-      if(rows.length){
-        hr   = rows[0].hr   != null ? Number(rows[0].hr)   : null;
-        spo2 = rows[0].spo2 != null ? Number(rows[0].spo2) : null;
-      }
-    }
-
-    if(hr==null && spo2==null){ ok++; return; }
-    if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
-    else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
-    else ok++;
-  });
-
-  document.getElementById('s-ok').textContent    = ok;
-  document.getElementById('s-warn').textContent  = w;
-  document.getElementById('s-danger').textContent= d;
+  document.getElementById('s-ok').textContent     = ok;
+  document.getElementById('s-warn').textContent   = w;
+  document.getElementById('s-danger').textContent = d;
+  // Tổng luôn là số bệnh nhân
   document.getElementById('s-total').textContent  = pts.length;
+  document.getElementById('sub-total').textContent = 'bệnh nhân';
 }
 
 // TOOLTIP
