@@ -712,6 +712,119 @@ app.get("/doctor/:doctorId/families", async (req, res) => {
 // ============================================================
 // MODULE 4: THIẾT BỊ
 // ============================================================
+  try {
+    const { patientId, name, phone, email, relation, isPrimary } = req.body;
+    if(!patientId || !name) return res.status(400).json({ error: "Thiếu patientId hoặc name" });
+ 
+    // 1. Tạo tài khoản người liên quan (user_lq) trong nguoi_dung
+    const { data: newUser, error: userErr } = await supabase
+      .from("nguoi_dung")
+      .insert({ ho_ten: name, so_dien_thoai: phone||null, email: email||null, trang_thai_hoat_dong: true })
+      .select("id")
+      .single();
+    if(userErr) throw userErr;
+ 
+    // 2. Gán vai trò user_lq
+    const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").single();
+    if(role) {
+      await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id: newUser.id, vai_tro_id: role.id });
+    }
+ 
+    // 3. Nếu isPrimary → bỏ primary cũ
+    if(isPrimary) {
+      await supabase.from("lien_ket_nguoi_nha")
+        .update({ la_nguoi_giam_sat_chinh: false })
+        .eq("nguoi_dung_tb_id", patientId)
+        .eq("trang_thai_hoat_dong", true);
+    }
+ 
+    // 4. Tạo liên kết
+    const { data: link, error: linkErr } = await supabase
+      .from("lien_ket_nguoi_nha")
+      .insert({
+        nguoi_dung_tb_id:       patientId,
+        nguoi_dung_lq_id:       newUser.id,
+        moi_quan_he:            relation || null,
+        la_nguoi_giam_sat_chinh: isPrimary || false,
+        trang_thai_hoat_dong:   true,
+        ngay_lien_ket:          new Date().toISOString(),
+      })
+      .select("*")
+      .single();
+    if(linkErr) throw linkErr;
+ 
+    res.json({ familyId: newUser.id, name, phone, email, relation, isPrimary: isPrimary||false });
+  } catch(err) {
+    console.error("[POST /families]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+ 
+// PATCH /families/:familyId — sửa thông tin người nhà
+// Body: { patientId, name, phone, email, relation, isPrimary }
+app.patch("/families/:familyId", async (req, res) => {
+  try {
+    const { familyId } = req.params;
+    const { patientId, name, phone, email, relation, isPrimary } = req.body;
+ 
+    // Cập nhật thông tin cá nhân
+    const userUpdate = {};
+    if(name  !== undefined) userUpdate.ho_ten         = name;
+    if(phone !== undefined) userUpdate.so_dien_thoai  = phone || null;
+    if(email !== undefined) userUpdate.email           = email || null;
+    if(Object.keys(userUpdate).length) {
+      await supabase.from("nguoi_dung").update(userUpdate).eq("id", familyId);
+    }
+ 
+    // Cập nhật liên kết
+    const linkUpdate = {};
+    if(relation  !== undefined) linkUpdate.moi_quan_he            = relation || null;
+    if(isPrimary !== undefined) linkUpdate.la_nguoi_giam_sat_chinh = isPrimary;
+ 
+    if(isPrimary && patientId) {
+      await supabase.from("lien_ket_nguoi_nha")
+        .update({ la_nguoi_giam_sat_chinh: false })
+        .eq("nguoi_dung_tb_id", patientId)
+        .eq("trang_thai_hoat_dong", true);
+    }
+    if(Object.keys(linkUpdate).length && patientId) {
+      await supabase.from("lien_ket_nguoi_nha")
+        .update(linkUpdate)
+        .eq("nguoi_dung_lq_id", familyId)
+        .eq("nguoi_dung_tb_id", patientId)
+        .eq("trang_thai_hoat_dong", true);
+    }
+ 
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[PATCH /families/:id]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+ 
+// DELETE /families/:familyId — xóa liên kết (soft delete)
+// Query: ?patientId=UUID
+app.delete("/families/:familyId", async (req, res) => {
+  try {
+    const { familyId } = req.params;
+    const { patientId } = req.query;
+    if(!patientId) return res.status(400).json({ error: "Thiếu patientId" });
+ 
+    await supabase.from("lien_ket_nguoi_nha")
+      .update({ trang_thai_hoat_dong: false })
+      .eq("nguoi_dung_lq_id", familyId)
+      .eq("nguoi_dung_tb_id", patientId);
+ 
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[DELETE /families/:id]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+ 
+// ============================================================
+// MODULE 4: THIẾT BỊ
+// ============================================================
  
 // GET /devices — tất cả thiết bị thuộc cơ sở y tế
 app.get("/devices", async (req, res) => {
