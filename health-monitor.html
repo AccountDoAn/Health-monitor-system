@@ -169,6 +169,34 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .rec-save{margin-top:10px;width:100%;padding:8px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.76rem;font-weight:700;cursor:pointer;}
 .rec-save:hover{background:#1e4a72;}
 .rec-msg{font-size:.7rem;text-align:center;min-height:14px;margin-top:4px;}
+/* Accordion */
+.acc-item{border-bottom:1px solid var(--border);}
+.acc-item:last-child{border-bottom:none;}
+.acc-item.hidden{display:none;}
+.acc-head{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;transition:background .12s;user-select:none;}
+.acc-head:hover{background:rgba(43,95,142,.04);}
+.acc-av{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;}
+.acc-info{flex:1;min-width:0;}
+.acc-name{font-size:.88rem;font-weight:700;color:var(--text);}
+.acc-sub{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.acc-meta{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.acc-tag{font-size:.62rem;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--mint);color:var(--navy);}
+.acc-chevron{color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.acc-item.open .acc-chevron{transform:rotate(180deg);}
+.acc-body{display:none;padding:0 20px 20px;}
+.acc-item.open .acc-body{display:block;}
+.acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;}
+.acc-field{display:flex;flex-direction:column;gap:3px;}
+.acc-flbl{font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.acc-finp{padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:.78rem;background:var(--bg);color:var(--text);outline:none;width:100%;}
+.acc-finp:focus{border-color:var(--navy);}
+.acc-fsel{padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:.78rem;background:var(--bg);color:var(--text);outline:none;width:100%;cursor:pointer;}
+.acc-fsel:focus{border-color:var(--navy);}
+.acc-full{grid-column:1/-1;}
+.acc-footer{display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px solid var(--border);}
+.acc-save{padding:8px 20px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;}
+.acc-save:hover{background:#1e4a72;}
+.acc-rmsg{font-size:.72rem;flex:1;}
 </style>
 </head>
 <body>
@@ -265,7 +293,17 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
   <!-- VIEW: HỒ SƠ BỆNH ÁN -->
   <div class="content" id="view-records" style="display:none">
     <div class="sec-card">
-      <div class="sec-head"><div class="sec-title">🗂️ Hồ sơ bệnh án</div></div>
+      <div class="sec-head">
+        <div class="sec-title">🗂️ Hồ sơ bệnh án</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <div class="srch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="rec-srch" placeholder="Tìm bệnh nhân..." oninput="filterRecords(this.value)"/>
+          </div>
+          <button onclick="expandAllRecs()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
+          <button onclick="collapseAllRecs()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
+        </div>
+      </div>
       <div id="records-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
@@ -428,61 +466,107 @@ async function renderLinksPage(){
   } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
 }
 
-// ── HỒ SƠ BỆNH ÁN PAGE ──
+// ── HỒ SƠ BỆNH ÁN PAGE — Accordion ──
+let recPts = [];
+
 async function renderRecordsPage(){
   const body = document.getElementById('records-body');
   body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  document.getElementById('rec-srch').value = '';
   try {
     const r = await fetch(`${API}/doctor/${DID}/patients`);
     const list = r.ok ? await r.json() : [];
-    if(!list.length){ body.innerHTML='<div class="loading">Không có dữ liệu</div>'; return; }
-    body.innerHTML = `<div class="page-grid" style="padding:18px">${list.map(p=>{
+    if(!list.length){ body.innerHTML='<div class="loading">Không có bệnh nhân</div>'; return; }
+    recPts = list;
+    body.innerHTML = list.map(p=>{
       const init = (p.patientName||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-      return `<div class="page-card" id="rcard-${p.patientId}">
-        <div class="page-card-head">
-          <div class="sb-av" style="width:36px;height:36px;font-size:.72rem;flex-shrink:0">${init}</div>
-          <div>
-            <div class="page-card-name">${esc(p.patientName)}</div>
-            <div class="page-card-sub">BN-${(p.patientId||'').slice(0,8).toUpperCase()}</div>
+      const dob = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+      return `<div class="acc-item" id="acc-${p.patientId}" data-name="${(p.patientName||'').toLowerCase()}">
+        <div class="acc-head" onclick="toggleAcc('${p.patientId}')">
+          <div class="acc-av">${init}</div>
+          <div class="acc-info">
+            <div class="acc-name">${esc(p.patientName)}</div>
+            <div class="acc-sub">BN-${(p.patientId||'').slice(0,8).toUpperCase()} · ${dob}</div>
           </div>
+          <div class="acc-meta">
+            <span class="acc-tag" id="acc-tag-${p.patientId}">Đang tải...</span>
+          </div>
+          <svg class="acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="page-card-body" id="rbody-${p.patientId}">
+        <div class="acc-body" id="acc-body-${p.patientId}">
           <div class="loading"><span class="spin"></span>Đang tải hồ sơ...</div>
         </div>
       </div>`;
-    }).join('')}</div>`;
-    // Load từng hồ sơ song song
-    await Promise.all(list.map(p => loadRecordCard(p.patientId)));
+    }).join('');
+    await Promise.all(list.map(p => loadAccRecord(p.patientId)));
   } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
 }
 
-async function loadRecordCard(pid){
-  const body = document.getElementById('rbody-'+pid);
+async function loadAccRecord(pid){
+  const body = document.getElementById('acc-body-'+pid);
+  const tag  = document.getElementById('acc-tag-'+pid);
   if(!body) return;
   try {
     const r = await fetch(`${API}/medical-record/${pid}`);
     const rec = r.ok ? await r.json() : null;
-    const v = k => rec?.[k] || '';
+    const v = k => rec?.[k] ?? '';
+    if(tag){
+      tag.textContent = rec ? 'Có hồ sơ' : 'Chưa có hồ sơ';
+      tag.style.background = rec ? 'var(--mint)' : '#fff4e0';
+      tag.style.color = rec ? 'var(--navy)' : '#8a5800';
+    }
     const fi = (id,type,val,opts=[]) => {
       const sid = `rf-${pid}-${id}`;
-      const sty = `class="rec-inp"`;
-      if(type==='select') return `<select id="${sid}" ${sty}><option value="">—</option>${opts.map(o=>`<option ${val===o?'selected':''}>${o}</option>`).join('')}</select>`;
-      return `<input id="${sid}" type="${type}" value="${esc(val)}" ${sty}/>`;
+      if(type==='select') return `<select id="${sid}" class="acc-fsel"><option value="">—</option>${opts.map(o=>`<option ${String(val)===o?'selected':''}>${o}</option>`).join('')}</select>`;
+      return `<input id="${sid}" type="${type}" value="${esc(String(val))}" class="acc-finp"/>`;
     };
     body.innerHTML = `
-      <div class="rec-field"><div class="rec-lbl">Nhóm máu</div>${fi('nhom_mau','select',v('nhom_mau'),['A+','A-','B+','B-','O+','O-','AB+','AB-'])}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-        <div class="rec-field"><div class="rec-lbl">Chiều cao (cm)</div>${fi('chieu_cao_cm','number',v('chieu_cao_cm'))}</div>
-        <div class="rec-field"><div class="rec-lbl">Cân nặng (kg)</div>${fi('can_nang_kg','number',v('can_nang_kg'))}</div>
+      <div class="acc-grid">
+        <div class="acc-field"><div class="acc-flbl">Nhóm máu</div>${fi('nhom_mau','select',v('nhom_mau'),['A+','A-','B+','B-','O+','O-','AB+','AB-'])}</div>
+        <div class="acc-field"><div class="acc-flbl">Chiều cao (cm)</div>${fi('chieu_cao_cm','number',v('chieu_cao_cm'))}</div>
+        <div class="acc-field"><div class="acc-flbl">Cân nặng (kg)</div>${fi('can_nang_kg','number',v('can_nang_kg'))}</div>
+        <div class="acc-field"><div class="acc-flbl">Dị ứng</div>${fi('di_ung','text',v('di_ung'))}</div>
+        <div class="acc-field acc-full"><div class="acc-flbl">Bệnh mãn tính</div>${fi('benh_man_tinh','text',v('benh_man_tinh'))}</div>
+        <div class="acc-field acc-full"><div class="acc-flbl">Tiền sử y tế</div>${fi('tien_su_y_te','text',v('tien_su_y_te'))}</div>
+        <div class="acc-field"><div class="acc-flbl">Người liên hệ khẩn</div>${fi('nguoi_lien_he_khan_ten','text',v('nguoi_lien_he_khan_ten'))}</div>
+        <div class="acc-field"><div class="acc-flbl">SĐT liên hệ khẩn</div>${fi('nguoi_lien_he_khan_sdt','text',v('nguoi_lien_he_khan_sdt'))}</div>
       </div>
-      <div class="rec-field"><div class="rec-lbl">Bệnh mãn tính</div>${fi('benh_man_tinh','text',v('benh_man_tinh'))}</div>
-      <div class="rec-field"><div class="rec-lbl">Dị ứng</div>${fi('di_ung','text',v('di_ung'))}</div>
-      <div class="rec-field"><div class="rec-lbl">Tiền sử y tế</div>${fi('tien_su_y_te','text',v('tien_su_y_te'))}</div>
-      <div class="rec-field"><div class="rec-lbl">Người liên hệ khẩn</div>${fi('nguoi_lien_he_khan_ten','text',v('nguoi_lien_he_khan_ten'))}</div>
-      <div class="rec-field"><div class="rec-lbl">SĐT liên hệ khẩn</div>${fi('nguoi_lien_he_khan_sdt','text',v('nguoi_lien_he_khan_sdt'))}</div>
-      <div class="rec-msg" id="rmsg-${pid}"></div>
-      <button class="rec-save" onclick="saveRec('${pid}')">💾 Lưu hồ sơ</button>`;
-  } catch(e){ body.innerHTML=`<div style="color:var(--danger);font-size:.74rem">⚠️ ${esc(e.message)}</div>`; }
+      <div class="acc-footer">
+        <button class="acc-save" onclick="saveAccRec('${pid}')">💾 Lưu hồ sơ</button>
+        <div class="acc-rmsg" id="acc-rmsg-${pid}"></div>
+      </div>`;
+  } catch(e){ if(body) body.innerHTML=`<div style="color:var(--danger);font-size:.74rem;padding:10px 0">⚠️ ${esc(e.message)}</div>`; }
+}
+
+function toggleAcc(pid){
+  const item = document.getElementById('acc-'+pid);
+  if(item) item.classList.toggle('open');
+}
+function expandAllRecs(){ document.querySelectorAll('.acc-item:not(.hidden)').forEach(el=>el.classList.add('open')); }
+function collapseAllRecs(){ document.querySelectorAll('.acc-item').forEach(el=>el.classList.remove('open')); }
+function filterRecords(q){
+  const kw = q.toLowerCase().trim();
+  document.querySelectorAll('.acc-item').forEach(el=>{
+    el.classList.toggle('hidden', kw!=='' && !(el.dataset.name||'').includes(kw));
+  });
+}
+async function saveAccRec(pid){
+  const msg = document.getElementById('acc-rmsg-'+pid);
+  const g = f => { const e = document.getElementById(`rf-${pid}-${f}`); return e ? e.value.trim()||null : null; };
+  const payload = {};
+  ['nhom_mau','benh_man_tinh','di_ung','tien_su_y_te','nguoi_lien_he_khan_ten','nguoi_lien_he_khan_sdt'].forEach(f=>{ const v=g(f); if(v) payload[f]=v; });
+  ['chieu_cao_cm','can_nang_kg'].forEach(f=>{ const v=g(f); if(v) payload[f]=parseFloat(v); });
+  msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(`${API}/medical-record/${pid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d = await r.json();
+    if(r.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Lưu thành công!';
+      const tag=document.getElementById('acc-tag-'+pid);
+      if(tag){tag.textContent='Có hồ sơ';tag.style.background='var(--mint)';tag.style.color='var(--navy)';}
+      setTimeout(()=>msg.textContent='',3000);
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
 }
 function openSettings(){ document.getElementById('modal-bg').classList.add('open'); }
 function closeSettings(){ document.getElementById('modal-bg').classList.remove('open'); }
