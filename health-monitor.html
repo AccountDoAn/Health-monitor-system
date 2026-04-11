@@ -438,7 +438,67 @@ async function renderDevicesPage(){
   } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
 }
  
-// ── LIÊN KẾT PAGE — Chỉ xem ──let linksData = {};async function renderLinksPage(){  const body = document.getElementById('links-body');  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';  try {    const r = await fetch(`${API}/doctor/${DID}/families`);    linksData = r.ok ? await r.json() : {};    const entries = Object.values(linksData);    if(!entries.length){ body.innerHTML='<div class="loading">Chưa có liên kết nào</div>'; return; }    body.innerHTML = entries.map(info=>{      const fams = info.families || [];      const init = (info.patientName||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();      const dob = pts.find(p=>p.id===info.patientId)?.dob;      const dobStr = dob ? new Date(dob).toLocaleDateString('vi-VN') : '—';      return `<div class="acc-item open" id="lnk-${info.patientId}">        <div class="acc-head" onclick="this.closest('.acc-item').classList.toggle('open')">          <div class="acc-av">${init}</div>          <div class="acc-info">            <div class="acc-name">${esc(info.patientName||'—')}</div>            <div class="acc-sub">BN-${(info.patientId||'').slice(0,8).toUpperCase()} · ${dobStr}</div>          </div>          <div class="acc-meta">            <span class="acc-tag">${fams.length} người nhà</span>          </div>          <svg class="acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>        </div>        <div class="acc-body">          ${fams.length ? fams.map(f=>{            const fi = (f.name||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();            return `<div class="fam-row">              <div class="fam-av">${fi}</div>              <div style="flex:1;min-width:0">                <div style="display:flex;align-items:center;gap:6px">                  <span class="fam-name">${esc(f.name||'—')}</span>                  ${f.isPrimary?'<span style="font-size:.6rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:2px 7px;border-radius:9px">Chính</span>':''}                </div>                <div class="fam-sub">${esc(f.relation||'—')}${f.phone?' · '+esc(f.phone):''}</div>              </div>            </div>`;          }).join('') : `<div style="color:var(--muted);font-size:.78rem;font-style:italic;padding:4px 0">Chưa có người nhà</div>`}        </div>      </div>`;    }).join('');  } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }}function filterLinks(q){  const kw = q.toLowerCase().trim();  document.querySelectorAll('[id^="lnk-"].acc-item').forEach(el=>{    el.classList.toggle('hidden', kw!=='' && !(el.querySelector('.acc-name')?.textContent||'').toLowerCase().includes(kw));  });}// ── HỒ SƠ BỆNH ÁN PAGE — Accordion ──
+// ── LIÊN KẾT PAGE — Chỉ xem ──
+let linksData = {};
+ 
+async function renderLinksPage(){
+  const body = document.getElementById('links-body');
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r = await fetch(`${API}/doctor/${DID}/families`);
+    linksData = r.ok ? await r.json() : {};
+    const entries = Object.values(linksData);
+    if(!entries.length){ body.innerHTML='<div class="loading">Chưa có liên kết nào</div>'; return; }
+ 
+    body.innerHTML = entries.map(info=>{
+      const fams = info.families || [];
+      const init = (info.patientName||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+      const dob = pts.find(p=>p.id===info.patientId)?.dob;
+      const dobStr = dob ? new Date(dob).toLocaleDateString('vi-VN') : '—';
+ 
+      return `<div class="acc-item open" id="lnk-${info.patientId}">
+        <div class="acc-head" onclick="this.closest('.acc-item').classList.toggle('open')">
+          <div class="acc-av">${init}</div>
+          <div class="acc-info">
+            <div class="acc-name">${esc(info.patientName||'—')}</div>
+            <div class="acc-sub">BN-${(info.patientId||'').slice(0,8).toUpperCase()} · ${dobStr}</div>
+          </div>
+          <div class="acc-meta">
+            <span class="acc-tag">${fams.length} người nhà</span>
+          </div>
+          <svg class="acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="acc-body">
+          ${fams.length ? fams.map(f=>{
+            const fi = (f.name||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+            const relLabel = f.relation ? f.relation : 'Chưa xác định';
+            return `<div class="fam-row">
+              <div class="fam-av">${fi}</div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                  <span class="fam-name">${esc(f.name||'—')}</span>
+                  <span style="font-size:.65rem;font-weight:700;background:var(--mint);color:var(--navy);padding:2px 8px;border-radius:9px">${esc(relLabel)}</span>
+                  ${f.isPrimary?'<span style="font-size:.6rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:2px 7px;border-radius:9px">Giám sát chính</span>':''}
+                </div>
+                ${f.phone?`<div class="fam-sub">📞 ${esc(f.phone)}</div>`:''}
+                ${f.email?`<div class="fam-sub">✉️ ${esc(f.email)}</div>`:''}
+              </div>
+            </div>`;
+          }).join('') : '<div style="color:var(--muted);font-size:.78rem;font-style:italic;padding:4px 0">Chưa có người nhà</div>'}
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
+}
+ 
+function filterLinks(q){
+  const kw = q.toLowerCase().trim();
+  document.querySelectorAll('[id^="lnk-"].acc-item').forEach(el=>{
+    el.classList.toggle('hidden', kw!=='' && !(el.querySelector('.acc-name')?.textContent||'').toLowerCase().includes(kw));
+  });
+}
+ 
+// ── HỒ SƠ BỆNH ÁN PAGE — Accordion ──
 let recPts = [];
  
 async function renderRecordsPage(){
