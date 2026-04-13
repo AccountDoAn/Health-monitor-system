@@ -86,7 +86,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:7px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .vsec{display:none;}.vsec.show{display:block;}
- 
+
 .vtw{overflow-x:auto;}
 .vt{width:100%;border-collapse:collapse;}
 .vt th{padding:8px 14px;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;}
@@ -99,7 +99,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .tr{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:.71rem;}
 .tr:last-child{border-bottom:none;}
 .tl{color:var(--muted);font-weight:600;}.tv{font-family:'DM Mono',monospace;}
- 
+
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
 .modal{background:var(--card);border-radius:16px;padding:26px;width:350px;max-width:95vw;position:relative;}
@@ -203,7 +203,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 </style>
 </head>
 <body>
- 
+
 <aside class="sb">
   <div class="sb-logo">
     <div class="sb-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
@@ -237,14 +237,14 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </button>
   </div>
 </aside>
- 
+
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="page-title">Tổng quan bệnh nhân</div>
     <div class="live-dot" id="live-dot">Đang theo dõi</div>
     <div class="last-upd" id="last-upd">—</div>
   </div>
- 
+
   <!-- VIEW: TỔNG QUAN -->
   <div class="content" id="view-overview">
     <div class="sum-row">
@@ -276,7 +276,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="vbody-unused"></div>
     </div>
   </div>
- 
+
   <!-- VIEW: CHI TIẾT BỆNH NHÂN -->
   <div class="content" id="view-patient" style="display:none">
     <div style="display:flex;align-items:center;gap:12px">
@@ -305,7 +305,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="vbody"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
- 
+
   <!-- VIEW: THIẾT BỊ -->
   <div class="content" id="view-devices" style="display:none">
     <div class="sec-card">
@@ -313,7 +313,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="devices-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
- 
+
   <!-- VIEW: LIÊN KẾT -->
   <div class="content" id="view-links" style="display:none">
     <div class="sec-card">
@@ -331,7 +331,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="links-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
- 
+
   <!-- VIEW: HỒ SƠ BỆNH ÁN -->
   <div class="content" id="view-records" style="display:none">
     <div class="sec-card">
@@ -350,11 +350,11 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <div class="tip" id="tip"></div>
- 
- 
- 
+
+
+
 <div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeSettings()">
   <div class="modal">
     <button class="mclose" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -371,7 +371,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <button class="cfab" onclick="toggleChat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
 <div class="cbox" id="cbox">
   <div id="cv-list" style="display:flex;flex-direction:column;height:100%">
@@ -388,25 +388,25 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <script>
 // SESSION CHECK
 try {
   const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
   if(!s.userId || s.role !== 'user_bs'){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
 } catch(_){ location.replace('index.html'); }
- 
+
 const API = 'https://health-monitor-system-twts.onrender.com';
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const DID = SESS.userId;
- 
+
 let pts=[], vcache={}, selPid=null, selDate=null, allDates=[], curCPid=null, ccache={};
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
- 
+
 function doLogout(){ if(!confirm('Đăng xuất?')) return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
 // ── VIEW SWITCHING ──
 const viewTitles = {overview:'Tổng quan bệnh nhân', devices:'Thiết bị theo dõi', links:'Liên kết người nhà', records:'Hồ sơ bệnh án'};
- 
+
 function switchView(name, btn){
   // Active button
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
@@ -425,9 +425,9 @@ function switchView(name, btn){
   if(name==='links')    renderLinksPage();
   if(name==='records')  renderRecordsPage();
 }
- 
+
 function setNav(b){ switchView('overview', b); } // compat
- 
+
 // ── THIẾT BỊ PAGE ──
 async function renderDevicesPage(){
   const body = document.getElementById('devices-body');
@@ -469,10 +469,10 @@ async function renderDevicesPage(){
     }).join('')}</div>`;
   } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
 }
- 
+
 // ── LIÊN KẾT PAGE — Chỉ xem ──
 let linksData = {};
- 
+
 async function renderLinksPage(){
   const body = document.getElementById('links-body');
   body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
@@ -481,7 +481,7 @@ async function renderLinksPage(){
     linksData = r.ok ? await r.json() : {};
     const entries = Object.values(linksData);
     if(!entries.length){ body.innerHTML='<div class="loading">Chưa có liên kết nào</div>'; return; }
- 
+
     let html = '';
     entries.forEach(function(info){
       const fams = info.families || [];
@@ -489,7 +489,7 @@ async function renderLinksPage(){
       const dob = pts.find(function(p){return p.id===info.patientId;});
       const dobStr = dob && dob.dob ? new Date(dob.dob).toLocaleDateString('vi-VN') : '—';
       const pid = info.patientId || '';
- 
+
       let famRows = '';
       if(fams.length){
         fams.forEach(function(f){
@@ -512,7 +512,7 @@ async function renderLinksPage(){
       } else {
         famRows = '<div style="color:var(--muted);font-size:.78rem;font-style:italic;padding:4px 0">Chưa có người nhà</div>';
       }
- 
+
       html += '<div class="acc-item open" id="lnk-' + pid + '">'
         + '<div class="acc-head" onclick="this.closest(\'.acc-item\').classList.toggle(\'open\')">'
         + '<div class="acc-av">' + init + '</div>'
@@ -526,21 +526,21 @@ async function renderLinksPage(){
         + '<div class="acc-body">' + famRows + '</div>'
         + '</div>';
     });
- 
+
     body.innerHTML = html;
   } catch(e){ body.innerHTML = '<div class="loading">⚠️ ' + esc(e.message) + '</div>'; }
 }
- 
+
 function filterLinks(q){
   const kw = q.toLowerCase().trim();
   document.querySelectorAll('[id^="lnk-"].acc-item').forEach(function(el){
     el.classList.toggle('hidden', kw!=='' && !(el.querySelector('.acc-name')?.textContent||'').toLowerCase().includes(kw));
   });
 }
- 
+
 // ── HỒ SƠ BỆNH ÁN PAGE — Accordion ──
 let recPts = [];
- 
+
 async function renderRecordsPage(){
   const body = document.getElementById('records-body');
   body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
@@ -573,7 +573,7 @@ async function renderRecordsPage(){
     await Promise.all(list.map(p => loadAccRecord(p.patientId)));
   } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
 }
- 
+
 async function loadAccRecord(pid){
   const body = document.getElementById('acc-body-'+pid);
   const tag  = document.getElementById('acc-tag-'+pid);
@@ -609,7 +609,7 @@ async function loadAccRecord(pid){
       </div>`;
   } catch(e){ if(body) body.innerHTML=`<div style="color:var(--danger);font-size:.74rem;padding:10px 0">⚠️ ${esc(e.message)}</div>`; }
 }
- 
+
 function toggleAcc(pid){
   const item = document.getElementById('acc-'+pid);
   if(item) item.classList.toggle('open');
@@ -672,10 +672,10 @@ async function changePw(){
     });
   }
 })();
- 
+
 // ── DATE PICKER CHO TRANG BỆNH NHÂN ──
-let ptSelDate = null; // ngày đang chọn trong trang bệnh nhân
- 
+let ptSelDate = null;
+
 function togglePtDD(e){
   if(e) e.stopPropagation();
   const dd = document.getElementById('pt-date-dd');
@@ -688,32 +688,79 @@ function togglePtDD(e){
   dd.style.left = rect.left + 'px';
   renderPtCal();
 }
- 
+
 document.addEventListener('mousedown', function(e){
   const dd = document.getElementById('pt-date-dd');
   if(!dd || dd.style.display==='none') return;
   if(e.target.closest('#pt-date-dd') || e.target.closest('#pt-date-trigger')) return;
   dd.style.display = 'none';
 });
- 
+
 function renderPtCal(){
   const dd = document.getElementById('pt-date-dd');
-  if(!selPid || !vcache[selPid]) { dd.innerHTML='<div style="padding:12px;font-size:.76rem;color:var(--muted)">Chưa có dữ liệu</div>'; return; }
-  const dates = vcache[selPid].dates;
-  let html = '<div class="date-opt" onclick="pickPtDate(null,this)" style="' + (!ptSelDate?'background:var(--mint);color:var(--navy);font-weight:700':'') + '">📅 Tất cả ngày</div>';
-  dates.forEach(d=>{
-    const [y,m,day]=d.split('-');
-    const active = d===ptSelDate;
-    html += '<div class="date-opt" onclick="pickPtDate(\''+d+'\',this)" style="'+(active?'background:var(--navy);color:#fff;font-weight:700':'')+'">'+day+'/'+m+'/'+y+'</div>';
-  });
+  if(!dd) return;
+  const ptDates = (selPid && vcache[selPid]) ? vcache[selPid].dates : [];
+
+  // Build calendar giống tổng quan
+  const mNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  const today = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(calY, calM, 1).getDay();
+  const daysInMonth = new Date(calY, calM+1, 0).getDate();
+
+  // Month nav
+  let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
+    + '<button onclick="ptCalMove(-1)" style="background:none;border:1px solid var(--border);border-radius:7px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--navy)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>'
+    + '<div style="font-size:.8rem;font-weight:700;color:var(--navy)">' + mNames[calM] + ' ' + calY + '</div>'
+    + '<button onclick="ptCalMove(1)" style="background:none;border:1px solid var(--border);border-radius:7px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--navy)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>'
+    + '</div>';
+
+  // Day headers
+  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:3px">'
+    + ['CN','T2','T3','T4','T5','T6','T7'].map(d=>`<div style="font-size:.6rem;font-weight:700;text-align:center;color:var(--muted);padding:2px 0">${d}</div>`).join('')
+    + '</div>';
+
+  // Days grid
+  html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
+  for(let i=0;i<firstDay;i++) html += '<div></div>';
+  for(let d=1;d<=daysInMonth;d++){
+    const key = `${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const has = ptDates.includes(key);
+    const isActive = key===ptSelDate;
+    const isToday = key===today;
+    let style = 'font-size:.72rem;text-align:center;padding:5px 2px;border-radius:6px;';
+    if(isActive) style += 'background:var(--navy);color:#fff;cursor:pointer;font-weight:700;';
+    else if(has) style += 'background:var(--mint);color:var(--navy);cursor:pointer;font-weight:700;';
+    else style += 'color:var(--border);cursor:default;';
+    if(isToday && !isActive) style += 'outline:2px solid var(--green);outline-offset:-1px;';
+    html += `<div style="${style}" ${has?`onclick="pickPtDate('${key}')"`:''}>${d}</div>`;
+  }
+  html += '</div>';
+
+  // Buttons
+  html += '<div style="display:flex;gap:6px;margin-top:8px">'
+    + `<button onclick="pickPtDate(null)" style="flex:1;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">✕ Tất cả ngày</button>`
+    + '</div>';
+
+  // Legend
+  html += '<div style="display:flex;align-items:center;gap:5px;font-size:.6rem;color:var(--muted);margin-top:8px;padding-top:7px;border-top:1px solid var(--border)">'
+    + '<div style="width:9px;height:9px;border-radius:3px;background:var(--mint);flex-shrink:0"></div> Có dữ liệu'
+    + '<div style="width:9px;height:9px;border-radius:3px;background:var(--navy);flex-shrink:0;margin-left:6px"></div> Đang chọn'
+    + '</div>';
+
   dd.innerHTML = html;
 }
- 
-function pickPtDate(d, el){
+
+function ptCalMove(dir){
+  calM += dir;
+  if(calM>11){calM=0;calY++;}
+  if(calM<0){calM=11;calY--;}
+  renderPtCal();
+}
+
+function pickPtDate(d){
   ptSelDate = d;
   document.getElementById('pt-date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
   document.getElementById('pt-date-dd').style.display = 'none';
-  // Hiển thị vitals theo ngày mới
   if(selPid && vcache[selPid]){
     const cache = vcache[selPid];
     const show = d && cache.byDate[d] ? d : cache.dates[0];
@@ -721,10 +768,10 @@ function pickPtDate(d, el){
     updPatientSum(selPid);
   }
 }
- 
+
 // ── DATE PICKER TỔNG QUAN ──
 let calY = new Date().getFullYear(), calM = new Date().getMonth(); // 0-based month
- 
+
 function toggleDD(e){
   if(e) e.stopPropagation();
   const dd = document.getElementById('date-dd');
@@ -742,14 +789,14 @@ function toggleDD(e){
   calInitSelects();
   calRender();
 }
- 
+
 document.addEventListener('mousedown', function(e){
   const dd = document.getElementById('date-dd');
   if(dd.style.display === 'none') return;
   if(e.target.closest('#date-dd') || e.target.closest('#date-trigger')) return;
   dd.style.display = 'none';
 });
- 
+
 function calInitSelects(){
   const ms = document.getElementById('cal-m-sel');
   const ys = document.getElementById('cal-y-sel');
@@ -763,7 +810,7 @@ function calInitSelects(){
   ms.onchange = ()=>{ calM=+ms.value; calRender(); };
   ys.onchange = ()=>{ calY=+ys.value; calRender(); };
 }
- 
+
 function calMove(dir){
   calM += dir;
   if(calM > 11){ calM=0; calY++; }
@@ -771,7 +818,7 @@ function calMove(dir){
   calInitSelects();
   calRender();
 }
- 
+
 function calRender(){
   const ms = document.getElementById('cal-m-sel');
   const ys = document.getElementById('cal-y-sel');
@@ -797,9 +844,9 @@ function calRender(){
   }
   grid.innerHTML = html;
 }
- 
+
 function buildDD(){ calRender(); } // Compat - called after allDates loads
- 
+
 function goToday(){
   const today = new Date();
   calY = today.getFullYear(); calM = today.getMonth();
@@ -807,7 +854,7 @@ function goToday(){
   const key = today.toISOString().slice(0,10);
   if(allDates.includes(key)) pickDate(key);
 }
- 
+
 function pickDate(d){
   selDate = d;
   document.getElementById('date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
@@ -816,7 +863,7 @@ function pickDate(d){
   if(selPid) showV(selPid);
   updSum();
 }
- 
+
 // LOAD DATA
 async function loadData(){
   const btn=document.getElementById('btn-ref'); btn.disabled=true;
@@ -834,7 +881,7 @@ async function loadData(){
   } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   btn.disabled=false;
 }
- 
+
 // RENDER PATIENTS
 function renderPts(list,q=''){
   const el=document.getElementById('pt-list');
@@ -864,7 +911,7 @@ function sbadge(hr,spo2){
   if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) return '<span class="badge warn">🟡 Cảnh báo</span>';
   return '<span class="badge ok">🟢 Bình thường</span>';
 }
- 
+
 // Tính summary cho 1 bệnh nhân cụ thể (hiện trên view-patient)
 function updPatientSum(pid){
   const cache = vcache[pid];
@@ -897,11 +944,11 @@ function updPatientSum(pid){
   if(wEl) wEl.textContent=w;
   if(dEl) dEl.textContent=d;
 }
- 
+
 // SUMMARY — tổng tất cả bệnh nhân (overview)
 function updSum(){
   let ok=0, w=0, d=0;
- 
+
   if(selDate){
     // Chọn ngày → đếm số bản ghi theo trạng thái trong ngày đó
     pts.forEach(p=>{
@@ -937,13 +984,13 @@ function updSum(){
     document.getElementById('sub-warn').textContent  = 'bản ghi';
     document.getElementById('sub-danger').textContent= 'bản ghi';
   }
- 
+
   document.getElementById('s-ok').textContent     = ok;
   document.getElementById('s-warn').textContent   = w;
   document.getElementById('s-danger').textContent = d;
   document.getElementById('s-total').textContent  = pts.length;
 }
- 
+
 // TOOLTIP
 let _tip=null;
 function showTip(e,pid){
@@ -966,19 +1013,21 @@ function showTip(e,pid){
   _tip.style.display='block';
 }
 function hideTip(){if(_tip)_tip.style.display='none';}
- 
+
 // CLICK PATIENT → mở trang chi tiết riêng
 function clickPt(pid){
   selPid = pid;
   const p = pts.find(x=>x.id===pid);
- 
-  // Chuyển sang view-patient
+
+  // Ẩn tất cả views
   ['overview','devices','links','records','patient'].forEach(v=>{
     document.getElementById('view-'+v).style.display = 'none';
   });
+
+  // Hiện view-patient
   document.getElementById('view-patient').style.display = 'flex';
   document.getElementById('live-dot').style.display = 'none';
- 
+
   // Cập nhật header
   if(p){
     document.getElementById('pt-detail-name').textContent = p.name;
@@ -987,19 +1036,21 @@ function clickPt(pid){
     document.getElementById('pt-detail-sub').textContent = 'BN-' + sid + ' · ' + dob;
     document.getElementById('vtitle').textContent = '📈 Dữ liệu sinh tồn — ' + p.name;
   }
- 
-  // Reset date picker của trang bệnh nhân
+
+  // Reset date picker & summary
   ptSelDate = null;
   document.getElementById('pt-date-lbl').textContent = 'Tất cả ngày';
- 
-  // Reset summary
   document.getElementById('pt-ok').textContent = '—';
   document.getElementById('pt-warn').textContent = '—';
   document.getElementById('pt-danger').textContent = '—';
- 
-  showV(pid);
+
+  // Đặt spinner trước
+  document.getElementById('vbody').innerHTML = '<div class="loading"><span class="spin"></span>Đang tải dữ liệu...</div>';
+
+  // Load vitals (dùng setTimeout để đảm bảo DOM đã render)
+  setTimeout(()=>showV(pid), 0);
 }
- 
+
 function backToOverview(){
   selPid = null;
   ['overview','devices','links','records','patient'].forEach(v=>{
@@ -1010,31 +1061,51 @@ function backToOverview(){
   // Bỏ highlight bệnh nhân
   renderPts(pts, document.getElementById('srch').value);
 }
- 
+
 async function showV(pid){
-  const body=document.getElementById('vbody');
-  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
-  if(!vcache[pid]){
-    try {
-      const r=await fetch(`${API}/vitals/${pid}?limit=2000`);
+  const body = document.getElementById('vbody');
+  if(!body) return;
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    if(!vcache[pid]){
+      const r = await fetch(API+'/vitals/'+pid+'?limit=2000');
       if(!r.ok) throw new Error('HTTP '+r.status);
-      const raw=await r.json();
-      const rows=raw.map(r=>({hr:r.heartRate??r.nhip_tim,spo2:r.spo2,dHR:r.deltaHeartRate??r.delta_nhip_tim,dS:r.deltaSpo2??r.delta_spo2,mode:r.samplingMode||r.che_do_lay_mau,time:r.time||r.thoi_gian_do})).filter(r=>r.time).sort((a,b)=>new Date(b.time)-new Date(a.time));
-      const byDate={};
-      rows.forEach(r=>{ const d=new Date(new Date(r.time).getTime()+7*3600000); const k=d.toISOString().slice(0,10); if(!byDate[k])byDate[k]=[]; byDate[k].push(r); });
-      const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
-      vcache[pid]={byDate,dates};
-      updSum(); // cập nhật summary tổng quan
-      // Tính summary riêng cho bệnh nhân này
-      updPatientSum(pid);
-    } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; return; }
+      const raw = await r.json();
+      const rows = raw.map(function(r){return{
+        hr:   r.heartRate   != null ? r.heartRate   : r.nhip_tim,
+        spo2: r.spo2,
+        dHR:  r.deltaHeartRate != null ? r.deltaHeartRate : r.delta_nhip_tim,
+        dS:   r.deltaSpo2   != null ? r.deltaSpo2   : r.delta_spo2,
+        mode: r.samplingMode || r.che_do_lay_mau,
+        time: r.time        || r.thoi_gian_do
+      };}).filter(function(r){return r.time;})
+        .sort(function(a,b){return new Date(b.time)-new Date(a.time);});
+      const byDate = {};
+      rows.forEach(function(r){
+        var d = new Date(new Date(r.time).getTime()+7*3600000);
+        var k = d.toISOString().slice(0,10);
+        if(!byDate[k]) byDate[k]=[];
+        byDate[k].push(r);
+      });
+      const dates = Object.keys(byDate).sort(function(a,b){return b.localeCompare(a);});
+      vcache[pid] = {byDate:byDate, dates:dates};
+      updSum();
+    }
+    const cache = vcache[pid];
+    if(!cache || !cache.dates || !cache.dates.length){
+      body.innerHTML = '<div class="loading">Không có dữ liệu</div>';
+      return;
+    }
+    const show = ptSelDate && cache.byDate[ptSelDate] ? ptSelDate : cache.dates[0];
+    renderVT(cache.byDate[show] || []);
+    updPatientSum(pid);
+    renderPtCal();
+  } catch(e){
+    body.innerHTML = '<div class="loading">⚠️ '+esc(e.message)+'</div>';
   }
-  const c=vcache[pid]; const dates=c.dates;
-  const show=ptSelDate&&c.byDate[ptSelDate]?ptSelDate:dates[0];
-  renderVT(c.byDate[show]||[]);
-  renderPtCal(); // cập nhật dropdown ngày
 }
- 
+
+
 function renderVT(rows){
   const body=document.getElementById('vbody');
   if(!rows.length){body.innerHTML='<div class="loading">Không có dữ liệu trong ngày này</div>';return;}
@@ -1052,14 +1123,14 @@ function renderVT(rows){
       return`<tr><td>${ts}</td><td style="color:${hc};font-weight:700">${hr!=null?hr+' bpm':'—'}</td><td style="color:${r.dHR>0?'var(--danger)':r.dHR<0?'var(--green)':'var(--muted)'}">${dHR}</td><td style="color:${sc};font-weight:700">${spo2!=null?spo2+'%':'—'}</td><td style="color:${r.dS>0?'var(--navy)':r.dS<0?'var(--warn)':'var(--muted)'}">${dS}</td><td><span style="background:var(--mint);color:var(--navy);padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700">${mL[r.mode]||r.mode||'—'}</span></td></tr>`;
     }).join('')}</tbody></table></div>`;
 }
- 
+
 document.getElementById('srch').addEventListener('input',function(){renderPts(pts,this.value);});
- 
+
 // SIDEBAR DOCTOR
 async function loadSbDoc(){
   try { const r=await fetch(`${API}/doctor/${DID}`); if(!r.ok)return; const d=await r.json(); const i=(d.name||'BS').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase(); document.getElementById('sb-av').textContent=i; document.getElementById('sb-name').textContent=d.name||'Bác sĩ'; document.getElementById('sb-role').textContent=d.hospital?.name||'Bác sĩ'; } catch(_){}
 }
- 
+
 // SLIDE PANELS
 async function saveRec(pid){
   const m=document.getElementById('rmsg-'+pid);
@@ -1070,7 +1141,7 @@ async function saveRec(pid){
   m.style.color='var(--muted)';m.textContent='Đang lưu...';
   try { const r=await fetch(`${API}/medical-record/${pid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}); const d=await r.json(); if(r.ok){m.style.color='var(--green)';m.textContent='✅ Lưu thành công!';setTimeout(()=>m.textContent='',3000);}else{m.style.color='var(--danger)';m.textContent='⚠️ '+(d.error||'Lỗi');} } catch(e){m.style.color='var(--danger)';m.textContent='⚠️ Không thể kết nối';}
 }
- 
+
 // CHAT
 function toggleChat(){const b=document.getElementById('cbox');b.classList.toggle('open');if(b.classList.contains('open'))renderCList();}
 function renderCList(){
@@ -1110,7 +1181,7 @@ async function sendNote(){
 }
 document.getElementById('cinp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendNote();}});
 document.getElementById('cinp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,68)+'px';});
- 
+
 loadData();
 </script>
 <!-- DATE PICKER POPUP — tách riêng khỏi trigger để tránh event bubble -->
@@ -1137,8 +1208,7 @@ loadData();
   </div>
 </div>
 <!-- DATE PICKER POPUP — TRANG BỆNH NHÂN -->
-<div id="pt-date-dd" style="display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:999;width:200px;max-height:280px;overflow-y:auto;padding:6px 0;">
-</div>
- 
+<div id="pt-date-dd" style="display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:999;width:280px;padding:14px;"></div>
+
 </body>
 </html>
