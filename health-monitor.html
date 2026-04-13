@@ -1,1985 +1,532 @@
 <!doctype html>
 <html lang="vi" data-theme="light">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-    <title>Health Monitor</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      :root {
-        --navy: #2b5f8e;
-        --sky: #85c8ee;
-        --green: #5ab52a;
-        --mint: #ceecd8;
-        --white: #fff;
-        --bg: #f0f7f4;
-        --card: #fff;
-        --text: #1a2e1e;
-        --muted: #6b8f7a;
-        --border: #d0e8da;
-        --danger: #e05252;
-        --warn: #e8a930;
-        --sw: 240px;
-      }
-      [data-theme="dark"] {
-        --bg: #0f1a14;
-        --card: #18261b;
-        --text: #d4ead9;
-        --border: #2a4030;
-        --white: #18261b;
-      }
-      body {
-        font-family: "Sora", sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        display: flex;
-        min-height: 100vh;
-      }
-      .sb {
-        width: var(--sw);
-        background: var(--navy);
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        z-index: 100;
-      }
-      .sb-logo {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 18px 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-      .sb-logo-icon {
-        width: 34px;
-        height: 34px;
-        background: rgba(255, 255, 255, 0.15);
-        border-radius: 9px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .sb-logo-icon svg {
-        color: var(--sky);
-        width: 18px;
-        height: 18px;
-      }
-      .sb-logo-name {
-        font-size: 0.9rem;
-        font-weight: 800;
-        color: #fff;
-      }
-      .sb-logo-name span {
-        color: var(--mint);
-      }
-      .sb-nav {
-        flex: 1;
-        padding: 10px;
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-        overflow-y: auto;
-      }
-      .sb-sec {
-        padding: 10px 10px 4px;
-        font-size: 0.6rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: rgba(255, 255, 255, 0.35);
-      }
-      .sb-btn {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        padding: 9px 12px;
-        border-radius: 9px;
-        cursor: pointer;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: rgba(255, 255, 255, 0.65);
-        transition:
-          background 0.15s,
-          color 0.15s;
-        border: none;
-        background: none;
-        width: 100%;
-        text-align: left;
-      }
-      .sb-btn:hover,
-      .sb-btn.active {
-        background: rgba(255, 255, 255, 0.15);
-        color: #fff;
-      }
-      .sb-btn svg {
-        width: 15px;
-        height: 15px;
-        flex-shrink: 0;
-      }
-      .sb-btn.red {
-        color: rgba(224, 82, 82, 0.85);
-      }
-      .sb-btn.red:hover {
-        background: rgba(224, 82, 82, 0.15);
-      }
-      .sb-bottom {
-        padding: 10px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      }
-      .sb-user {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        padding: 10px 12px;
-        border-radius: 9px;
-        background: rgba(255, 255, 255, 0.08);
-        margin-bottom: 4px;
-      }
-      .sb-av {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: var(--sky);
-        color: var(--navy);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.7rem;
-        font-weight: 800;
-        flex-shrink: 0;
-      }
-      .sb-uname {
-        font-size: 0.78rem;
-        font-weight: 700;
-        color: #fff;
-        line-height: 1.2;
-      }
-      .sb-urole {
-        font-size: 0.65rem;
-        color: rgba(255, 255, 255, 0.5);
-      }
-      .main {
-        margin-left: var(--sw);
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-      }
-      .topbar {
-        background: var(--card);
-        border-bottom: 1px solid var(--border);
-        padding: 0 24px;
-        height: 54px;
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        position: sticky;
-        top: 0;
-        z-index: 50;
-      }
-      .topbar-title {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--navy);
-        flex: 1;
-      }
-      .live-dot {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        font-size: 0.7rem;
-        color: var(--green);
-        font-family: "DM Mono", monospace;
-      }
-      .live-dot::before {
-        content: "";
-        width: 7px;
-        height: 7px;
-        background: var(--green);
-        border-radius: 50%;
-        animation: pulse 1.8s infinite;
-      }
-      @keyframes pulse {
-        0%,
-        100% {
-          opacity: 1;
-          transform: scale(1);
-        }
-        50% {
-          opacity: 0.5;
-          transform: scale(1.3);
-        }
-      }
-      .last-upd {
-        font-size: 0.68rem;
-        color: var(--muted);
-        font-family: "DM Mono", monospace;
-      }
-      .content {
-        flex: 1;
-        padding: 20px 24px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-      }
-      .sum-row {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 12px;
-      }
-      .sum-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 14px 16px;
-      }
-      .sum-label {
-        font-size: 0.66rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--muted);
-        margin-bottom: 5px;
-      }
-      .sum-val {
-        font-size: 1.6rem;
-        font-weight: 800;
-        color: var(--navy);
-        font-family: "DM Mono", monospace;
-      }
-      .sum-sub {
-        font-size: 0.66rem;
-        color: var(--muted);
-        margin-top: 2px;
-      }
-      .toolbar {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 10px 16px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .tb-label {
-        font-size: 0.74rem;
-        font-weight: 700;
-        color: var(--muted);
-      }
-      .tb-date {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: var(--bg);
-        border: 1.5px solid var(--border);
-        border-radius: 8px;
-        padding: 6px 12px;
-        cursor: pointer;
-        font-family: "DM Mono", monospace;
-        font-size: 0.78rem;
-        color: var(--navy);
-        font-weight: 500;
-        position: relative;
-        user-select: none;
-      }
-      .tb-date:hover {
-        border-color: var(--navy);
-      }
-      .date-dd-unused {
-        display: none;
-      }
-      .cal-nav {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 8px;
-      }
-      .cal-nav-btn {
-        background: none;
-        border: 1px solid var(--border);
-        border-radius: 7px;
-        width: 28px;
-        height: 28px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--navy);
-      }
-      .cal-nav-btn:hover {
-        background: var(--mint);
-      }
-      .cal-month-lbl {
-        font-size: 0.82rem;
-        font-weight: 700;
-        color: var(--navy);
-      }
-      .cal-dow-row {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        margin-bottom: 3px;
-      }
-      .cal-dow {
-        font-size: 0.6rem;
-        font-weight: 700;
-        text-align: center;
-        color: var(--muted);
-        padding: 3px 0;
-      }
-      .cal-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 2px;
-      }
-      .cal-day {
-        font-size: 0.72rem;
-        text-align: center;
-        padding: 5px 2px;
-        border-radius: 6px;
-        cursor: default;
-        color: var(--muted);
-      }
-      .cal-day.has {
-        background: var(--mint);
-        color: var(--navy);
-        cursor: pointer;
-        font-weight: 700;
-      }
-      .cal-day.has:hover {
-        background: var(--sky);
-      }
-      .cal-day.active {
-        background: var(--navy) !important;
-        color: #fff !important;
-      }
-      .cal-day.today {
-        outline: 2px solid var(--green);
-        outline-offset: -1px;
-      }
-      .cal-reset {
-        width: 100%;
-        margin-top: 8px;
-        padding: 6px;
-        background: none;
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.74rem;
-        font-weight: 600;
-        color: var(--muted);
-        cursor: pointer;
-      }
-      .cal-reset:hover {
-        background: var(--bg);
-      }
-      .cal-selects {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 8px;
-      }
-      .cal-sel {
-        flex: 1;
-        border: 1px solid var(--border);
-        border-radius: 7px;
-        padding: 4px 6px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.72rem;
-        background: var(--bg);
-        color: var(--text);
-        outline: none;
-        cursor: pointer;
-      }
-      .btn-ref {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: var(--navy);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        padding: 7px 14px;
-        cursor: pointer;
-        font-family: "Sora", sans-serif;
-        font-size: 0.74rem;
-        font-weight: 700;
-        margin-left: auto;
-      }
-      .btn-ref:hover {
-        background: #1e4a72;
-      }
-      .btn-ref:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      .sec-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      .sec-head {
-        padding: 13px 18px;
-        border-bottom: 1px solid var(--border);
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-      .sec-title {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: var(--navy);
-        flex: 1;
-      }
-      .srch {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        background: var(--bg);
-        border: 1.5px solid var(--border);
-        border-radius: 8px;
-        padding: 6px 11px;
-      }
-      .srch svg {
-        width: 13px;
-        height: 13px;
-        color: var(--muted);
-        flex-shrink: 0;
-      }
-      .srch input {
-        border: none;
-        background: none;
-        outline: none;
-        font-family: "Sora", sans-serif;
-        font-size: 0.76rem;
-        color: var(--text);
-        width: 150px;
-      }
-      .srch input::placeholder {
-        color: var(--muted);
-        opacity: 0.7;
-      }
-      .pt-header,
-      .pt-row {
-        display: grid;
-        grid-template-columns: 90px 1fr 100px 110px 80px 70px 100px;
-        align-items: center;
-        padding: 10px 18px;
-      }
-      .pt-header {
-        background: var(--bg);
-        font-size: 0.62rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--muted);
-        border-bottom: 1px solid var(--border);
-      }
-      .pt-row {
-        border-bottom: 1px solid var(--border);
-        cursor: pointer;
-        transition: background 0.1s;
-      }
-      .pt-row:last-child {
-        border-bottom: none;
-      }
-      .pt-row:hover {
-        background: rgba(43, 95, 142, 0.04);
-      }
-      .pt-row.sel {
-        background: rgba(133, 200, 238, 0.15);
-        border-left: 3px solid var(--navy);
-      }
-      .mono {
-        font-family: "DM Mono", monospace;
-        font-size: 0.72rem;
-        color: var(--muted);
-      }
-      .val {
-        font-family: "DM Mono", monospace;
-        font-size: 0.84rem;
-        font-weight: 700;
-      }
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 3px;
-        padding: 3px 9px;
-        border-radius: 20px;
-        font-size: 0.63rem;
-        font-weight: 700;
-      }
-      .ok {
-        background: #e6f7e6;
-        color: #2d7a2d;
-      }
-      .warn {
-        background: #fff4e0;
-        color: #8a5800;
-      }
-      .danger {
-        background: #fdeaea;
-        color: #c0392b;
-      }
-      .off {
-        background: #f0f0f0;
-        color: #888;
-      }
-      .loading {
-        padding: 32px;
-        text-align: center;
-        color: var(--muted);
-        font-size: 0.82rem;
-      }
-      .spin {
-        display: inline-block;
-        width: 18px;
-        height: 18px;
-        border: 2px solid var(--border);
-        border-top-color: var(--navy);
-        border-radius: 50%;
-        animation: spin 0.65s linear infinite;
-        vertical-align: middle;
-        margin-right: 7px;
-      }
-      @keyframes spin {
-        to {
-          transform: rotate(360deg);
-        }
-      }
-      .vsec {
-        display: none;
-      }
-      .vsec.show {
-        display: block;
-      }
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Health Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--navy:#2b5f8e;--sky:#85c8ee;--green:#5ab52a;--mint:#ceecd8;--white:#fff;--bg:#f0f7f4;--card:#fff;--text:#1a2e1e;--muted:#6b8f7a;--border:#d0e8da;--danger:#e05252;--warn:#e8a930;--sw:240px;}
+[data-theme=dark]{--bg:#0f1a14;--card:#18261b;--text:#d4ead9;--border:#2a4030;--white:#18261b;}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+.sb{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sb-logo-icon{width:34px;height:34px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.sb-logo-icon svg{color:var(--sky);width:18px;height:18px;}
+.sb-logo-name{font-size:.9rem;font-weight:800;color:#fff;}
+.sb-logo-name span{color:var(--mint);}
+.sb-nav{flex:1;padding:10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sb-sec{padding:10px 10px 4px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:.8rem;font-weight:600;color:rgba(255,255,255,.65);transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left;}
+.sb-btn:hover,.sb-btn.active{background:rgba(255,255,255,.15);color:#fff;}
+.sb-btn svg{width:15px;height:15px;flex-shrink:0;}
+.sb-btn.red{color:rgba(224,82,82,.85);}
+.sb-btn.red:hover{background:rgba(224,82,82,.15);}
+.sb-bottom{padding:10px;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:2px;}
+.sb-user{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.08);margin-bottom:4px;}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
+.sb-uname{font-size:.78rem;font-weight:700;color:#fff;line-height:1.2;}
+.sb-urole{font-size:.65rem;color:rgba(255,255,255,.5);}
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:.95rem;font-weight:700;color:var(--navy);flex:1;}
+.live-dot{display:flex;align-items:center;gap:6px;font-size:.7rem;color:var(--green);font-family:'DM Mono',monospace;}
+.live-dot::before{content:'';width:7px;height:7px;background:var(--green);border-radius:50%;animation:pulse 1.8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.3);}}
+.last-upd{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;}
+.content{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:14px;}
+.sum-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.sum-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;}
+.sum-label{font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px;}
+.sum-val{font-size:1.6rem;font-weight:800;color:var(--navy);font-family:'DM Mono',monospace;}
+.sum-sub{font-size:.66rem;color:var(--muted);margin-top:2px;}
+.toolbar{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.tb-label{font-size:.74rem;font-weight:700;color:var(--muted);}
+.tb-date{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:'DM Mono',monospace;font-size:.78rem;color:var(--navy);font-weight:500;position:relative;user-select:none;}
+.tb-date:hover{border-color:var(--navy);}
+.date-dd-unused{display:none;}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.cal-nav-btn{background:none;border:1px solid var(--border);border-radius:7px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--navy);}
+.cal-nav-btn:hover{background:var(--mint);}
+.cal-month-lbl{font-size:.82rem;font-weight:700;color:var(--navy);}
+.cal-dow-row{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:3px;}
+.cal-dow{font-size:.6rem;font-weight:700;text-align:center;color:var(--muted);padding:3px 0;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.cal-day{font-size:.72rem;text-align:center;padding:5px 2px;border-radius:6px;cursor:default;color:var(--muted);}
+.cal-day.has{background:var(--mint);color:var(--navy);cursor:pointer;font-weight:700;}
+.cal-day.has:hover{background:var(--sky);}
+.cal-day.active{background:var(--navy)!important;color:#fff!important;}
+.cal-day.today{outline:2px solid var(--green);outline-offset:-1px;}
+.cal-reset{width:100%;margin-top:8px;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;}
+.cal-reset:hover{background:var(--bg);}
+.cal-selects{display:flex;gap:6px;margin-bottom:8px;}
+.cal-sel{flex:1;border:1px solid var(--border);border-radius:7px;padding:4px 6px;font-family:'Sora',sans-serif;font-size:.72rem;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
+.btn-ref{display:flex;align-items:center;gap:6px;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:700;margin-left:auto;}
+.btn-ref:hover{background:#1e4a72;}
+.btn-ref:disabled{opacity:.5;cursor:not-allowed;}
+.sec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.sec-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sec-title{font-size:.85rem;font-weight:700;color:var(--navy);flex:1;}
+.srch{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 11px;}
+.srch svg{width:13px;height:13px;color:var(--muted);flex-shrink:0;}
+.srch input{border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:150px;}
+.srch input::placeholder{color:var(--muted);opacity:.7;}
+.pt-header,.pt-row{display:grid;grid-template-columns:90px 1fr 100px 110px 80px 70px 100px;align-items:center;padding:10px 18px;}
+.pt-header{background:var(--bg);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);}
+.pt-row{border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
+.pt-row:last-child{border-bottom:none;}
+.pt-row:hover{background:rgba(43,95,142,.04);}
+.pt-row.sel{background:rgba(133,200,238,.15);border-left:3px solid var(--navy);}
+.mono{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);}
+.val{font-family:'DM Mono',monospace;font-size:.84rem;font-weight:700;}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:.63rem;font-weight:700;}
+.ok{background:#e6f7e6;color:#2d7a2d;}.warn{background:#fff4e0;color:#8a5800;}.danger{background:#fdeaea;color:#c0392b;}.off{background:#f0f0f0;color:#888;}
+.loading{padding:32px;text-align:center;color:var(--muted);font-size:.82rem;}
+.spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:7px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.vsec{display:none;}.vsec.show{display:block;}
 
-      .vtw {
-        overflow-x: auto;
-      }
-      .vt {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      .vt th {
-        padding: 8px 14px;
-        text-align: left;
-        font-size: 0.62rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.07em;
-        color: var(--muted);
-        background: var(--bg);
-        border-bottom: 1px solid var(--border);
-        white-space: nowrap;
-      }
-      .vt td {
-        padding: 8px 14px;
-        font-size: 0.78rem;
-        border-bottom: 1px solid var(--border);
-        font-family: "DM Mono", monospace;
-      }
-      .vt tr:last-child td {
-        border-bottom: none;
-      }
-      .vt tr:hover td {
-        background: rgba(43, 95, 142, 0.03);
-      }
-      .vcount {
-        padding: 6px 18px;
-        font-size: 0.68rem;
-        color: var(--muted);
-        border-bottom: 1px solid var(--border);
-      }
-      .tip {
-        display: none;
-        position: fixed;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 13px;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.14);
-        z-index: 500;
-        min-width: 230px;
-        pointer-events: none;
-      }
-      .tn {
-        font-size: 0.86rem;
-        font-weight: 700;
-        color: var(--navy);
-        margin-bottom: 7px;
-      }
-      .tr {
-        display: flex;
-        justify-content: space-between;
-        padding: 3px 0;
-        border-bottom: 1px solid var(--border);
-        font-size: 0.71rem;
-      }
-      .tr:last-child {
-        border-bottom: none;
-      }
-      .tl {
-        color: var(--muted);
-        font-weight: 600;
-      }
-      .tv {
-        font-family: "DM Mono", monospace;
-      }
+.vtw{overflow-x:auto;}
+.vt{width:100%;border-collapse:collapse;}
+.vt th{padding:8px 14px;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border);white-space:nowrap;}
+.vt td{padding:8px 14px;font-size:.78rem;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;}
+.vt tr:last-child td{border-bottom:none;}
+.vt tr:hover td{background:rgba(43,95,142,.03);}
+.vcount{padding:6px 18px;font-size:.68rem;color:var(--muted);border-bottom:1px solid var(--border);}
+.tip{display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;box-shadow:0 8px 28px rgba(0,0,0,.14);z-index:500;min-width:230px;pointer-events:none;}
+.tn{font-size:.86rem;font-weight:700;color:var(--navy);margin-bottom:7px;}
+.tr{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:.71rem;}
+.tr:last-child{border-bottom:none;}
+.tl{color:var(--muted);font-weight:600;}.tv{font-family:'DM Mono',monospace;}
 
-      .modal-bg {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.4);
-        z-index: 400;
-        align-items: center;
-        justify-content: center;
-      }
-      .modal-bg.open {
-        display: flex;
-      }
-      .modal {
-        background: var(--card);
-        border-radius: 16px;
-        padding: 26px;
-        width: 350px;
-        max-width: 95vw;
-        position: relative;
-      }
-      .modal-ttl {
-        font-size: 0.95rem;
-        font-weight: 700;
-        color: var(--navy);
-        margin-bottom: 18px;
-      }
-      .srow {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--border);
-      }
-      .srow:last-child {
-        border-bottom: none;
-      }
-      .slbl {
-        font-size: 0.82rem;
-        color: var(--text);
-      }
-      .tgl {
-        width: 40px;
-        height: 22px;
-        background: var(--border);
-        border-radius: 11px;
-        cursor: pointer;
-        border: none;
-        position: relative;
-        transition: background 0.2s;
-      }
-      .tgl.on {
-        background: var(--navy);
-      }
-      .tgl::after {
-        content: "";
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 16px;
-        height: 16px;
-        background: #fff;
-        border-radius: 50%;
-        transition: transform 0.2s;
-      }
-      .tgl.on::after {
-        transform: translateX(18px);
-      }
-      .fg {
-        display: flex;
-        gap: 5px;
-      }
-      .fb {
-        padding: 4px 10px;
-        border-radius: 6px;
-        border: 1.5px solid var(--border);
-        background: var(--bg);
-        color: var(--text);
-        cursor: pointer;
-        font-family: "Sora", sans-serif;
-        font-size: 0.72rem;
-        font-weight: 600;
-      }
-      .fb.on,
-      .fb:hover {
-        background: var(--navy);
-        color: #fff;
-        border-color: var(--navy);
-      }
-      .finp {
-        width: 100%;
-        padding: 8px 11px;
-        border: 1.5px solid var(--border);
-        border-radius: 8px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.8rem;
-        background: var(--bg);
-        color: var(--text);
-        outline: none;
-        margin-bottom: 7px;
-      }
-      .finp:focus {
-        border-color: var(--navy);
-      }
-      .bprim {
-        width: 100%;
-        padding: 9px;
-        background: var(--navy);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.8rem;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .bprim:hover {
-        background: #1e4a72;
-      }
-      .pwmsg {
-        font-size: 0.7rem;
-        text-align: center;
-        min-height: 14px;
-        margin-bottom: 6px;
-      }
-      .mclose {
-        position: absolute;
-        top: 12px;
-        right: 12px;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: var(--muted);
-      }
-      .cfab {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        z-index: 300;
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        background: var(--navy);
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 4px 14px rgba(43, 95, 142, 0.35);
-      }
-      .cfab svg {
-        color: #fff;
-      }
-      .cbox {
-        position: fixed;
-        bottom: 82px;
-        right: 24px;
-        width: 305px;
-        height: 430px;
-        background: var(--card);
-        border-radius: 14px;
-        box-shadow: 0 6px 28px rgba(0, 0, 0, 0.14);
-        border: 1px solid var(--border);
-        display: none;
-        flex-direction: column;
-        overflow: hidden;
-        z-index: 299;
-      }
-      .cbox.open {
-        display: flex;
-      }
-      .chd {
-        background: var(--navy);
-        padding: 11px 13px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-shrink: 0;
-      }
-      .chdn {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #fff;
-      }
-      .chds {
-        font-size: 0.63rem;
-        color: rgba(255, 255, 255, 0.6);
-      }
-      .cbk {
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: rgba(255, 255, 255, 0.8);
-        display: flex;
-      }
-      .cav {
-        width: 27px;
-        height: 27px;
-        border-radius: 50%;
-        background: var(--sky);
-        color: var(--navy);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.63rem;
-        font-weight: 800;
-        flex-shrink: 0;
-      }
-      .clist {
-        flex: 1;
-        overflow-y: auto;
-      }
-      .citem {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 9px 12px;
-        border-bottom: 1px solid var(--border);
-        cursor: pointer;
-      }
-      .citem:hover {
-        background: var(--bg);
-      }
-      .cav2 {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: var(--mint);
-        color: var(--navy);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.66rem;
-        font-weight: 800;
-        flex-shrink: 0;
-      }
-      .cn {
-        font-size: 0.76rem;
-        font-weight: 700;
-        color: var(--text);
-      }
-      .cp {
-        font-size: 0.64rem;
-        color: var(--muted);
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      .cmsgs {
-        flex: 1;
-        overflow-y: auto;
-        padding: 9px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-        background: var(--bg);
-      }
-      .cmsg {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-end;
-      }
-      .cbbl {
-        background: var(--navy);
-        color: #fff;
-        padding: 7px 10px;
-        border-radius: 10px 10px 2px 10px;
-        font-size: 0.74rem;
-        line-height: 1.5;
-        max-width: 90%;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-      .cts {
-        font-size: 0.58rem;
-        color: var(--muted);
-        margin-top: 2px;
-      }
-      .cft {
-        padding: 7px;
-        border-top: 1px solid var(--border);
-        background: var(--card);
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-      }
-      .ctype {
-        font-family: "Sora", sans-serif;
-        font-size: 0.7rem;
-        border: 1px solid var(--border);
-        border-radius: 7px;
-        padding: 4px 8px;
-        color: var(--navy);
-        background: var(--bg);
-        outline: none;
-        width: 100%;
-      }
-      .crow {
-        display: flex;
-        gap: 5px;
-        align-items: flex-end;
-      }
-      .cinp {
-        flex: 1;
-        border: 1.5px solid var(--border);
-        border-radius: 7px;
-        padding: 7px 9px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.74rem;
-        resize: none;
-        outline: none;
-        background: var(--bg);
-        color: var(--text);
-        max-height: 70px;
-      }
-      .cinp:focus {
-        border-color: var(--navy);
-      }
-      .csnd {
-        width: 31px;
-        height: 31px;
-        border-radius: 7px;
-        background: var(--navy);
-        border: none;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-        flex-shrink: 0;
-      }
-      .csnd:hover {
-        background: #1e4a72;
-      }
-      .cempty {
-        flex: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--muted);
-        font-size: 0.76rem;
-      }
-      .page-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-        gap: 16px;
-      }
-      .page-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        overflow: hidden;
-      }
-      .page-card-head {
-        padding: 14px 18px;
-        border-bottom: 1px solid var(--border);
-        background: var(--bg);
-      }
-      .page-card-name {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: var(--navy);
-      }
-      .page-card-sub {
-        font-size: 0.68rem;
-        color: var(--muted);
-        font-family: "DM Mono", monospace;
-        margin-top: 2px;
-      }
-      .page-card-body {
-        padding: 14px 18px;
-      }
-      .fam-row {
-        display: flex;
-        align-items: center;
-        gap: 9px;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--border);
-      }
-      .fam-row:last-child {
-        border-bottom: none;
-      }
-      .fam-av {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        background: var(--mint);
-        color: var(--navy);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-        font-size: 0.63rem;
-        flex-shrink: 0;
-      }
-      .fam-name {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: var(--text);
-      }
-      .fam-sub {
-        font-size: 0.68rem;
-        color: var(--muted);
-      }
-      .dev-row {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 8px 0;
-        border-bottom: 1px solid var(--border);
-      }
-      .dev-row:last-child {
-        border-bottom: none;
-      }
-      .dev-ic {
-        width: 32px;
-        height: 32px;
-        border-radius: 8px;
-        background: var(--navy);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-      }
-      .dev-serial {
-        font-family: "DM Mono", monospace;
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: var(--navy);
-      }
-      .dev-sub {
-        font-size: 0.68rem;
-        color: var(--muted);
-        margin-top: 2px;
-      }
-      .rec-field {
-        margin-bottom: 10px;
-      }
-      .rec-lbl {
-        font-size: 0.61rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--muted);
-        margin-bottom: 3px;
-      }
-      .rec-inp {
-        width: 100%;
-        padding: 7px 10px;
-        border: 1.5px solid var(--border);
-        border-radius: 7px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.76rem;
-        background: var(--bg);
-        color: var(--text);
-        outline: none;
-      }
-      .rec-inp:focus {
-        border-color: var(--navy);
-      }
-      .rec-save {
-        margin-top: 10px;
-        width: 100%;
-        padding: 8px;
-        background: var(--navy);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.76rem;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .rec-save:hover {
-        background: #1e4a72;
-      }
-      .rec-msg {
-        font-size: 0.7rem;
-        text-align: center;
-        min-height: 14px;
-        margin-top: 4px;
-      }
-      /* Accordion */
-      .acc-item {
-        border-bottom: 1px solid var(--border);
-      }
-      .acc-item:last-child {
-        border-bottom: none;
-      }
-      .acc-item.hidden {
-        display: none;
-      }
-      .acc-head {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 14px 20px;
-        cursor: pointer;
-        transition: background 0.12s;
-        user-select: none;
-      }
-      .acc-head:hover {
-        background: rgba(43, 95, 142, 0.04);
-      }
-      .acc-av {
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        background: var(--navy);
-        color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.72rem;
-        font-weight: 800;
-        flex-shrink: 0;
-      }
-      .acc-info {
-        flex: 1;
-        min-width: 0;
-      }
-      .acc-name {
-        font-size: 0.88rem;
-        font-weight: 700;
-        color: var(--text);
-      }
-      .acc-sub {
-        font-size: 0.68rem;
-        color: var(--muted);
-        font-family: "DM Mono", monospace;
-        margin-top: 2px;
-      }
-      .acc-meta {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-shrink: 0;
-      }
-      .acc-tag {
-        font-size: 0.62rem;
-        font-weight: 700;
-        padding: 3px 9px;
-        border-radius: 10px;
-        background: var(--mint);
-        color: var(--navy);
-      }
-      .acc-chevron {
-        color: var(--muted);
-        transition: transform 0.2s;
-        flex-shrink: 0;
-      }
-      .acc-item.open .acc-chevron {
-        transform: rotate(180deg);
-      }
-      .acc-body {
-        display: none;
-        padding: 0 20px 20px;
-      }
-      .acc-item.open .acc-body {
-        display: block;
-      }
-      .acc-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 10px;
-        margin-bottom: 14px;
-      }
-      .acc-field {
-        display: flex;
-        flex-direction: column;
-        gap: 3px;
-      }
-      .acc-flbl {
-        font-size: 0.61rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--muted);
-      }
-      .acc-finp {
-        padding: 7px 10px;
-        border: 1.5px solid var(--border);
-        border-radius: 7px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.78rem;
-        background: var(--bg);
-        color: var(--text);
-        outline: none;
-        width: 100%;
-      }
-      .acc-finp:focus {
-        border-color: var(--navy);
-      }
-      .acc-fsel {
-        padding: 7px 10px;
-        border: 1.5px solid var(--border);
-        border-radius: 7px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.78rem;
-        background: var(--bg);
-        color: var(--text);
-        outline: none;
-        width: 100%;
-        cursor: pointer;
-      }
-      .acc-fsel:focus {
-        border-color: var(--navy);
-      }
-      .acc-full {
-        grid-column: 1/-1;
-      }
-      .acc-footer {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding-top: 10px;
-        border-top: 1px solid var(--border);
-      }
-      .acc-save {
-        padding: 8px 20px;
-        background: var(--navy);
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-        font-family: "Sora", sans-serif;
-        font-size: 0.78rem;
-        font-weight: 700;
-        cursor: pointer;
-      }
-      .acc-save:hover {
-        background: #1e4a72;
-      }
-      .acc-rmsg {
-        font-size: 0.72rem;
-        flex: 1;
-      }
-    </style>
-  </head>
-  <body>
-    <aside class="sb">
-      <div class="sb-logo">
-        <div class="sb-logo-icon">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-          </svg>
-        </div>
-        <div class="sb-logo-name">Health<span>Monitor</span></div>
-      </div>
-      <div class="sb-nav">
-        <div class="sb-sec">Theo dõi</div>
-        <button class="sb-btn active" onclick="switchView('overview', this)">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <rect x="3" y="3" width="7" height="7" />
-            <rect x="14" y="3" width="7" height="7" />
-            <rect x="3" y="14" width="7" height="7" />
-            <rect x="14" y="14" width="7" height="7" /></svg
-          >Tổng quan
-        </button>
-        <button class="sb-btn" onclick="switchView('devices', this)">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <rect x="5" y="2" width="14" height="20" rx="2" />
-            <line x1="12" y1="18" x2="12.01" y2="18" /></svg
-          >Thiết bị
-        </button>
-        <button class="sb-btn" onclick="switchView('links', this)">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-            <path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg
-          >Liên kết
-        </button>
-        <button class="sb-btn" onclick="switchView('records', this)">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
-            />
-            <polyline points="14 2 14 8 20 8" />
-            <line x1="16" y1="13" x2="8" y2="13" /></svg
-          >Hồ sơ bệnh án
-        </button>
-      </div>
-      <div class="sb-bottom">
-        <div class="sb-user">
-          <div class="sb-av" id="sb-av">BS</div>
-          <div>
-            <div class="sb-uname" id="sb-name">Đang tải...</div>
-            <div class="sb-urole" id="sb-role">Bác sĩ</div>
-          </div>
-        </div>
-        <button class="sb-btn" onclick="openSettings()">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <path
-              d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"
-            /></svg
-          >Cài đặt
-        </button>
-        <button class="sb-btn red" onclick="doLogout()">
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" /></svg
-          >Đăng xuất
-        </button>
-      </div>
-    </aside>
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:400;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:16px;padding:26px;width:350px;max-width:95vw;position:relative;}
+.modal-ttl{font-size:.95rem;font-weight:700;color:var(--navy);margin-bottom:18px;}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);}
+.srow:last-child{border-bottom:none;}
+.slbl{font-size:.82rem;color:var(--text);}
+.tgl{width:40px;height:22px;background:var(--border);border-radius:11px;cursor:pointer;border:none;position:relative;transition:background .2s;}
+.tgl.on{background:var(--navy);}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#fff;border-radius:50%;transition:transform .2s;}
+.tgl.on::after{transform:translateX(18px);}
+.fg{display:flex;gap:5px;}
+.fb{padding:4px 10px;border-radius:6px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;}
+.fb.on,.fb:hover{background:var(--navy);color:#fff;border-color:var(--navy);}
+.finp{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.8rem;background:var(--bg);color:var(--text);outline:none;margin-bottom:7px;}
+.finp:focus{border-color:var(--navy);}
+.bprim{width:100%;padding:9px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;}
+.bprim:hover{background:#1e4a72;}
+.pwmsg{font-size:.7rem;text-align:center;min-height:14px;margin-bottom:6px;}
+.mclose{position:absolute;top:12px;right:12px;background:none;border:none;cursor:pointer;color:var(--muted);}
+.cfab{position:fixed;bottom:24px;right:24px;z-index:300;width:50px;height:50px;border-radius:50%;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(43,95,142,.35);}
+.cfab svg{color:#fff;}
+.cbox{position:fixed;bottom:82px;right:24px;width:305px;height:430px;background:var(--card);border-radius:14px;box-shadow:0 6px 28px rgba(0,0,0,.14);border:1px solid var(--border);display:none;flex-direction:column;overflow:hidden;z-index:299;}
+.cbox.open{display:flex;}
+.chd{background:var(--navy);padding:11px 13px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.chdn{font-size:.8rem;font-weight:700;color:#fff;}
+.chds{font-size:.63rem;color:rgba(255,255,255,.6);}
+.cbk{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.8);display:flex;}
+.cav{width:27px;height:27px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.63rem;font-weight:800;flex-shrink:0;}
+.clist{flex:1;overflow-y:auto;}
+.citem{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;}
+.citem:hover{background:var(--bg);}
+.cav2{width:30px;height:30px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:800;flex-shrink:0;}
+.cn{font-size:.76rem;font-weight:700;color:var(--text);}
+.cp{font-size:.64rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cmsgs{flex:1;overflow-y:auto;padding:9px;display:flex;flex-direction:column;gap:6px;background:var(--bg);}
+.cmsg{display:flex;flex-direction:column;align-items:flex-end;}
+.cbbl{background:var(--navy);color:#fff;padding:7px 10px;border-radius:10px 10px 2px 10px;font-size:.74rem;line-height:1.5;max-width:90%;white-space:pre-wrap;word-break:break-word;}
+.cts{font-size:.58rem;color:var(--muted);margin-top:2px;}
+.cft{padding:7px;border-top:1px solid var(--border);background:var(--card);display:flex;flex-direction:column;gap:5px;}
+.ctype{font-family:'Sora',sans-serif;font-size:.7rem;border:1px solid var(--border);border-radius:7px;padding:4px 8px;color:var(--navy);background:var(--bg);outline:none;width:100%;}
+.crow{display:flex;gap:5px;align-items:flex-end;}
+.cinp{flex:1;border:1.5px solid var(--border);border-radius:7px;padding:7px 9px;font-family:'Sora',sans-serif;font-size:.74rem;resize:none;outline:none;background:var(--bg);color:var(--text);max-height:70px;}
+.cinp:focus{border-color:var(--navy);}
+.csnd{width:31px;height:31px;border-radius:7px;background:var(--navy);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;}
+.csnd:hover{background:#1e4a72;}
+.cempty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.76rem;}.page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
+.page-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.page-card-head{padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg);}
+.page-card-name{font-size:.9rem;font-weight:700;color:var(--navy);}
+.page-card-sub{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.page-card-body{padding:14px 18px;}
+.fam-row{display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border);}
+.fam-row:last-child{border-bottom:none;}
+.fam-av{width:30px;height:30px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.63rem;flex-shrink:0;}
+.fam-name{font-size:.8rem;font-weight:600;color:var(--text);}
+.fam-sub{font-size:.68rem;color:var(--muted);}
+.dev-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);}
+.dev-row:last-child{border-bottom:none;}
+.dev-ic{width:32px;height:32px;border-radius:8px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.dev-serial{font-family:'DM Mono',monospace;font-size:.8rem;font-weight:700;color:var(--navy);}
+.dev-sub{font-size:.68rem;color:var(--muted);margin-top:2px;}
+.rec-field{margin-bottom:10px;}
+.rec-lbl{font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:3px;}
+.rec-inp{width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:.76rem;background:var(--bg);color:var(--text);outline:none;}
+.rec-inp:focus{border-color:var(--navy);}
+.rec-save{margin-top:10px;width:100%;padding:8px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.76rem;font-weight:700;cursor:pointer;}
+.rec-save:hover{background:#1e4a72;}
+.rec-msg{font-size:.7rem;text-align:center;min-height:14px;margin-top:4px;}
+/* Accordion */
+.acc-item{border-bottom:1px solid var(--border);}
+.acc-item:last-child{border-bottom:none;}
+.acc-item.hidden{display:none;}
+.acc-head{display:flex;align-items:center;gap:12px;padding:14px 20px;cursor:pointer;transition:background .12s;user-select:none;}
+.acc-head:hover{background:rgba(43,95,142,.04);}
+.acc-av{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;}
+.acc-info{flex:1;min-width:0;}
+.acc-name{font-size:.88rem;font-weight:700;color:var(--text);}
+.acc-sub{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.acc-meta{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.acc-tag{font-size:.62rem;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--mint);color:var(--navy);}
+.acc-chevron{color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.acc-item.open .acc-chevron{transform:rotate(180deg);}
+.acc-body{display:none;padding:0 20px 20px;}
+.acc-item.open .acc-body{display:block;}
+.acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;}
+.acc-field{display:flex;flex-direction:column;gap:3px;}
+.acc-flbl{font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+.acc-finp{padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:.78rem;background:var(--bg);color:var(--text);outline:none;width:100%;}
+.acc-finp:focus{border-color:var(--navy);}
+.acc-fsel{padding:7px 10px;border:1.5px solid var(--border);border-radius:7px;font-family:'Sora',sans-serif;font-size:.78rem;background:var(--bg);color:var(--text);outline:none;width:100%;cursor:pointer;}
+.acc-fsel:focus{border-color:var(--navy);}
+.acc-full{grid-column:1/-1;}
+.acc-footer{display:flex;align-items:center;gap:10px;padding-top:10px;border-top:1px solid var(--border);}
+.acc-save{padding:8px 20px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;}
+.acc-save:hover{background:#1e4a72;}
+.acc-rmsg{font-size:.72rem;flex:1;}
+</style>
+</head>
+<body>
 
-    <div class="main">
-      <div class="topbar">
-        <div class="topbar-title" id="page-title">Tổng quan bệnh nhân</div>
-        <div class="live-dot" id="live-dot">Đang theo dõi</div>
-        <div class="last-upd" id="last-upd">—</div>
-      </div>
-
-      <!-- VIEW: TỔNG QUAN -->
-      <div class="content" id="view-overview">
-        <div class="sum-row">
-          <div class="sum-card">
-            <div class="sum-label">Bình thường</div>
-            <div class="sum-val" id="s-ok" style="color: var(--green)">—</div>
-            <div class="sum-sub" id="sub-ok">bệnh nhân</div>
-          </div>
-          <div class="sum-card">
-            <div class="sum-label">Cảnh báo</div>
-            <div class="sum-val" id="s-warn" style="color: var(--warn)">—</div>
-            <div class="sum-sub" id="sub-warn">bệnh nhân</div>
-          </div>
-          <div class="sum-card">
-            <div class="sum-label">Nguy hiểm</div>
-            <div class="sum-val" id="s-danger" style="color: var(--danger)">
-              —
-            </div>
-            <div class="sum-sub" id="sub-danger">bệnh nhân</div>
-          </div>
-          <div class="sum-card">
-            <div class="sum-label">Tổng</div>
-            <div class="sum-val" id="s-total">—</div>
-            <div class="sum-sub" id="sub-total">bệnh nhân</div>
-          </div>
-        </div>
-        <div class="toolbar">
-          <div class="tb-label">Ngày xem:</div>
-          <div class="tb-date" id="date-trigger" onclick="toggleDD(event)">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span id="date-lbl">Tất cả ngày</span>
-          </div>
-          <button class="btn-ref" id="btn-ref" onclick="loadData()">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <polyline points="23 4 23 10 17 10" />
-              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" /></svg
-            >Làm mới
-          </button>
-        </div>
-        <div class="sec-card">
-          <div class="sec-head">
-            <div class="sec-title">🧑‍⚕️ Danh sách bệnh nhân</div>
-            <div class="srch">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" /></svg
-              ><input type="text" id="srch" placeholder="Tìm bệnh nhân..." />
-            </div>
-          </div>
-          <div class="pt-header">
-            <div>Mã BN</div>
-            <div>Họ tên</div>
-            <div>Ngày sinh</div>
-            <div>Thiết bị</div>
-            <div>Nhịp tim</div>
-            <div>SpO₂</div>
-            <div>Trạng thái</div>
-          </div>
-          <div id="pt-list">
-            <div class="loading"><span class="spin"></span>Đang tải...</div>
-          </div>
-        </div>
-        <div class="sec-card vsec" id="vsec">
-          <div class="sec-head">
-            <div class="sec-title" id="vtitle">📈 Dữ liệu sinh tồn</div>
-          </div>
-          <div id="vbody">
-            <div class="loading">Chọn bệnh nhân để xem dữ liệu</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- VIEW: THIẾT BỊ -->
-      <div class="content" id="view-devices" style="display: none">
-        <div class="sec-card">
-          <div class="sec-head">
-            <div class="sec-title">📱 Thiết bị theo dõi</div>
-          </div>
-          <div id="devices-body">
-            <div class="loading"><span class="spin"></span>Đang tải...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- VIEW: LIÊN KẾT -->
-      <div class="content" id="view-links" style="display: none">
-        <div class="sec-card">
-          <div class="sec-head">
-            <div class="sec-title">👨‍👩‍👧 Liên kết người nhà</div>
-          </div>
-          <div id="links-body">
-            <div class="loading"><span class="spin"></span>Đang tải...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- VIEW: HỒ SƠ BỆNH ÁN -->
-      <div class="content" id="view-records" style="display: none">
-        <div class="sec-card">
-          <div class="sec-head">
-            <div class="sec-title">🗂️ Hồ sơ bệnh án</div>
-            <div
-              style="
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                margin-left: auto;
-              "
-            >
-              <div class="srch">
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <input
-                  type="text"
-                  id="rec-srch"
-                  placeholder="Tìm bệnh nhân..."
-                  oninput="filterRecords(this.value)"
-                />
-              </div>
-              <button
-                onclick="expandAllRecs()"
-                style="
-                  padding: 5px 12px;
-                  border: 1.5px solid var(--border);
-                  border-radius: 8px;
-                  background: var(--bg);
-                  font-family: &quot;Sora&quot;, sans-serif;
-                  font-size: 0.72rem;
-                  font-weight: 600;
-                  color: var(--muted);
-                  cursor: pointer;
-                "
-              >
-                Mở tất cả
-              </button>
-              <button
-                onclick="collapseAllRecs()"
-                style="
-                  padding: 5px 12px;
-                  border: 1.5px solid var(--border);
-                  border-radius: 8px;
-                  background: var(--bg);
-                  font-family: &quot;Sora&quot;, sans-serif;
-                  font-size: 0.72rem;
-                  font-weight: 600;
-                  color: var(--muted);
-                  cursor: pointer;
-                "
-              >
-                Thu tất cả
-              </button>
-            </div>
-          </div>
-          <div id="records-body">
-            <div class="loading"><span class="spin"></span>Đang tải...</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tip" id="tip"></div>
-
-    <div
-      class="modal-bg"
-      id="modal-bg"
-      onclick="if (event.target === this) closeSettings();"
-    >
-      <div class="modal">
-        <button class="mclose" onclick="closeSettings()">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-        <div class="modal-ttl">⚙️ Cài đặt</div>
-        <div class="srow">
-          <span class="slbl">🌙 Chế độ tối</span
-          ><button class="tgl" id="dark-tgl" onclick="toggleDark()"></button>
-        </div>
-        <div class="srow">
-          <span class="slbl">🔤 Cỡ chữ</span>
-          <div class="fg">
-            <button class="fb" onclick="setFont(12, this)">Nhỏ</button
-            ><button class="fb on" onclick="setFont(14, this)">Vừa</button
-            ><button class="fb" onclick="setFont(16, this)">Lớn</button>
-          </div>
-        </div>
-        <div
-          style="
-            margin-top: 16px;
-            padding-top: 16px;
-            border-top: 1px solid var(--border);
-          "
-        >
-          <div
-            style="
-              font-size: 0.66rem;
-              font-weight: 700;
-              text-transform: uppercase;
-              letter-spacing: 0.06em;
-              color: var(--muted);
-              margin-bottom: 10px;
-            "
-          >
-            Đổi mật khẩu
-          </div>
-          <input
-            class="finp"
-            type="password"
-            id="pw-old"
-            placeholder="Mật khẩu hiện tại"
-          />
-          <input
-            class="finp"
-            type="password"
-            id="pw-new"
-            placeholder="Mật khẩu mới (≥6 ký tự)"
-          />
-          <input
-            class="finp"
-            type="password"
-            id="pw-cf"
-            placeholder="Xác nhận mật khẩu mới"
-          />
-          <div class="pwmsg" id="pwmsg"></div>
-          <button class="bprim" onclick="changePw()">Đổi mật khẩu</button>
-        </div>
-      </div>
-    </div>
-
-    <button class="cfab" onclick="toggleChat()">
-      <svg
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <path
-          d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-        />
-      </svg>
+<aside class="sb">
+  <div class="sb-logo">
+    <div class="sb-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    <div class="sb-logo-name">Health<span>Monitor</span></div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Theo dõi</div>
+    <button class="sb-btn active" onclick="switchView('overview',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Tổng quan
     </button>
-    <div class="cbox" id="cbox">
-      <div
-        id="cv-list"
-        style="display: flex; flex-direction: column; height: 100%"
-      >
-        <div class="chd">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            style="color: var(--sky)"
-          >
-            <path
-              d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-            />
-          </svg>
-          <div>
-            <div class="chdn">Ghi chú y tế</div>
-            <div class="chds" id="csub">—</div>
-          </div>
-        </div>
-        <div class="clist" id="clist"></div>
-        <div class="cempty" id="cempty" style="display: none">
-          Chưa có bệnh nhân
-        </div>
-      </div>
-      <div
-        id="cv-chat"
-        style="display: none; flex-direction: column; height: 100%"
-      >
-        <div class="chd">
-          <button class="cbk" onclick="backChat()">
-            <svg
-              width="13"
-              height="13"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-            >
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </button>
-          <div class="cav" id="cav">—</div>
-          <div>
-            <div class="chdn" id="cpname">—</div>
-            <div class="chds">Bệnh nhân</div>
-          </div>
-        </div>
-        <div class="cmsgs" id="cmsgs"></div>
-        <div class="cft">
-          <select class="ctype" id="ctype">
-            <option value="theo_doi">👁️ Theo dõi</option>
-            <option value="don_thuoc">💊 Đơn thuốc</option>
-            <option value="khuyen_nghi">📋 Khuyến nghị</option>
-            <option value="tai_kham">📅 Tái khám</option>
-          </select>
-          <div class="crow">
-            <textarea
-              class="cinp"
-              id="cinp"
-              rows="1"
-              placeholder="Nhập ghi chú..."
-            ></textarea
-            ><button class="csnd" onclick="sendNote()">
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2.5"
-              >
-                <line x1="22" y1="2" x2="11" y2="13" />
-                <polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
+    <button class="sb-btn" onclick="switchView('devices',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Thiết bị
+    </button>
+    <button class="sb-btn" onclick="switchView('links',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Liên kết
+    </button>
+    <button class="sb-btn" onclick="switchView('records',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>Hồ sơ bệnh án
+    </button>
+  </div>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-av" id="sb-av">BS</div>
+      <div><div class="sb-uname" id="sb-name">Đang tải...</div><div class="sb-urole" id="sb-role">Bác sĩ</div></div>
     </div>
+    <button class="sb-btn" onclick="openSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>Cài đặt
+    </button>
+    <button class="sb-btn red" onclick="doLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Đăng xuất
+    </button>
+  </div>
+</aside>
 
-    <script>
-      // SESSION CHECK
-      try {
-        const s = JSON.parse(localStorage.getItem("hm_session") || "{}");
-        if (!s.userId || s.role !== "user_bs") {
-          localStorage.removeItem("hm_session");
-          location.replace("index.html");
-        }
-      } catch (_) {
-        location.replace("index.html");
-      }
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Tổng quan bệnh nhân</div>
+    <div class="live-dot" id="live-dot">Đang theo dõi</div>
+    <div class="last-upd" id="last-upd">—</div>
+  </div>
 
-      const API = "https://health-monitor-system-twts.onrender.com";
-      const SESS = JSON.parse(localStorage.getItem("hm_session") || "{}");
-      const DID = SESS.userId;
+  <!-- VIEW: TỔNG QUAN -->
+  <div class="content" id="view-overview">
+    <div class="sum-row">
+      <div class="sum-card"><div class="sum-label">Bình thường</div><div class="sum-val" id="s-ok" style="color:var(--green)">—</div><div class="sum-sub" id="sub-ok">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Cảnh báo</div><div class="sum-val" id="s-warn" style="color:var(--warn)">—</div><div class="sum-sub" id="sub-warn">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Nguy hiểm</div><div class="sum-val" id="s-danger" style="color:var(--danger)">—</div><div class="sum-sub" id="sub-danger">bệnh nhân</div></div>
+      <div class="sum-card"><div class="sum-label">Tổng</div><div class="sum-val" id="s-total">—</div><div class="sum-sub" id="sub-total">bệnh nhân</div></div>
+    </div>
+    <div class="toolbar">
+      <div class="tb-label">Ngày xem:</div>
+      <div class="tb-date" id="date-trigger" onclick="toggleDD(event)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span id="date-lbl">Tất cả ngày</span>
+      </div>
+      <button class="btn-ref" id="btn-ref" onclick="loadData()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
+      </button>
+    </div>
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🧑‍⚕️ Danh sách bệnh nhân</div>
+        <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="srch" placeholder="Tìm bệnh nhân..."/></div>
+      </div>
+      <div class="pt-header"><div>Mã BN</div><div>Họ tên</div><div>Ngày sinh</div><div>Thiết bị</div><div>Nhịp tim</div><div>SpO₂</div><div>Trạng thái</div></div>
+      <div id="pt-list"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+    <div class="sec-card vsec" id="vsec">
+      <div class="sec-head"><div class="sec-title" id="vtitle">📈 Dữ liệu sinh tồn</div></div>
+      <div id="vbody"><div class="loading">Chọn bệnh nhân để xem dữ liệu</div></div>
+    </div>
+  </div>
 
-      let pts = [],
-        vcache = {},
-        selPid = null,
-        selDate = null,
-        allDates = [],
-        curCPid = null,
-        ccache = {};
-      const esc = (s) =>
-        String(s || "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;");
+  <!-- VIEW: THIẾT BỊ -->
+  <div class="content" id="view-devices" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head"><div class="sec-title">📱 Thiết bị theo dõi</div></div>
+      <div id="devices-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
 
-      function doLogout() {
-        if (!confirm("Đăng xuất?")) return;
-        localStorage.removeItem("hm_session");
-        location.replace("index.html");
-      }
-      // ── VIEW SWITCHING ──
-      const viewTitles = {
-        overview: "Tổng quan bệnh nhân",
-        devices: "Thiết bị theo dõi",
-        links: "Liên kết người nhà",
-        records: "Hồ sơ bệnh án",
-      };
+  <!-- VIEW: LIÊN KẾT -->
+  <div class="content" id="view-links" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">👨‍👩‍👧 Liên kết người nhà</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <div class="srch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="lnk-srch" placeholder="Tìm bệnh nhân..." oninput="filterLinks(this.value)"/>
+          </div>
+          <button onclick="document.querySelectorAll('[id^=lnk-].acc-item').forEach(e=>e.classList.add('open'))" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
+          <button onclick="document.querySelectorAll('[id^=lnk-].acc-item').forEach(e=>e.classList.remove('open'))" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
+        </div>
+      </div>
+      <div id="links-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
 
-      function switchView(name, btn) {
-        // Active button
-        document
-          .querySelectorAll(".sb-btn")
-          .forEach((b) => b.classList.remove("active"));
-        if (btn) btn.classList.add("active");
-        // Hide all views
-        ["overview", "devices", "links", "records"].forEach((v) => {
-          document.getElementById("view-" + v).style.display = "none";
-        });
-        // Show selected
-        document.getElementById("view-" + name).style.display = "flex";
-        document.getElementById("page-title").textContent =
-          viewTitles[name] || name;
-        // Live dot only on overview
-        document.getElementById("live-dot").style.display =
-          name === "overview" ? "flex" : "none";
-        // Load content
-        if (name === "devices") renderDevicesPage();
-        if (name === "links") renderLinksPage();
-        if (name === "records") renderRecordsPage();
-      }
+  <!-- VIEW: HỒ SƠ BỆNH ÁN -->
+  <div class="content" id="view-records" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🗂️ Hồ sơ bệnh án</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <div class="srch">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="rec-srch" placeholder="Tìm bệnh nhân..." oninput="filterRecords(this.value)"/>
+          </div>
+          <button onclick="expandAllRecs()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
+          <button onclick="collapseAllRecs()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
+        </div>
+      </div>
+      <div id="records-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+</div>
 
-      function setNav(b) {
-        switchView("overview", b);
-      } // compat
+<div class="tip" id="tip"></div>
 
-      // ── THIẾT BỊ PAGE ──
-      async function renderDevicesPage() {
-        const body = document.getElementById("devices-body");
-        body.innerHTML =
-          '<div class="loading"><span class="spin"></span>Đang tải...</div>';
-        try {
-          const r = await fetch(`${API}/doctor/${DID}/patients`);
-          const list = r.ok ? await r.json() : [];
-          if (!list.length) {
-            body.innerHTML = '<div class="loading">Không có dữ liệu</div>';
-            return;
-          }
-          body.innerHTML = `<div class="page-grid" style="padding:18px">${list
-            .map((p) => {
-              const dev = p.device;
-              const init = (p.patientName || "?")
-                .split(" ")
-                .map((w) => w[0])
-                .slice(-2)
-                .join("")
-                .toUpperCase();
-              return `<div class="page-card">
+
+
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeSettings()">
+  <div class="modal">
+    <button class="mclose" onclick="closeSettings()"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">⚙️ Cài đặt</div>
+    <div class="srow"><span class="slbl">🌙 Chế độ tối</span><button class="tgl" id="dark-tgl" onclick="toggleDark()"></button></div>
+    <div class="srow"><span class="slbl">🔤 Cỡ chữ</span><div class="fg"><button class="fb" onclick="setFont(12,this)">Nhỏ</button><button class="fb on" onclick="setFont(14,this)">Vừa</button><button class="fb" onclick="setFont(16,this)">Lớn</button></div></div>
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+      <div style="font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Đổi mật khẩu</div>
+      <input class="finp" type="password" id="pw-old" placeholder="Mật khẩu hiện tại"/>
+      <input class="finp" type="password" id="pw-new" placeholder="Mật khẩu mới (≥6 ký tự)"/>
+      <input class="finp" type="password" id="pw-cf" placeholder="Xác nhận mật khẩu mới"/>
+      <div class="pwmsg" id="pwmsg"></div>
+      <button class="bprim" onclick="changePw()">Đổi mật khẩu</button>
+    </div>
+  </div>
+</div>
+
+<button class="cfab" onclick="toggleChat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+<div class="cbox" id="cbox">
+  <div id="cv-list" style="display:flex;flex-direction:column;height:100%">
+    <div class="chd"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:var(--sky)"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><div><div class="chdn">Ghi chú y tế</div><div class="chds" id="csub">—</div></div></div>
+    <div class="clist" id="clist"></div>
+    <div class="cempty" id="cempty" style="display:none">Chưa có bệnh nhân</div>
+  </div>
+  <div id="cv-chat" style="display:none;flex-direction:column;height:100%">
+    <div class="chd"><button class="cbk" onclick="backChat()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button><div class="cav" id="cav">—</div><div><div class="chdn" id="cpname">—</div><div class="chds">Bệnh nhân</div></div></div>
+    <div class="cmsgs" id="cmsgs"></div>
+    <div class="cft">
+      <select class="ctype" id="ctype"><option value="theo_doi">👁️ Theo dõi</option><option value="don_thuoc">💊 Đơn thuốc</option><option value="khuyen_nghi">📋 Khuyến nghị</option><option value="tai_kham">📅 Tái khám</option></select>
+      <div class="crow"><textarea class="cinp" id="cinp" rows="1" placeholder="Nhập ghi chú..."></textarea><button class="csnd" onclick="sendNote()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// SESSION CHECK
+try {
+  const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  if(!s.userId || s.role !== 'user_bs'){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
+} catch(_){ location.replace('index.html'); }
+
+const API = 'https://health-monitor-system-twts.onrender.com';
+const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
+const DID = SESS.userId;
+
+let pts=[], vcache={}, selPid=null, selDate=null, allDates=[], curCPid=null, ccache={};
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function doLogout(){ if(!confirm('Đăng xuất?')) return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
+// ── VIEW SWITCHING ──
+const viewTitles = {overview:'Tổng quan bệnh nhân', devices:'Thiết bị theo dõi', links:'Liên kết người nhà', records:'Hồ sơ bệnh án'};
+
+function switchView(name, btn){
+  // Active button
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  // Hide all views
+  ['overview','devices','links','records'].forEach(v=>{
+    document.getElementById('view-'+v).style.display = 'none';
+  });
+  // Show selected
+  document.getElementById('view-'+name).style.display = 'flex';
+  document.getElementById('page-title').textContent = viewTitles[name] || name;
+  // Live dot only on overview
+  document.getElementById('live-dot').style.display = name==='overview' ? 'flex' : 'none';
+  // Load content
+  if(name==='devices')  renderDevicesPage();
+  if(name==='links')    renderLinksPage();
+  if(name==='records')  renderRecordsPage();
+}
+
+function setNav(b){ switchView('overview', b); } // compat
+
+// ── THIẾT BỊ PAGE ──
+async function renderDevicesPage(){
+  const body = document.getElementById('devices-body');
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r = await fetch(`${API}/doctor/${DID}/patients`);
+    const list = r.ok ? await r.json() : [];
+    if(!list.length){ body.innerHTML='<div class="loading">Không có dữ liệu</div>'; return; }
+    body.innerHTML = `<div class="page-grid" style="padding:18px">${list.map(p=>{
+      const dev = p.device;
+      const init = (p.patientName||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+      return `<div class="page-card">
         <div class="page-card-head">
           <div class="sb-av" style="width:36px;height:36px;font-size:.72rem;flex-shrink:0">${init}</div>
           <div>
             <div class="page-card-name">${esc(p.patientName)}</div>
-            <div class="page-card-sub">BN-${(p.patientId || "").slice(0, 8).toUpperCase()}</div>
+            <div class="page-card-sub">BN-${(p.patientId||'').slice(0,8).toUpperCase()}</div>
           </div>
         </div>
         <div class="page-card-body">
-          ${
-            dev
-              ? `
+          ${dev ? `
             <div class="dev-row">
               <div class="dev-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
               <div style="flex:1">
-                <div class="dev-serial">${esc(dev.serial || "—")}</div>
-                <div class="dev-sub">Gán từ: ${dev.assignedAt ? new Date(dev.assignedAt).toLocaleDateString("vi-VN") : "—"}</div>
+                <div class="dev-serial">${esc(dev.serial||'—')}</div>
+                <div class="dev-sub">Gán từ: ${dev.assignedAt?new Date(dev.assignedAt).toLocaleDateString('vi-VN'):'—'}</div>
               </div>
               <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-                <span style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;background:${dev.online ? "#e6f7e6" : "#f0f0f0"};color:${dev.online ? "#2d7a2d" : "#888"}">
-                  ${dev.online ? "● Online" : "○ Offline"}
+                <span style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;background:${dev.online?'#e6f7e6':'#f0f0f0'};color:${dev.online?'#2d7a2d':'#888'}">
+                  ${dev.online?'● Online':'○ Offline'}
                 </span>
-                ${dev.battery != null ? `<span style="font-size:.65rem;color:var(--muted)">🔋 ${dev.battery}%</span>` : ""}
+                ${dev.battery!=null?`<span style="font-size:.65rem;color:var(--muted)">🔋 ${dev.battery}%</span>`:''}
               </div>
-            </div>`
-              : `<div style="font-size:.78rem;color:var(--muted);font-style:italic;padding:6px 0">Chưa có thiết bị</div>`
+            </div>` :
+            `<div style="font-size:.78rem;color:var(--muted);font-style:italic;padding:6px 0">Chưa có thiết bị</div>`
           }
         </div>
       </div>`;
-            })
-            .join("")}</div>`;
-        } catch (e) {
-          body.innerHTML = `<div class="loading">⚠️ ${esc(e.message)}</div>`;
-        }
+    }).join('')}</div>`;
+  } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
+}
+
+// ── LIÊN KẾT PAGE — Chỉ xem ──
+let linksData = {};
+
+async function renderLinksPage(){
+  const body = document.getElementById('links-body');
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r = await fetch(API + '/doctor/' + DID + '/families');
+    linksData = r.ok ? await r.json() : {};
+    const entries = Object.values(linksData);
+    if(!entries.length){ body.innerHTML='<div class="loading">Chưa có liên kết nào</div>'; return; }
+
+    let html = '';
+    entries.forEach(function(info){
+      const fams = info.families || [];
+      const init = (info.patientName||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+      const dob = pts.find(function(p){return p.id===info.patientId;});
+      const dobStr = dob && dob.dob ? new Date(dob.dob).toLocaleDateString('vi-VN') : '—';
+      const pid = info.patientId || '';
+
+      let famRows = '';
+      if(fams.length){
+        fams.forEach(function(f){
+          const fi = (f.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+          const relLabel = esc(f.relation || 'Chưa xác định');
+          const priTag = '';
+          const phoneRow = f.phone ? '<div class="fam-sub">📞 ' + esc(f.phone) + '</div>' : '';
+          const emailRow = f.email ? '<div class="fam-sub">✉️ ' + esc(f.email) + '</div>' : '';
+          famRows += '<div class="fam-row">'
+            + '<div class="fam-av">' + fi + '</div>'
+            + '<div style="flex:1;min-width:0">'
+            + '<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
+            + '<span class="fam-name">' + esc(f.name||'—') + '</span>'
+            + '<span style="font-size:.65rem;font-weight:700;background:var(--mint);color:var(--navy);padding:2px 8px;border-radius:9px">' + relLabel + '</span>'
+            + priTag
+            + '</div>'
+            + phoneRow + emailRow
+            + '</div></div>';
+        });
+      } else {
+        famRows = '<div style="color:var(--muted);font-size:.78rem;font-style:italic;padding:4px 0">Chưa có người nhà</div>';
       }
 
-      // ── LIÊN KẾT PAGE ──
-      async function renderLinksPage() {
-        const body = document.getElementById("links-body");
-        body.innerHTML =
-          '<div class="loading"><span class="spin"></span>Đang tải...</div>';
-        try {
-          const r = await fetch(`${API}/doctor/${DID}/families`);
-          const data = r.ok ? await r.json() : {};
-          const entries = Object.values(data);
-          if (!entries.length) {
-            body.innerHTML =
-              '<div class="loading">Chưa có liên kết người nhà</div>';
-            return;
-          }
-          body.innerHTML = `<div class="page-grid" style="padding:18px">${entries
-            .map((info) => {
-              const fams = info.families || [];
-              const init = (info.patientName || "?")
-                .split(" ")
-                .map((w) => w[0])
-                .slice(-2)
-                .join("")
-                .toUpperCase();
-              return `<div class="page-card">
-        <div class="page-card-head">
-          <div class="sb-av" style="width:36px;height:36px;font-size:.72rem;flex-shrink:0">${init}</div>
-          <div>
-            <div class="page-card-name">${esc(info.patientName || "—")}</div>
-            <div class="page-card-sub">BN-${(info.patientId || "").slice(0, 8).toUpperCase()} · ${fams.length} người nhà</div>
-          </div>
-        </div>
-        <div class="page-card-body">
-          ${
-            fams.length
-              ? fams
-                  .map((f) => {
-                    const fi = (f.name || "?")
-                      .split(" ")
-                      .map((w) => w[0])
-                      .slice(-2)
-                      .join("")
-                      .toUpperCase();
-                    return `<div class="fam-row">
-              <div class="fam-av">${fi}</div>
-              <div style="flex:1">
-                <div class="fam-name">${esc(f.name || "—")}</div>
-                <div class="fam-sub">${esc(f.relation || "—")}${f.phone ? " · " + esc(f.phone) : ""}</div>
-              </div>
-              ${f.isPrimary ? '<span style="font-size:.62rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:2px 8px;border-radius:10px">Chính</span>' : ""}
-            </div>`;
-                  })
-                  .join("")
-              : `<div style="font-size:.78rem;color:var(--muted);font-style:italic">Chưa có người nhà</div>`
-          }
-        </div>
-      </div>`;
-            })
-            .join("")}</div>`;
-        } catch (e) {
-          body.innerHTML = `<div class="loading">⚠️ ${esc(e.message)}</div>`;
-        }
-      }
+      html += '<div class="acc-item open" id="lnk-' + pid + '">'
+        + '<div class="acc-head" onclick="this.closest('.acc-item').classList.toggle('open')">'
+        + '<div class="acc-av">' + init + '</div>'
+        + '<div class="acc-info">'
+        + '<div class="acc-name">' + esc(info.patientName||'—') + '</div>'
+        + '<div class="acc-sub">BN-' + pid.slice(0,8).toUpperCase() + ' · ' + dobStr + '</div>'
+        + '</div>'
+        + '<div class="acc-meta"><span class="acc-tag">' + fams.length + ' người nhà</span></div>'
+        + '<svg class="acc-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+        + '</div>'
+        + '<div class="acc-body">' + famRows + '</div>'
+        + '</div>';
+    });
 
-      // ── HỒ SƠ BỆNH ÁN PAGE — Accordion ──
-      let recPts = [];
+    body.innerHTML = html;
+  } catch(e){ body.innerHTML = '<div class="loading">⚠️ ' + esc(e.message) + '</div>'; }
+}
 
-      async function renderRecordsPage() {
-        const body = document.getElementById("records-body");
-        body.innerHTML =
-          '<div class="loading"><span class="spin"></span>Đang tải...</div>';
-        document.getElementById("rec-srch").value = "";
-        try {
-          const r = await fetch(`${API}/doctor/${DID}/patients`);
-          const list = r.ok ? await r.json() : [];
-          if (!list.length) {
-            body.innerHTML = '<div class="loading">Không có bệnh nhân</div>';
-            return;
-          }
-          recPts = list;
-          body.innerHTML = list
-            .map((p) => {
-              const init = (p.patientName || "?")
-                .split(" ")
-                .map((w) => w[0])
-                .slice(-2)
-                .join("")
-                .toUpperCase();
-              const dob = p.dob
-                ? new Date(p.dob).toLocaleDateString("vi-VN")
-                : "—";
-              return `<div class="acc-item" id="acc-${p.patientId}" data-name="${(p.patientName || "").toLowerCase()}">
+function filterLinks(q){
+  const kw = q.toLowerCase().trim();
+  document.querySelectorAll('[id^="lnk-"].acc-item').forEach(function(el){
+    el.classList.toggle('hidden', kw!=='' && !(el.querySelector('.acc-name')?.textContent||'').toLowerCase().includes(kw));
+  });
+}
+
+// ── HỒ SƠ BỆNH ÁN PAGE — Accordion ──
+let recPts = [];
+
+async function renderRecordsPage(){
+  const body = document.getElementById('records-body');
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  document.getElementById('rec-srch').value = '';
+  try {
+    const r = await fetch(`${API}/doctor/${DID}/patients`);
+    const list = r.ok ? await r.json() : [];
+    if(!list.length){ body.innerHTML='<div class="loading">Không có bệnh nhân</div>'; return; }
+    recPts = list;
+    body.innerHTML = list.map(p=>{
+      const init = (p.patientName||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+      const dob = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+      return `<div class="acc-item" id="acc-${p.patientId}" data-name="${(p.patientName||'').toLowerCase()}">
         <div class="acc-head" onclick="toggleAcc('${p.patientId}')">
           <div class="acc-av">${init}</div>
           <div class="acc-info">
             <div class="acc-name">${esc(p.patientName)}</div>
-            <div class="acc-sub">BN-${(p.patientId || "").slice(0, 8).toUpperCase()} · ${dob}</div>
+            <div class="acc-sub">BN-${(p.patientId||'').slice(0,8).toUpperCase()} · ${dob}</div>
           </div>
           <div class="acc-meta">
             <span class="acc-tag" id="acc-tag-${p.patientId}">Đang tải...</span>
@@ -1990,976 +537,457 @@
           <div class="loading"><span class="spin"></span>Đang tải hồ sơ...</div>
         </div>
       </div>`;
-            })
-            .join("");
-          await Promise.all(list.map((p) => loadAccRecord(p.patientId)));
-        } catch (e) {
-          body.innerHTML = `<div class="loading">⚠️ ${esc(e.message)}</div>`;
-        }
-      }
+    }).join('');
+    await Promise.all(list.map(p => loadAccRecord(p.patientId)));
+  } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
+}
 
-      async function loadAccRecord(pid) {
-        const body = document.getElementById("acc-body-" + pid);
-        const tag = document.getElementById("acc-tag-" + pid);
-        if (!body) return;
-        try {
-          const r = await fetch(`${API}/medical-record/${pid}`);
-          const rec = r.ok ? await r.json() : null;
-          const v = (k) => rec?.[k] ?? "";
-          if (tag) {
-            tag.textContent = rec ? "Có hồ sơ" : "Chưa có hồ sơ";
-            tag.style.background = rec ? "var(--mint)" : "#fff4e0";
-            tag.style.color = rec ? "var(--navy)" : "#8a5800";
-          }
-          const fi = (id, type, val, opts = []) => {
-            const sid = `rf-${pid}-${id}`;
-            if (type === "select")
-              return `<select id="${sid}" class="acc-fsel"><option value="">—</option>${opts.map((o) => `<option ${String(val) === o ? "selected" : ""}>${o}</option>`).join("")}</select>`;
-            return `<input id="${sid}" type="${type}" value="${esc(String(val))}" class="acc-finp"/>`;
-          };
-          body.innerHTML = `
+async function loadAccRecord(pid){
+  const body = document.getElementById('acc-body-'+pid);
+  const tag  = document.getElementById('acc-tag-'+pid);
+  if(!body) return;
+  try {
+    const r = await fetch(`${API}/medical-record/${pid}`);
+    const rec = r.ok ? await r.json() : null;
+    const v = k => rec?.[k] ?? '';
+    if(tag){
+      tag.textContent = rec ? 'Có hồ sơ' : 'Chưa có hồ sơ';
+      tag.style.background = rec ? 'var(--mint)' : '#fff4e0';
+      tag.style.color = rec ? 'var(--navy)' : '#8a5800';
+    }
+    const fi = (id,type,val,opts=[]) => {
+      const sid = `rf-${pid}-${id}`;
+      if(type==='select') return `<select id="${sid}" class="acc-fsel"><option value="">—</option>${opts.map(o=>`<option ${String(val)===o?'selected':''}>${o}</option>`).join('')}</select>`;
+      return `<input id="${sid}" type="${type}" value="${esc(String(val))}" class="acc-finp"/>`;
+    };
+    body.innerHTML = `
       <div class="acc-grid">
-        <div class="acc-field"><div class="acc-flbl">Nhóm máu</div>${fi("nhom_mau", "select", v("nhom_mau"), ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"])}</div>
-        <div class="acc-field"><div class="acc-flbl">Chiều cao (cm)</div>${fi("chieu_cao_cm", "number", v("chieu_cao_cm"))}</div>
-        <div class="acc-field"><div class="acc-flbl">Cân nặng (kg)</div>${fi("can_nang_kg", "number", v("can_nang_kg"))}</div>
-        <div class="acc-field"><div class="acc-flbl">Dị ứng</div>${fi("di_ung", "text", v("di_ung"))}</div>
-        <div class="acc-field acc-full"><div class="acc-flbl">Bệnh mãn tính</div>${fi("benh_man_tinh", "text", v("benh_man_tinh"))}</div>
-        <div class="acc-field acc-full"><div class="acc-flbl">Tiền sử y tế</div>${fi("tien_su_y_te", "text", v("tien_su_y_te"))}</div>
-        <div class="acc-field"><div class="acc-flbl">Người liên hệ khẩn</div>${fi("nguoi_lien_he_khan_ten", "text", v("nguoi_lien_he_khan_ten"))}</div>
-        <div class="acc-field"><div class="acc-flbl">SĐT liên hệ khẩn</div>${fi("nguoi_lien_he_khan_sdt", "text", v("nguoi_lien_he_khan_sdt"))}</div>
+        <div class="acc-field"><div class="acc-flbl">Nhóm máu</div>${fi('nhom_mau','select',v('nhom_mau'),['A+','A-','B+','B-','O+','O-','AB+','AB-'])}</div>
+        <div class="acc-field"><div class="acc-flbl">Chiều cao (cm)</div>${fi('chieu_cao_cm','number',v('chieu_cao_cm'))}</div>
+        <div class="acc-field"><div class="acc-flbl">Cân nặng (kg)</div>${fi('can_nang_kg','number',v('can_nang_kg'))}</div>
+        <div class="acc-field"><div class="acc-flbl">Dị ứng</div>${fi('di_ung','text',v('di_ung'))}</div>
+        <div class="acc-field acc-full"><div class="acc-flbl">Bệnh mãn tính</div>${fi('benh_man_tinh','text',v('benh_man_tinh'))}</div>
+        <div class="acc-field acc-full"><div class="acc-flbl">Tiền sử y tế</div>${fi('tien_su_y_te','text',v('tien_su_y_te'))}</div>
+        <div class="acc-field"><div class="acc-flbl">Người liên hệ khẩn</div>${fi('nguoi_lien_he_khan_ten','text',v('nguoi_lien_he_khan_ten'))}</div>
+        <div class="acc-field"><div class="acc-flbl">SĐT liên hệ khẩn</div>${fi('nguoi_lien_he_khan_sdt','text',v('nguoi_lien_he_khan_sdt'))}</div>
       </div>
       <div class="acc-footer">
         <button class="acc-save" onclick="saveAccRec('${pid}')">💾 Lưu hồ sơ</button>
         <div class="acc-rmsg" id="acc-rmsg-${pid}"></div>
       </div>`;
-        } catch (e) {
-          if (body)
-            body.innerHTML = `<div style="color:var(--danger);font-size:.74rem;padding:10px 0">⚠️ ${esc(e.message)}</div>`;
-        }
-      }
+  } catch(e){ if(body) body.innerHTML=`<div style="color:var(--danger);font-size:.74rem;padding:10px 0">⚠️ ${esc(e.message)}</div>`; }
+}
 
-      function toggleAcc(pid) {
-        const item = document.getElementById("acc-" + pid);
-        if (item) item.classList.toggle("open");
-      }
-      function expandAllRecs() {
-        document
-          .querySelectorAll(".acc-item:not(.hidden)")
-          .forEach((el) => el.classList.add("open"));
-      }
-      function collapseAllRecs() {
-        document
-          .querySelectorAll(".acc-item")
-          .forEach((el) => el.classList.remove("open"));
-      }
-      function filterRecords(q) {
-        const kw = q.toLowerCase().trim();
-        document.querySelectorAll(".acc-item").forEach((el) => {
-          el.classList.toggle(
-            "hidden",
-            kw !== "" && !(el.dataset.name || "").includes(kw),
-          );
-        });
-      }
-      async function saveAccRec(pid) {
-        const msg = document.getElementById("acc-rmsg-" + pid);
-        const g = (f) => {
-          const e = document.getElementById(`rf-${pid}-${f}`);
-          return e ? e.value.trim() || null : null;
-        };
-        const payload = {};
-        [
-          "nhom_mau",
-          "benh_man_tinh",
-          "di_ung",
-          "tien_su_y_te",
-          "nguoi_lien_he_khan_ten",
-          "nguoi_lien_he_khan_sdt",
-        ].forEach((f) => {
-          const v = g(f);
-          if (v) payload[f] = v;
-        });
-        ["chieu_cao_cm", "can_nang_kg"].forEach((f) => {
-          const v = g(f);
-          if (v) payload[f] = parseFloat(v);
-        });
-        msg.style.color = "var(--muted)";
-        msg.textContent = "Đang lưu...";
-        try {
-          const r = await fetch(`${API}/medical-record/${pid}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-          const d = await r.json();
-          if (r.ok) {
-            msg.style.color = "var(--green)";
-            msg.textContent = "✅ Lưu thành công!";
-            const tag = document.getElementById("acc-tag-" + pid);
-            if (tag) {
-              tag.textContent = "Có hồ sơ";
-              tag.style.background = "var(--mint)";
-              tag.style.color = "var(--navy)";
-            }
-            setTimeout(() => (msg.textContent = ""), 3000);
-          } else {
-            msg.style.color = "var(--danger)";
-            msg.textContent = "⚠️ " + (d.error || "Lỗi");
-          }
-        } catch (e) {
-          msg.style.color = "var(--danger)";
-          msg.textContent = "⚠️ Không thể kết nối";
-        }
-      }
-      function openSettings() {
-        document.getElementById("modal-bg").classList.add("open");
-      }
-      function closeSettings() {
-        document.getElementById("modal-bg").classList.remove("open");
-      }
-      function toggleDark() {
-        const h = document.documentElement;
-        const d = h.getAttribute("data-theme") === "dark";
-        h.setAttribute("data-theme", d ? "light" : "dark");
-        document.getElementById("dark-tgl").classList.toggle("on", !d);
-        localStorage.setItem("hm_theme", d ? "light" : "dark");
-      }
-      function setFont(n, b) {
-        // Thay đổi font-size của html → tất cả rem tự scale theo
-        const sizes = { 12: "87.5%", 14: "100%", 16: "112.5%" };
-        document.documentElement.style.fontSize = sizes[n] || "100%";
-        localStorage.setItem("hm_font", n);
-        document
-          .querySelectorAll(".fb")
-          .forEach((x) => x.classList.remove("on"));
-        if (b) b.classList.add("on");
-      }
-      async function changePw() {
-        const o = document.getElementById("pw-old").value,
-          n = document.getElementById("pw-new").value,
-          c = document.getElementById("pw-cf").value,
-          m = document.getElementById("pwmsg");
-        m.style.color = "var(--danger)";
-        if (!o || !n || !c) {
-          m.textContent = "Điền đủ thông tin";
-          return;
-        }
-        if (n.length < 6) {
-          m.textContent = "Mật khẩu ≥ 6 ký tự";
-          return;
-        }
-        if (n !== c) {
-          m.textContent = "Không khớp";
-          return;
-        }
-        m.style.color = "var(--muted)";
-        m.textContent = "Đang xử lý...";
-        try {
-          const r = await fetch(`${API}/auth/change-password`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: DID, newPassword: n }),
-          });
-          const d = await r.json();
-          if (r.ok) {
-            m.style.color = "var(--green)";
-            m.textContent = "✅ Thành công!";
-            ["pw-old", "pw-new", "pw-cf"].forEach(
-              (id) => (document.getElementById(id).value = ""),
-            );
-          } else {
-            m.textContent = d.error || "Lỗi";
-          }
-        } catch (e) {
-          m.textContent = "Không thể kết nối";
-        }
-      }
-      (() => {
-        const t = localStorage.getItem("hm_theme");
-        if (t === "dark") {
-          document.documentElement.setAttribute("data-theme", "dark");
-          document.getElementById("dark-tgl").classList.add("on");
-        }
-        const f = parseInt(localStorage.getItem("hm_font"));
-        if (f) {
-          const sizes = { 12: "87.5%", 14: "100%", 16: "112.5%" };
-          document.documentElement.style.fontSize = sizes[f] || "100%";
-          // Highlight đúng nút
-          const labels = { 12: "Nhỏ", 14: "Vừa", 16: "Lớn" };
-          document.querySelectorAll(".fb").forEach((b) => {
-            b.classList.toggle("on", b.textContent.trim() === labels[f]);
-          });
-        }
-      })();
+function toggleAcc(pid){
+  const item = document.getElementById('acc-'+pid);
+  if(item) item.classList.toggle('open');
+}
+function expandAllRecs(){ document.querySelectorAll('.acc-item:not(.hidden)').forEach(el=>el.classList.add('open')); }
+function collapseAllRecs(){ document.querySelectorAll('.acc-item').forEach(el=>el.classList.remove('open')); }
+function filterRecords(q){
+  const kw = q.toLowerCase().trim();
+  document.querySelectorAll('.acc-item').forEach(el=>{
+    el.classList.toggle('hidden', kw!=='' && !(el.dataset.name||'').includes(kw));
+  });
+}
+async function saveAccRec(pid){
+  const msg = document.getElementById('acc-rmsg-'+pid);
+  const g = f => { const e = document.getElementById(`rf-${pid}-${f}`); return e ? e.value.trim()||null : null; };
+  const payload = {};
+  ['nhom_mau','benh_man_tinh','di_ung','tien_su_y_te','nguoi_lien_he_khan_ten','nguoi_lien_he_khan_sdt'].forEach(f=>{ const v=g(f); if(v) payload[f]=v; });
+  ['chieu_cao_cm','can_nang_kg'].forEach(f=>{ const v=g(f); if(v) payload[f]=parseFloat(v); });
+  msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(`${API}/medical-record/${pid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d = await r.json();
+    if(r.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Lưu thành công!';
+      const tag=document.getElementById('acc-tag-'+pid);
+      if(tag){tag.textContent='Có hồ sơ';tag.style.background='var(--mint)';tag.style.color='var(--navy)';}
+      setTimeout(()=>msg.textContent='',3000);
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+}
+function openSettings(){ document.getElementById('modal-bg').classList.add('open'); }
+function closeSettings(){ document.getElementById('modal-bg').classList.remove('open'); }
+function toggleDark(){ const h=document.documentElement; const d=h.getAttribute('data-theme')==='dark'; h.setAttribute('data-theme',d?'light':'dark'); document.getElementById('dark-tgl').classList.toggle('on',!d); localStorage.setItem('hm_theme',d?'light':'dark'); }
+function setFont(n,b){
+  // Thay đổi font-size của html → tất cả rem tự scale theo
+  const sizes = {12: '87.5%', 14: '100%', 16: '112.5%'};
+  document.documentElement.style.fontSize = sizes[n] || '100%';
+  localStorage.setItem('hm_font', n);
+  document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on'));
+  if(b) b.classList.add('on');
+}
+async function changePw(){
+  const o=document.getElementById('pw-old').value, n=document.getElementById('pw-new').value, c=document.getElementById('pw-cf').value, m=document.getElementById('pwmsg');
+  m.style.color='var(--danger)';
+  if(!o||!n||!c){m.textContent='Điền đủ thông tin';return;} if(n.length<6){m.textContent='Mật khẩu ≥ 6 ký tự';return;} if(n!==c){m.textContent='Không khớp';return;}
+  m.style.color='var(--muted)'; m.textContent='Đang xử lý...';
+  try { const r=await fetch(`${API}/auth/change-password`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:DID,newPassword:n})}); const d=await r.json(); if(r.ok){m.style.color='var(--green)';m.textContent='✅ Thành công!';['pw-old','pw-new','pw-cf'].forEach(id=>document.getElementById(id).value='');}else{m.textContent=d.error||'Lỗi';} } catch(e){m.textContent='Không thể kết nối';}
+}
+(()=>{
+  const t=localStorage.getItem('hm_theme');
+  if(t==='dark'){document.documentElement.setAttribute('data-theme','dark');document.getElementById('dark-tgl').classList.add('on');}
+  const f=parseInt(localStorage.getItem('hm_font'));
+  if(f){
+    const sizes={12:'87.5%',14:'100%',16:'112.5%'};
+    document.documentElement.style.fontSize=sizes[f]||'100%';
+    // Highlight đúng nút
+    const labels={12:'Nhỏ',14:'Vừa',16:'Lớn'};
+    document.querySelectorAll('.fb').forEach(b=>{
+      b.classList.toggle('on', b.textContent.trim()===labels[f]);
+    });
+  }
+})();
 
-      // DATE DROPDOWN
-      // CALENDAR DATE PICKER
-      let calY = new Date().getFullYear(),
-        calM = new Date().getMonth(); // 0-based month
+// DATE DROPDOWN
+// CALENDAR DATE PICKER
+let calY = new Date().getFullYear(), calM = new Date().getMonth(); // 0-based month
 
-      function toggleDD(e) {
-        if (e) e.stopPropagation();
-        const dd = document.getElementById("date-dd");
-        const isOpen = dd.style.display !== "none";
-        if (isOpen) {
-          dd.style.display = "none";
-          return;
-        }
-        // Định vị theo trigger
-        const trigger = document.getElementById("date-trigger");
-        const rect = trigger.getBoundingClientRect();
-        dd.style.display = "block";
-        dd.style.top = rect.bottom + 6 + "px";
-        dd.style.left = rect.left + "px";
-        calInitSelects();
-        calRender();
-      }
+function toggleDD(e){
+  if(e) e.stopPropagation();
+  const dd = document.getElementById('date-dd');
+  const isOpen = dd.style.display !== 'none';
+  if(isOpen){
+    dd.style.display = 'none';
+    return;
+  }
+  // Định vị theo trigger
+  const trigger = document.getElementById('date-trigger');
+  const rect = trigger.getBoundingClientRect();
+  dd.style.display = 'block';
+  dd.style.top = (rect.bottom + 6) + 'px';
+  dd.style.left = rect.left + 'px';
+  calInitSelects();
+  calRender();
+}
 
-      document.addEventListener("mousedown", function (e) {
-        const dd = document.getElementById("date-dd");
-        if (dd.style.display === "none") return;
-        if (e.target.closest("#date-dd") || e.target.closest("#date-trigger"))
-          return;
-        dd.style.display = "none";
-      });
+document.addEventListener('mousedown', function(e){
+  const dd = document.getElementById('date-dd');
+  if(dd.style.display === 'none') return;
+  if(e.target.closest('#date-dd') || e.target.closest('#date-trigger')) return;
+  dd.style.display = 'none';
+});
 
-      function calInitSelects() {
-        const ms = document.getElementById("cal-m-sel");
-        const ys = document.getElementById("cal-y-sel");
-        const mNames = [
-          "Tháng 1",
-          "Tháng 2",
-          "Tháng 3",
-          "Tháng 4",
-          "Tháng 5",
-          "Tháng 6",
-          "Tháng 7",
-          "Tháng 8",
-          "Tháng 9",
-          "Tháng 10",
-          "Tháng 11",
-          "Tháng 12",
-        ];
-        ms.innerHTML = mNames
-          .map(
-            (m, i) =>
-              `<option value="${i}" ${i === calM ? "selected" : ""}>${m}</option>`,
-          )
-          .join("");
-        // Lấy năm từ allDates hoặc năm hiện tại
-        const years = [
-          ...new Set(allDates.map((d) => parseInt(d.slice(0, 4)))),
-        ];
-        if (!years.includes(new Date().getFullYear()))
-          years.push(new Date().getFullYear());
-        years.sort();
-        ys.innerHTML = years
-          .map(
-            (y) =>
-              `<option value="${y}" ${y === calY ? "selected" : ""}>${y}</option>`,
-          )
-          .join("");
-        ms.onchange = () => {
-          calM = +ms.value;
-          calRender();
-        };
-        ys.onchange = () => {
-          calY = +ys.value;
-          calRender();
-        };
-      }
+function calInitSelects(){
+  const ms = document.getElementById('cal-m-sel');
+  const ys = document.getElementById('cal-y-sel');
+  const mNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  ms.innerHTML = mNames.map((m,i)=>`<option value="${i}" ${i===calM?'selected':''}>${m}</option>`).join('');
+  // Lấy năm từ allDates hoặc năm hiện tại
+  const years = [...new Set(allDates.map(d=>parseInt(d.slice(0,4))))];
+  if(!years.includes(new Date().getFullYear())) years.push(new Date().getFullYear());
+  years.sort();
+  ys.innerHTML = years.map(y=>`<option value="${y}" ${y===calY?'selected':''}>${y}</option>`).join('');
+  ms.onchange = ()=>{ calM=+ms.value; calRender(); };
+  ys.onchange = ()=>{ calY=+ys.value; calRender(); };
+}
 
-      function calMove(dir) {
-        calM += dir;
-        if (calM > 11) {
-          calM = 0;
-          calY++;
-        }
-        if (calM < 0) {
-          calM = 11;
-          calY--;
-        }
-        calInitSelects();
-        calRender();
-      }
+function calMove(dir){
+  calM += dir;
+  if(calM > 11){ calM=0; calY++; }
+  if(calM < 0){ calM=11; calY--; }
+  calInitSelects();
+  calRender();
+}
 
-      function calRender() {
-        const ms = document.getElementById("cal-m-sel");
-        const ys = document.getElementById("cal-y-sel");
-        if (ms) calM = +ms.value;
-        if (ys) calY = +ys.value;
-        const lbl = document.getElementById("cal-lbl");
-        const mNames = [
-          "Tháng 1",
-          "Tháng 2",
-          "Tháng 3",
-          "Tháng 4",
-          "Tháng 5",
-          "Tháng 6",
-          "Tháng 7",
-          "Tháng 8",
-          "Tháng 9",
-          "Tháng 10",
-          "Tháng 11",
-          "Tháng 12",
-        ];
-        if (lbl) lbl.textContent = mNames[calM] + " " + calY;
-        const grid = document.getElementById("cal-grid");
-        if (!grid) return;
-        const today = new Date().toISOString().slice(0, 10);
-        const firstDay = new Date(calY, calM, 1).getDay(); // 0=Sun
-        const daysInMonth = new Date(calY, calM + 1, 0).getDate();
-        let html = "";
-        for (let i = 0; i < firstDay; i++)
-          html += '<div class="cal-day"></div>';
-        for (let d = 1; d <= daysInMonth; d++) {
-          const key = `${calY}-${String(calM + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-          const has = allDates.includes(key);
-          const isToday = key === today;
-          const isActive = key === selDate;
-          const cls = [
-            "cal-day",
-            has ? "has" : "",
-            isToday ? "today" : "",
-            isActive ? "active" : "",
-          ]
-            .filter(Boolean)
-            .join(" ");
-          html += `<div class="${cls}" ${has ? `onclick="pickDate('${key}')"` : ""} title="${has ? key : ""}">${d}</div>`;
-        }
-        grid.innerHTML = html;
-      }
+function calRender(){
+  const ms = document.getElementById('cal-m-sel');
+  const ys = document.getElementById('cal-y-sel');
+  if(ms) calM = +ms.value;
+  if(ys) calY = +ys.value;
+  const lbl = document.getElementById('cal-lbl');
+  const mNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
+  if(lbl) lbl.textContent = mNames[calM] + ' ' + calY;
+  const grid = document.getElementById('cal-grid');
+  if(!grid) return;
+  const today = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(calY, calM, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(calY, calM+1, 0).getDate();
+  let html = '';
+  for(let i=0; i<firstDay; i++) html += '<div class="cal-day"></div>';
+  for(let d=1; d<=daysInMonth; d++){
+    const key = `${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const has = allDates.includes(key);
+    const isToday = key===today;
+    const isActive = key===selDate;
+    const cls = ['cal-day', has?'has':'', isToday?'today':'', isActive?'active':''].filter(Boolean).join(' ');
+    html += `<div class="${cls}" ${has?`onclick="pickDate('${key}')"`:''} title="${has?key:''}">${d}</div>`;
+  }
+  grid.innerHTML = html;
+}
 
-      function buildDD() {
-        calRender();
-      } // Compat - called after allDates loads
+function buildDD(){ calRender(); } // Compat - called after allDates loads
 
-      function goToday() {
-        const today = new Date();
-        calY = today.getFullYear();
-        calM = today.getMonth();
-        calInitSelects();
-        calRender();
-        const key = today.toISOString().slice(0, 10);
-        if (allDates.includes(key)) pickDate(key);
-      }
+function goToday(){
+  const today = new Date();
+  calY = today.getFullYear(); calM = today.getMonth();
+  calInitSelects(); calRender();
+  const key = today.toISOString().slice(0,10);
+  if(allDates.includes(key)) pickDate(key);
+}
 
-      function pickDate(d) {
-        selDate = d;
-        document.getElementById("date-lbl").textContent = d
-          ? d.split("-").reverse().join("/")
-          : "Tất cả ngày";
-        if (d) document.getElementById("date-dd").style.display = "none";
-        calRender();
-        if (selPid) showV(selPid);
-        updSum();
-      }
+function pickDate(d){
+  selDate = d;
+  document.getElementById('date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
+  if(d) document.getElementById('date-dd').style.display = 'none';
+  calRender();
+  if(selPid) showV(selPid);
+  updSum();
+}
 
-      // LOAD DATA
-      async function loadData() {
-        const btn = document.getElementById("btn-ref");
-        btn.disabled = true;
-        document.getElementById("pt-list").innerHTML =
-          '<div class="loading"><span class="spin"></span>Đang tải...</div>';
-        try {
-          const r = await fetch(`${API}/doctor/${DID}/patients`);
-          if (!r.ok) throw new Error("HTTP " + r.status);
-          const raw = await r.json();
-          pts = raw.map((p) => ({
-            id: p.patientId,
-            name: p.patientName,
-            dob: p.dob,
-            gender: p.gender,
-            serial: p.device?.serial || "—",
-            hr: p.live?.heartRate ?? null,
-            spo2: p.live?.spo2 ?? null,
-            last: p.live?.updatedAt,
-            blood: p.profile?.nhom_mau,
-            disease: p.profile?.benh_man_tinh,
-            phone: p.phone,
-          }));
-          renderPts(pts);
-          updSum();
-          document.getElementById("last-upd").textContent =
-            new Date().toLocaleTimeString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            });
-          loadSbDoc();
-          try {
-            const rd = await fetch(`${API}/vitals/days`);
-            if (rd.ok) {
-              allDates = (await rd.json()).sort((a, b) => b.localeCompare(a));
-              buildDD();
-            }
-          } catch (_) {}
-        } catch (e) {
-          document.getElementById("pt-list").innerHTML =
-            `<div class="loading">⚠️ ${esc(e.message)}</div>`;
-        }
-        btn.disabled = false;
-      }
+// LOAD DATA
+async function loadData(){
+  const btn=document.getElementById('btn-ref'); btn.disabled=true;
+  document.getElementById('pt-list').innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r=await fetch(`${API}/doctor/${DID}/patients`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const raw=await r.json();
+    pts=raw.map(p=>({id:p.patientId,name:p.patientName,dob:p.dob,gender:p.gender,serial:p.device?.serial||'—',hr:p.live?.heartRate??null,spo2:p.live?.spo2??null,last:p.live?.updatedAt,blood:p.profile?.nhom_mau,disease:p.profile?.benh_man_tinh,phone:p.phone}));
+    renderPts(pts);
+    updSum();
+    document.getElementById('last-upd').textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    loadSbDoc();
+    try { const rd=await fetch(`${API}/vitals/days`); if(rd.ok){allDates=(await rd.json()).sort((a,b)=>b.localeCompare(a));buildDD();} } catch(_){}
+  } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
+  btn.disabled=false;
+}
 
-      // RENDER PATIENTS
-      function renderPts(list, q = "") {
-        const el = document.getElementById("pt-list");
-        const fl = q
-          ? list.filter((p) =>
-              (p.name || "").toLowerCase().includes(q.toLowerCase()),
-            )
-          : list;
-        if (!fl.length) {
-          el.innerHTML = '<div class="loading">Không có dữ liệu</div>';
-          return;
-        }
-        el.innerHTML = fl
-          .map((p) => {
-            const hr = p.hr != null ? Number(p.hr) : null,
-              spo2 = p.spo2 != null ? Number(p.spo2) : null;
-            const hc =
-              hr != null
-                ? hr > 100 || hr < 50
-                  ? "var(--danger)"
-                  : hr > 90
-                    ? "var(--warn)"
-                    : "var(--green)"
-                : "var(--muted)";
-            const sc =
-              spo2 != null
-                ? spo2 < 90
-                  ? "var(--danger)"
-                  : spo2 < 94
-                    ? "var(--warn)"
-                    : "var(--navy)"
-                : "var(--muted)";
-            const dob = p.dob
-              ? new Date(p.dob).toLocaleDateString("vi-VN")
-              : "—";
-            const sid = (p.id || "").slice(0, 8).toUpperCase();
-            const bdg = sbadge(hr, spo2);
-            return `<div class="pt-row${selPid === p.id ? " sel" : ""}" onclick="clickPt('${p.id}')" onmouseenter="showTip(event,'${p.id}')" onmouseleave="hideTip()">
+// RENDER PATIENTS
+function renderPts(list,q=''){
+  const el=document.getElementById('pt-list');
+  const fl=q?list.filter(p=>(p.name||'').toLowerCase().includes(q.toLowerCase())):list;
+  if(!fl.length){el.innerHTML='<div class="loading">Không có dữ liệu</div>';return;}
+  el.innerHTML=fl.map(p=>{
+    const hr=p.hr!=null?Number(p.hr):null, spo2=p.spo2!=null?Number(p.spo2):null;
+    const hc=hr!=null?(hr>100||hr<50?'var(--danger)':hr>90?'var(--warn)':'var(--green)'):'var(--muted)';
+    const sc=spo2!=null?(spo2<90?'var(--danger)':spo2<94?'var(--warn)':'var(--navy)'):'var(--muted)';
+    const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
+    const sid=(p.id||'').slice(0,8).toUpperCase();
+    const bdg=sbadge(hr,spo2);
+    return `<div class="pt-row${selPid===p.id?' sel':''}" onclick="clickPt('${p.id}')" onmouseenter="showTip(event,'${p.id}')" onmouseleave="hideTip()">
       <div class="mono">BN-${sid}</div>
       <div style="font-size:.82rem;font-weight:600">${esc(p.name)}</div>
       <div class="mono">${dob}</div>
       <div class="mono">${esc(p.serial)}</div>
-      <div class="val" style="color:${hc}">${hr != null ? hr : "—"}</div>
-      <div class="val" style="color:${sc}">${spo2 != null ? spo2 + "%" : "—"}</div>
+      <div class="val" style="color:${hc}">${hr!=null?hr:'—'}</div>
+      <div class="val" style="color:${sc}">${spo2!=null?spo2+'%':'—'}</div>
       <div>${bdg}</div>
     </div>`;
-          })
-          .join("");
-      }
-      function sbadge(hr, spo2) {
-        if (hr == null && spo2 == null)
-          return '<span class="badge off">⚫ Offline</span>';
-        if (
-          (spo2 != null && spo2 < 90) ||
-          (hr != null && (hr > 120 || hr < 45))
-        )
-          return '<span class="badge danger">🔴 Nguy hiểm</span>';
-        if (
-          (spo2 != null && spo2 < 94) ||
-          (hr != null && (hr > 100 || hr < 50))
-        )
-          return '<span class="badge warn">🟡 Cảnh báo</span>';
-        return '<span class="badge ok">🟢 Bình thường</span>';
-      }
+  }).join('');
+}
+function sbadge(hr,spo2){
+  if(hr==null&&spo2==null) return '<span class="badge off">⚫ Offline</span>';
+  if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) return '<span class="badge danger">🔴 Nguy hiểm</span>';
+  if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) return '<span class="badge warn">🟡 Cảnh báo</span>';
+  return '<span class="badge ok">🟢 Bình thường</span>';
+}
 
-      // SUMMARY — đếm số bản ghi theo trạng thái
-      function updSum() {
-        let ok = 0,
-          w = 0,
-          d = 0;
+// SUMMARY — đếm số bản ghi theo trạng thái
+function updSum(){
+  let ok=0, w=0, d=0;
 
-        if (selDate) {
-          // Chọn ngày → đếm số bản ghi theo trạng thái trong ngày đó
-          pts.forEach((p) => {
-            if (!vcache[p.id] || !vcache[p.id].byDate[selDate]) return;
-            vcache[p.id].byDate[selDate].forEach((r) => {
-              const hr = r.hr != null ? Number(r.hr) : null;
-              const spo2 = r.spo2 != null ? Number(r.spo2) : null;
-              if (hr == null && spo2 == null) return;
-              if (
-                (spo2 != null && spo2 < 90) ||
-                (hr != null && (hr > 120 || hr < 45))
-              )
-                d++;
-              else if (
-                (spo2 != null && spo2 < 94) ||
-                (hr != null && (hr > 100 || hr < 50))
-              )
-                w++;
-              else ok++;
-            });
-          });
-          document.getElementById("sub-ok").textContent = "bản ghi";
-          document.getElementById("sub-warn").textContent = "bản ghi";
-          document.getElementById("sub-danger").textContent = "bản ghi";
-        } else {
-          // Không chọn ngày → đếm tất cả bản ghi từ mọi cache
-          pts.forEach((p) => {
-            if (!vcache[p.id]) return;
-            Object.values(vcache[p.id].byDate).forEach((rows) => {
-              rows.forEach((r) => {
-                const hr = r.hr != null ? Number(r.hr) : null;
-                const spo2 = r.spo2 != null ? Number(r.spo2) : null;
-                if (hr == null && spo2 == null) return;
-                if (
-                  (spo2 != null && spo2 < 90) ||
-                  (hr != null && (hr > 120 || hr < 45))
-                )
-                  d++;
-                else if (
-                  (spo2 != null && spo2 < 94) ||
-                  (hr != null && (hr > 100 || hr < 50))
-                )
-                  w++;
-                else ok++;
-              });
-            });
-          });
-          document.getElementById("sub-ok").textContent = "bản ghi";
-          document.getElementById("sub-warn").textContent = "bản ghi";
-          document.getElementById("sub-danger").textContent = "bản ghi";
-        }
+  if(selDate){
+    // Chọn ngày → đếm số bản ghi theo trạng thái trong ngày đó
+    pts.forEach(p=>{
+      if(!vcache[p.id] || !vcache[p.id].byDate[selDate]) return;
+      vcache[p.id].byDate[selDate].forEach(r=>{
+        const hr   = r.hr   != null ? Number(r.hr)   : null;
+        const spo2 = r.spo2 != null ? Number(r.spo2) : null;
+        if(hr==null && spo2==null) return;
+        if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
+        else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
+        else ok++;
+      });
+    });
+    document.getElementById('sub-ok').textContent    = 'bản ghi';
+    document.getElementById('sub-warn').textContent  = 'bản ghi';
+    document.getElementById('sub-danger').textContent= 'bản ghi';
+  } else {
+    // Không chọn ngày → đếm tất cả bản ghi từ mọi cache
+    pts.forEach(p=>{
+      if(!vcache[p.id]) return;
+      Object.values(vcache[p.id].byDate).forEach(rows=>{
+        rows.forEach(r=>{
+          const hr   = r.hr   != null ? Number(r.hr)   : null;
+          const spo2 = r.spo2 != null ? Number(r.spo2) : null;
+          if(hr==null && spo2==null) return;
+          if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
+          else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
+          else ok++;
+        });
+      });
+    });
+    document.getElementById('sub-ok').textContent    = 'bản ghi';
+    document.getElementById('sub-warn').textContent  = 'bản ghi';
+    document.getElementById('sub-danger').textContent= 'bản ghi';
+  }
 
-        document.getElementById("s-ok").textContent = ok;
-        document.getElementById("s-warn").textContent = w;
-        document.getElementById("s-danger").textContent = d;
-        // Tổng luôn là số bệnh nhân
-        document.getElementById("s-total").textContent = pts.length;
-        document.getElementById("sub-total").textContent = "bệnh nhân";
-      }
+  document.getElementById('s-ok').textContent     = ok;
+  document.getElementById('s-warn').textContent   = w;
+  document.getElementById('s-danger').textContent = d;
+  // Tổng luôn là số bệnh nhân
+  document.getElementById('s-total').textContent  = pts.length;
+  document.getElementById('sub-total').textContent = 'bệnh nhân';
+}
 
-      // TOOLTIP
-      let _tip = null;
-      function showTip(e, pid) {
-        _tip = document.getElementById("tip");
-        const p = pts.find((x) => x.id === pid);
-        if (!p) return;
-        const dob = p.dob ? new Date(p.dob).toLocaleDateString("vi-VN") : "—";
-        const age = p.dob
-          ? Math.floor((Date.now() - new Date(p.dob)) / 31557600000)
-          : null;
-        _tip.innerHTML = `<div class="tn">${esc(p.name)}</div>
-    <div class="tr"><span class="tl">Mã BN</span><span class="tv">BN-${(p.id || "").slice(0, 8).toUpperCase()}</span></div>
-    <div class="tr"><span class="tl">Ngày sinh</span><span class="tv">${dob}${age ? " (" + age + " tuổi)" : ""}</span></div>
-    <div class="tr"><span class="tl">Giới tính</span><span class="tv">${p.gender === "nam" ? "Nam" : p.gender === "nu" ? "Nữ" : "—"}</span></div>
+// TOOLTIP
+let _tip=null;
+function showTip(e,pid){
+  _tip=document.getElementById('tip');
+  const p=pts.find(x=>x.id===pid);if(!p)return;
+  const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
+  const age=p.dob?Math.floor((Date.now()-new Date(p.dob))/31557600000):null;
+  _tip.innerHTML=`<div class="tn">${esc(p.name)}</div>
+    <div class="tr"><span class="tl">Mã BN</span><span class="tv">BN-${(p.id||'').slice(0,8).toUpperCase()}</span></div>
+    <div class="tr"><span class="tl">Ngày sinh</span><span class="tv">${dob}${age?' ('+age+' tuổi)':''}</span></div>
+    <div class="tr"><span class="tl">Giới tính</span><span class="tv">${p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':'—'}</span></div>
     <div class="tr"><span class="tl">Thiết bị</span><span class="tv">${esc(p.serial)}</span></div>
-    <div class="tr"><span class="tl">Nhịp tim</span><span class="tv">${p.hr != null ? p.hr + " bpm" : "—"}</span></div>
-    <div class="tr"><span class="tl">SpO₂</span><span class="tv">${p.spo2 != null ? p.spo2 + "%" : "—"}</span></div>
-    ${p.blood ? `<div class="tr"><span class="tl">Nhóm máu</span><span class="tv">${esc(p.blood)}</span></div>` : ""}
-    ${p.disease ? `<div class="tr"><span class="tl">Bệnh mãn</span><span class="tv" style="font-size:.66rem;max-width:130px;text-align:right">${esc(p.disease)}</span></div>` : ""}`;
-        const x = e.clientX + 14,
-          y = e.clientY - 10;
-        _tip.style.left = (x + 250 > innerWidth ? x - 264 : x) + "px";
-        _tip.style.top = (y + 280 > innerHeight ? y - 280 + 20 : y) + "px";
-        _tip.style.display = "block";
-      }
-      function hideTip() {
-        if (_tip) _tip.style.display = "none";
-      }
+    <div class="tr"><span class="tl">Nhịp tim</span><span class="tv">${p.hr!=null?p.hr+' bpm':'—'}</span></div>
+    <div class="tr"><span class="tl">SpO₂</span><span class="tv">${p.spo2!=null?p.spo2+'%':'—'}</span></div>
+    ${p.blood?`<div class="tr"><span class="tl">Nhóm máu</span><span class="tv">${esc(p.blood)}</span></div>`:''}
+    ${p.disease?`<div class="tr"><span class="tl">Bệnh mãn</span><span class="tv" style="font-size:.66rem;max-width:130px;text-align:right">${esc(p.disease)}</span></div>`:''}`;
+  const x=e.clientX+14,y=e.clientY-10;
+  _tip.style.left=(x+250>innerWidth?x-264:x)+'px';
+  _tip.style.top=(y+280>innerHeight?y-280+20:y)+'px';
+  _tip.style.display='block';
+}
+function hideTip(){if(_tip)_tip.style.display='none';}
 
-      // CLICK PATIENT
-      function clickPt(pid) {
-        selPid = pid;
-        const p = pts.find((x) => x.id === pid);
-        if (p)
-          document.getElementById("vtitle").textContent =
-            `📈 Dữ liệu sinh tồn — ${p.name}`;
-        document.getElementById("vsec").classList.add("show");
-        renderPts(pts, document.getElementById("srch").value);
-        showV(pid);
-      }
+// CLICK PATIENT
+function clickPt(pid){
+  selPid=pid;
+  const p=pts.find(x=>x.id===pid);
+  if(p) document.getElementById('vtitle').textContent=`📈 Dữ liệu sinh tồn — ${p.name}`;
+  document.getElementById('vsec').classList.add('show');
+  renderPts(pts,document.getElementById('srch').value);
+  showV(pid);
+}
 
-      async function showV(pid) {
-        const body = document.getElementById("vbody");
-        body.innerHTML =
-          '<div class="loading"><span class="spin"></span>Đang tải...</div>';
-        if (!vcache[pid]) {
-          try {
-            const r = await fetch(`${API}/vitals/${pid}?limit=2000`);
-            if (!r.ok) throw new Error("HTTP " + r.status);
-            const raw = await r.json();
-            const rows = raw
-              .map((r) => ({
-                hr: r.heartRate ?? r.nhip_tim,
-                spo2: r.spo2,
-                dHR: r.deltaHeartRate ?? r.delta_nhip_tim,
-                dS: r.deltaSpo2 ?? r.delta_spo2,
-                mode: r.samplingMode || r.che_do_lay_mau,
-                time: r.time || r.thoi_gian_do,
-              }))
-              .filter((r) => r.time)
-              .sort((a, b) => new Date(b.time) - new Date(a.time));
-            const byDate = {};
-            rows.forEach((r) => {
-              const d = new Date(new Date(r.time).getTime() + 7 * 3600000);
-              const k = d.toISOString().slice(0, 10);
-              if (!byDate[k]) byDate[k] = [];
-              byDate[k].push(r);
-            });
-            const dates = Object.keys(byDate).sort((a, b) =>
-              b.localeCompare(a),
-            );
-            vcache[pid] = { byDate, dates };
-            updSum(); // cập nhật summary với data mới
-          } catch (e) {
-            body.innerHTML = `<div class="loading">⚠️ ${esc(e.message)}</div>`;
-            return;
-          }
-        }
-        const c = vcache[pid];
-        const dates = c.dates;
-        const show = selDate && c.byDate[selDate] ? selDate : dates[0];
-        renderVT(c.byDate[show] || []);
-      }
+async function showV(pid){
+  const body=document.getElementById('vbody');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  if(!vcache[pid]){
+    try {
+      const r=await fetch(`${API}/vitals/${pid}?limit=2000`);
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const raw=await r.json();
+      const rows=raw.map(r=>({hr:r.heartRate??r.nhip_tim,spo2:r.spo2,dHR:r.deltaHeartRate??r.delta_nhip_tim,dS:r.deltaSpo2??r.delta_spo2,mode:r.samplingMode||r.che_do_lay_mau,time:r.time||r.thoi_gian_do})).filter(r=>r.time).sort((a,b)=>new Date(b.time)-new Date(a.time));
+      const byDate={};
+      rows.forEach(r=>{ const d=new Date(new Date(r.time).getTime()+7*3600000); const k=d.toISOString().slice(0,10); if(!byDate[k])byDate[k]=[]; byDate[k].push(r); });
+      const dates=Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+      vcache[pid]={byDate,dates};
+      updSum(); // cập nhật summary với data mới
+    } catch(e){ body.innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; return; }
+  }
+  const c=vcache[pid]; const dates=c.dates;
+  const show=selDate&&c.byDate[selDate]?selDate:dates[0];
+  renderVT(c.byDate[show]||[]);
+}
 
-      function renderVT(rows) {
-        const body = document.getElementById("vbody");
-        if (!rows.length) {
-          body.innerHTML =
-            '<div class="loading">Không có dữ liệu trong ngày này</div>';
-          return;
-        }
-        const mL = {
-          nghi_ngoi: "Nghỉ ngơi",
-          thay_doi: "Thay đổi",
-          canh_bao: "Cảnh báo",
-        };
-        body.innerHTML = `<div class="vcount">Hiển thị ${Math.min(rows.length, 500)}/${rows.length} bản ghi</div>
+function renderVT(rows){
+  const body=document.getElementById('vbody');
+  if(!rows.length){body.innerHTML='<div class="loading">Không có dữ liệu trong ngày này</div>';return;}
+  const mL={nghi_ngoi:'Nghỉ ngơi',thay_doi:'Thay đổi',canh_bao:'Cảnh báo'};
+  body.innerHTML=`<div class="vcount">Hiển thị ${Math.min(rows.length,500)}/${rows.length} bản ghi</div>
   <div class="vtw"><table class="vt">
     <thead><tr><th>Thời gian</th><th>Nhịp tim</th><th>Δ HR</th><th>SpO₂</th><th>Δ SpO₂</th><th>Chế độ</th></tr></thead>
-    <tbody>${rows
-      .slice(0, 500)
-      .map((r) => {
-        const hr = r.hr,
-          spo2 = r.spo2;
-        const hc =
-          hr != null && (hr > 100 || hr < 50)
-            ? "var(--danger)"
-            : hr != null
-              ? "var(--green)"
-              : "var(--muted)";
-        const sc = spo2 != null && spo2 < 93 ? "var(--danger)" : "var(--navy)";
-        const ts = r.time
-          ? new Date(r.time).toLocaleTimeString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              second: "2-digit",
-            })
-          : "—";
-        const dHR = r.dHR != null ? (r.dHR > 0 ? "+" : "") + r.dHR : "—";
-        const dS =
-          r.dS != null ? (r.dS > 0 ? "+" : "") + Number(r.dS).toFixed(1) : "—";
-        return `<tr><td>${ts}</td><td style="color:${hc};font-weight:700">${hr != null ? hr + " bpm" : "—"}</td><td style="color:${r.dHR > 0 ? "var(--danger)" : r.dHR < 0 ? "var(--green)" : "var(--muted)"}">${dHR}</td><td style="color:${sc};font-weight:700">${spo2 != null ? spo2 + "%" : "—"}</td><td style="color:${r.dS > 0 ? "var(--navy)" : r.dS < 0 ? "var(--warn)" : "var(--muted)"}">${dS}</td><td><span style="background:var(--mint);color:var(--navy);padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700">${mL[r.mode] || r.mode || "—"}</span></td></tr>`;
-      })
-      .join("")}</tbody></table></div>`;
-      }
+    <tbody>${rows.slice(0,500).map(r=>{
+      const hr=r.hr,spo2=r.spo2;
+      const hc=hr!=null&&(hr>100||hr<50)?'var(--danger)':hr!=null?'var(--green)':'var(--muted)';
+      const sc=spo2!=null&&spo2<93?'var(--danger)':'var(--navy)';
+      const ts=r.time?new Date(r.time).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+      const dHR=r.dHR!=null?(r.dHR>0?'+':'')+r.dHR:'—';
+      const dS=r.dS!=null?(r.dS>0?'+':'')+Number(r.dS).toFixed(1):'—';
+      return`<tr><td>${ts}</td><td style="color:${hc};font-weight:700">${hr!=null?hr+' bpm':'—'}</td><td style="color:${r.dHR>0?'var(--danger)':r.dHR<0?'var(--green)':'var(--muted)'}">${dHR}</td><td style="color:${sc};font-weight:700">${spo2!=null?spo2+'%':'—'}</td><td style="color:${r.dS>0?'var(--navy)':r.dS<0?'var(--warn)':'var(--muted)'}">${dS}</td><td><span style="background:var(--mint);color:var(--navy);padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700">${mL[r.mode]||r.mode||'—'}</span></td></tr>`;
+    }).join('')}</tbody></table></div>`;
+}
 
-      document.getElementById("srch").addEventListener("input", function () {
-        renderPts(pts, this.value);
-      });
+document.getElementById('srch').addEventListener('input',function(){renderPts(pts,this.value);});
 
-      // SIDEBAR DOCTOR
-      async function loadSbDoc() {
-        try {
-          const r = await fetch(`${API}/doctor/${DID}`);
-          if (!r.ok) return;
-          const d = await r.json();
-          const i = (d.name || "BS")
-            .split(" ")
-            .map((w) => w[0])
-            .slice(-2)
-            .join("")
-            .toUpperCase();
-          document.getElementById("sb-av").textContent = i;
-          document.getElementById("sb-name").textContent = d.name || "Bác sĩ";
-          document.getElementById("sb-role").textContent =
-            d.hospital?.name || "Bác sĩ";
-        } catch (_) {}
-      }
+// SIDEBAR DOCTOR
+async function loadSbDoc(){
+  try { const r=await fetch(`${API}/doctor/${DID}`); if(!r.ok)return; const d=await r.json(); const i=(d.name||'BS').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase(); document.getElementById('sb-av').textContent=i; document.getElementById('sb-name').textContent=d.name||'Bác sĩ'; document.getElementById('sb-role').textContent=d.hospital?.name||'Bác sĩ'; } catch(_){}
+}
 
-      // SLIDE PANELS
-      async function saveRec(pid) {
-        const m = document.getElementById("rmsg-" + pid);
-        const g = (f) => {
-          const e = document.getElementById(`rf-${pid}-${f}`);
-          return e ? e.value.trim() || null : null;
-        };
-        const p = {};
-        [
-          "nhom_mau",
-          "benh_man_tinh",
-          "di_ung",
-          "tien_su_y_te",
-          "nguoi_lien_he_khan_ten",
-          "nguoi_lien_he_khan_sdt",
-        ].forEach((f) => {
-          const v = g(f);
-          if (v) p[f] = v;
-        });
-        ["chieu_cao_cm", "can_nang_kg"].forEach((f) => {
-          const v = g(f);
-          if (v) p[f] = parseFloat(v);
-        });
-        m.style.color = "var(--muted)";
-        m.textContent = "Đang lưu...";
-        try {
-          const r = await fetch(`${API}/medical-record/${pid}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(p),
-          });
-          const d = await r.json();
-          if (r.ok) {
-            m.style.color = "var(--green)";
-            m.textContent = "✅ Lưu thành công!";
-            setTimeout(() => (m.textContent = ""), 3000);
-          } else {
-            m.style.color = "var(--danger)";
-            m.textContent = "⚠️ " + (d.error || "Lỗi");
-          }
-        } catch (e) {
-          m.style.color = "var(--danger)";
-          m.textContent = "⚠️ Không thể kết nối";
-        }
-      }
+// SLIDE PANELS
+async function saveRec(pid){
+  const m=document.getElementById('rmsg-'+pid);
+  const g=f=>{const e=document.getElementById(`rf-${pid}-${f}`);return e?e.value.trim()||null:null;};
+  const p={};
+  ['nhom_mau','benh_man_tinh','di_ung','tien_su_y_te','nguoi_lien_he_khan_ten','nguoi_lien_he_khan_sdt'].forEach(f=>{const v=g(f);if(v)p[f]=v;});
+  ['chieu_cao_cm','can_nang_kg'].forEach(f=>{const v=g(f);if(v)p[f]=parseFloat(v);});
+  m.style.color='var(--muted)';m.textContent='Đang lưu...';
+  try { const r=await fetch(`${API}/medical-record/${pid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)}); const d=await r.json(); if(r.ok){m.style.color='var(--green)';m.textContent='✅ Lưu thành công!';setTimeout(()=>m.textContent='',3000);}else{m.style.color='var(--danger)';m.textContent='⚠️ '+(d.error||'Lỗi');} } catch(e){m.style.color='var(--danger)';m.textContent='⚠️ Không thể kết nối';}
+}
 
-      // CHAT
-      function toggleChat() {
-        const b = document.getElementById("cbox");
-        b.classList.toggle("open");
-        if (b.classList.contains("open")) renderCList();
-      }
-      function renderCList() {
-        document.getElementById("cv-list").style.display = "flex";
-        document.getElementById("cv-chat").style.display = "none";
-        const l = document.getElementById("clist"),
-          em = document.getElementById("cempty");
-        if (!pts.length) {
-          l.innerHTML = "";
-          em.style.display = "flex";
-          document.getElementById("csub").textContent = "Không có bệnh nhân";
-          return;
-        }
-        em.style.display = "none";
-        document.getElementById("csub").textContent = `${pts.length} bệnh nhân`;
-        l.innerHTML = pts
-          .map((p) => {
-            const i = (p.name || "?")
-              .split(" ")
-              .map((w) => w[0])
-              .slice(-2)
-              .join("")
-              .toUpperCase();
-            const msgs = ccache[p.id] || [];
-            const last = msgs[msgs.length - 1];
-            return `<div class="citem" onclick="openChat('${p.id}','${esc(p.name)}')"><div class="cav2">${i}</div><div style="flex:1;min-width:0"><div class="cn">${esc(p.name)}</div><div class="cp">${last ? esc(last.content.slice(0, 40)) : "Chưa có ghi chú"}</div></div></div>`;
-          })
-          .join("");
-      }
-      async function openChat(pid, name) {
-        curCPid = pid;
-        const i = (name || "?")
-          .split(" ")
-          .map((w) => w[0])
-          .slice(-2)
-          .join("")
-          .toUpperCase();
-        document.getElementById("cav").textContent = i;
-        document.getElementById("cpname").textContent = name;
-        document.getElementById("cv-list").style.display = "none";
-        document.getElementById("cv-chat").style.display = "flex";
-        const m = document.getElementById("cmsgs");
-        m.innerHTML =
-          '<div style="text-align:center;padding:20px"><span class="spin"></span></div>';
-        try {
-          const r = await fetch(`${API}/chat/${pid}`);
-          ccache[pid] = r.ok ? await r.json() : [];
-        } catch (_) {
-          ccache[pid] = [];
-        }
-        renderCMsgs();
-      }
-      function renderCMsgs() {
-        const m = document.getElementById("cmsgs"),
-          h = ccache[curCPid] || [];
-        const tl = {
-          don_thuoc: "💊",
-          khuyen_nghi: "📋",
-          theo_doi: "👁️",
-          tai_kham: "📅",
-        };
-        if (!h.length) {
-          m.innerHTML =
-            '<div style="text-align:center;color:var(--muted);padding:20px;font-size:.76rem">Chưa có ghi chú</div>';
-          return;
-        }
-        m.innerHTML = h
-          .map((x) => {
-            const ts = new Date(x.createdAt).toLocaleTimeString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
-            return `<div class="cmsg"><div class="cbbl">${tl[x.type] || ""} ${esc(x.content)}</div><div class="cts">${ts}</div></div>`;
-          })
-          .join("");
-        m.scrollTop = m.scrollHeight;
-      }
-      function backChat() {
-        document.getElementById("cv-list").style.display = "flex";
-        document.getElementById("cv-chat").style.display = "none";
-        renderCList();
-      }
-      async function sendNote() {
-        const inp = document.getElementById("cinp"),
-          txt = inp.value.trim();
-        if (!txt || !curCPid) return;
-        const type = document.getElementById("ctype").value;
-        inp.value = "";
-        inp.style.height = "auto";
-        try {
-          const r = await fetch(`${API}/chat/${curCPid}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ doctorId: DID, content: txt, type }),
-          });
-          if (r.ok) {
-            if (!ccache[curCPid]) ccache[curCPid] = [];
-            ccache[curCPid].push(await r.json());
-            renderCMsgs();
-          }
-        } catch (_) {}
-      }
-      document.getElementById("cinp").addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          sendNote();
-        }
-      });
-      document.getElementById("cinp").addEventListener("input", function () {
-        this.style.height = "auto";
-        this.style.height = Math.min(this.scrollHeight, 68) + "px";
-      });
+// CHAT
+function toggleChat(){const b=document.getElementById('cbox');b.classList.toggle('open');if(b.classList.contains('open'))renderCList();}
+function renderCList(){
+  document.getElementById('cv-list').style.display='flex';
+  document.getElementById('cv-chat').style.display='none';
+  const l=document.getElementById('clist'),em=document.getElementById('cempty');
+  if(!pts.length){l.innerHTML='';em.style.display='flex';document.getElementById('csub').textContent='Không có bệnh nhân';return;}
+  em.style.display='none';document.getElementById('csub').textContent=`${pts.length} bệnh nhân`;
+  l.innerHTML=pts.map(p=>{const i=(p.name||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();const msgs=ccache[p.id]||[];const last=msgs[msgs.length-1];return`<div class="citem" onclick="openChat('${p.id}','${esc(p.name)}')"><div class="cav2">${i}</div><div style="flex:1;min-width:0"><div class="cn">${esc(p.name)}</div><div class="cp">${last?esc(last.content.slice(0,40)):'Chưa có ghi chú'}</div></div></div>`;}).join('');
+}
+async function openChat(pid,name){
+  curCPid=pid;
+  const i=(name||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+  document.getElementById('cav').textContent=i;
+  document.getElementById('cpname').textContent=name;
+  document.getElementById('cv-list').style.display='none';
+  document.getElementById('cv-chat').style.display='flex';
+  const m=document.getElementById('cmsgs');
+  m.innerHTML='<div style="text-align:center;padding:20px"><span class="spin"></span></div>';
+  try{const r=await fetch(`${API}/chat/${pid}`);ccache[pid]=r.ok?await r.json():[];}catch(_){ccache[pid]=[];}
+  renderCMsgs();
+}
+function renderCMsgs(){
+  const m=document.getElementById('cmsgs'),h=ccache[curCPid]||[];
+  const tl={don_thuoc:'💊',khuyen_nghi:'📋',theo_doi:'👁️',tai_kham:'📅'};
+  if(!h.length){m.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:.76rem">Chưa có ghi chú</div>';return;}
+  m.innerHTML=h.map(x=>{const ts=new Date(x.createdAt).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});return`<div class="cmsg"><div class="cbbl">${tl[x.type]||''} ${esc(x.content)}</div><div class="cts">${ts}</div></div>`;}).join('');
+  m.scrollTop=m.scrollHeight;
+}
+function backChat(){document.getElementById('cv-list').style.display='flex';document.getElementById('cv-chat').style.display='none';renderCList();}
+async function sendNote(){
+  const inp=document.getElementById('cinp'),txt=inp.value.trim();
+  if(!txt||!curCPid)return;
+  const type=document.getElementById('ctype').value;
+  inp.value='';inp.style.height='auto';
+  try{const r=await fetch(`${API}/chat/${curCPid}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({doctorId:DID,content:txt,type})});if(r.ok){if(!ccache[curCPid])ccache[curCPid]=[];ccache[curCPid].push(await r.json());renderCMsgs();}}catch(_){}
+}
+document.getElementById('cinp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendNote();}});
+document.getElementById('cinp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,68)+'px';});
 
-      loadData();
-    </script>
-    <!-- DATE PICKER POPUP — tách riêng khỏi trigger để tránh event bubble -->
-    <div
-      id="date-dd"
-      style="
-        display: none;
-        position: fixed;
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
-        z-index: 999;
-        width: 292px;
-        padding: 14px;
-      "
-    >
-      <div class="cal-selects">
-        <select class="cal-sel" id="cal-m-sel" onchange="calRender()"></select>
-        <select class="cal-sel" id="cal-y-sel" onchange="calRender()"></select>
-      </div>
-      <div class="cal-nav">
-        <button class="cal-nav-btn" onclick="calMove(-1)">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </button>
-        <div class="cal-month-lbl" id="cal-lbl">—</div>
-        <button class="cal-nav-btn" onclick="calMove(1)">
-          <svg
-            width="12"
-            height="12"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.5"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-      </div>
-      <div class="cal-dow-row">
-        <div class="cal-dow">CN</div>
-        <div class="cal-dow">T2</div>
-        <div class="cal-dow">T3</div>
-        <div class="cal-dow">T4</div>
-        <div class="cal-dow">T5</div>
-        <div class="cal-dow">T6</div>
-        <div class="cal-dow">T7</div>
-      </div>
-      <div class="cal-grid" id="cal-grid"></div>
-      <div style="display: flex; gap: 6px; margin-top: 8px">
-        <button class="cal-reset" onclick="pickDate(null)" style="flex: 1">
-          ✕ Tất cả ngày
-        </button>
-        <button
-          class="cal-reset"
-          onclick="goToday()"
-          style="flex: 1; color: var(--navy); font-weight: 700"
-        >
-          📅 Hôm nay
-        </button>
-      </div>
-      <div
-        style="
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          font-size: 0.62rem;
-          color: var(--muted);
-          margin-top: 8px;
-          padding-top: 8px;
-          border-top: 1px solid var(--border);
-        "
-      >
-        <div
-          style="
-            width: 10px;
-            height: 10px;
-            border-radius: 3px;
-            background: var(--mint);
-            flex-shrink: 0;
-          "
-        ></div>
-        Ngày có dữ liệu
-        <div
-          style="
-            width: 10px;
-            height: 10px;
-            border-radius: 3px;
-            background: var(--navy);
-            flex-shrink: 0;
-            margin-left: 8px;
-          "
-        ></div>
-        Đang chọn
-        <div
-          style="
-            width: 10px;
-            height: 10px;
-            border-radius: 3px;
-            outline: 2px solid var(--green);
-            outline-offset: -1px;
-            flex-shrink: 0;
-            margin-left: 8px;
-          "
-        ></div>
-        Hôm nay
-      </div>
-    </div>
-  </body>
+loadData();
+</script>
+<!-- DATE PICKER POPUP — tách riêng khỏi trigger để tránh event bubble -->
+<div id="date-dd" style="display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:999;width:292px;padding:14px;">
+  <div class="cal-selects">
+    <select class="cal-sel" id="cal-m-sel" onchange="calRender()"></select>
+    <select class="cal-sel" id="cal-y-sel" onchange="calRender()"></select>
+  </div>
+  <div class="cal-nav">
+    <button class="cal-nav-btn" onclick="calMove(-1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="cal-month-lbl" id="cal-lbl">—</div>
+    <button class="cal-nav-btn" onclick="calMove(1)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>
+  </div>
+  <div class="cal-dow-row"><div class="cal-dow">CN</div><div class="cal-dow">T2</div><div class="cal-dow">T3</div><div class="cal-dow">T4</div><div class="cal-dow">T5</div><div class="cal-dow">T6</div><div class="cal-dow">T7</div></div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div style="display:flex;gap:6px;margin-top:8px">
+    <button class="cal-reset" onclick="pickDate(null)" style="flex:1">✕ Tất cả ngày</button>
+    <button class="cal-reset" onclick="goToday()" style="flex:1;color:var(--navy);font-weight:700">📅 Hôm nay</button>
+  </div>
+  <div style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+    <div style="width:10px;height:10px;border-radius:3px;background:var(--mint);flex-shrink:0"></div> Ngày có dữ liệu
+    <div style="width:10px;height:10px;border-radius:3px;background:var(--navy);flex-shrink:0;margin-left:8px"></div> Đang chọn
+    <div style="width:10px;height:10px;border-radius:3px;outline:2px solid var(--green);outline-offset:-1px;flex-shrink:0;margin-left:8px"></div> Hôm nay
+  </div>
+</div>
+
+</body>
 </html>
