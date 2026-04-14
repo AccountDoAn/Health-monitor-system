@@ -14,7 +14,7 @@
 }
 [data-theme=dark]{--bg:#0f1a14;--card:#18261b;--text:#d4ead9;--border:#2a4030;}
 body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
-
+ 
 /* SIDEBAR */
 .sb{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
 .sb-logo{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid rgba(255,255,255,.1);}
@@ -34,14 +34,14 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
 .sb-uname{font-size:.76rem;font-weight:700;color:#fff;line-height:1.2;}
 .sb-urole{font-size:.62rem;color:rgba(255,255,255,.5);}
-
+ 
 /* MAIN */
 .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
 .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
 .topbar-title{font-size:.92rem;font-weight:700;color:var(--navy);flex:1;}
 .topbar-hs{font-size:.7rem;color:var(--muted);font-family:'DM Mono',monospace;}
 .content{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
-
+ 
 /* CARDS */
 .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;}
@@ -49,7 +49,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .stat-ic svg{width:20px;height:20px;}
 .stat-val{font-size:1.5rem;font-weight:800;font-family:'DM Mono',monospace;color:var(--navy);}
 .stat-lbl{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:2px;}
-
+ 
 /* SEC CARD */
 .sec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .sec-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
@@ -58,7 +58,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .sec-head .btn-primary:hover{background:#1e4a72;}
 .sec-head .btn-outline{display:flex;align-items:center;gap:6px;padding:6px 12px;background:none;color:var(--navy);border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;}
 .sec-head .btn-outline:hover{border-color:var(--navy);}
-
+ 
 /* TABLE */
 .tbl-header,.tbl-row{display:grid;align-items:center;padding:10px 18px;gap:8px;}
 .tbl-header{background:var(--bg);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);}
@@ -71,17 +71,17 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .b-off{background:#f0f0f0;color:#888;}
 .b-warn{background:#fff4e0;color:#8a5800;}
 .b-danger{background:#fdeaea;color:#c0392b;}
-
+ 
 /* GRID COLUMNS */
 .dev-grid{grid-template-columns:130px 1fr 80px 90px 100px 120px;}
 .pt-grid{grid-template-columns:1fr 100px 90px 100px 1fr 110px;}
 .doc-grid{grid-template-columns:1fr 130px 80px 130px;}
-
+ 
 /* LOADING */
 .loading{padding:32px;text-align:center;color:var(--muted);font-size:.82rem;}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
-
+ 
 /* MODAL */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
@@ -103,24 +103,45 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .btn-save:disabled{opacity:.5;cursor:not-allowed;}
 .modal-msg{font-size:.72rem;text-align:center;min-height:16px;margin-top:8px;}
 .divider{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-
+ 
 /* ACTION BTNS */
 .act-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s;}
 .act-btn:hover{border-color:var(--navy);color:var(--navy);}
 .act-btn.red:hover{border-color:var(--danger);color:var(--danger);}
-
+ 
 /* SCAN */
 .scan-area{background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;margin-bottom:12px;}
 .scan-area input{border:none;background:none;font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:700;text-align:center;outline:none;width:100%;color:var(--navy);}
 .scan-hint{font-size:.7rem;color:var(--muted);margin-top:6px;}
-
+ 
 /* BATTERY BAR */
 .bat-bar{width:48px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px;}
 .bat-fill{height:100%;border-radius:4px;transition:width .3s;}
+/* Search wrap */
+.srch-wrap{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 11px;}
+.srch-wrap:focus-within{border-color:var(--navy);}
+/* Links accordion */
+.lnk-acc{border-bottom:1px solid var(--border);}
+.lnk-acc:last-child{border-bottom:none;}
+.lnk-acc.hidden{display:none;}
+.lnk-head{display:flex;align-items:center;gap:12px;padding:13px 18px;cursor:pointer;user-select:none;transition:background .12s;}
+.lnk-head:hover{background:rgba(43,95,142,.04);}
+.lnk-av{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;}
+.lnk-info{flex:1;min-width:0;}
+.lnk-name{font-size:.88rem;font-weight:700;color:var(--text);}
+.lnk-sub{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.lnk-chev{color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.lnk-acc.open .lnk-chev{transform:rotate(180deg);}
+.lnk-body{display:none;padding:0 18px 16px 68px;}
+.lnk-acc.open .lnk-body{display:block;}
+.lnk-doc-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:9px;margin-bottom:8px;border:1px solid var(--border);}
+.lnk-doc-info{display:flex;align-items:center;gap:10px;}
+.lnk-doc-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;}
+.lnk-empty{color:var(--muted);font-size:.76rem;font-style:italic;padding:6px 0;}
 </style>
 </head>
 <body>
-
+ 
 <aside class="sb">
   <div class="sb-logo">
     <div class="sb-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
@@ -138,6 +159,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <button class="sb-btn" onclick="switchView('patients',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Bệnh nhân
     </button>
+    <button class="sb-btn" onclick="switchView('links',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Liên kết
+    </button>
     <button class="sb-btn" onclick="switchView('doctors',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-7m0 0V3m0 4L9 3m4 4v10M9 21H5a2 2 0 0 1-2-2v-5"/><circle cx="17" cy="17" r="3"/></svg>Bác sĩ
     </button>
@@ -152,14 +176,14 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </button>
   </div>
 </aside>
-
+ 
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="page-title">Dashboard</div>
     <div class="topbar-hs" id="hs-name">—</div>
     <div class="last-upd" id="last-upd" style="font-size:.65rem;color:var(--muted);font-family:'DM Mono',monospace">—</div>
   </div>
-
+ 
   <!-- DASHBOARD -->
   <div class="content" id="view-overview">
     <div class="stat-row">
@@ -180,7 +204,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div><div class="stat-val" id="ov-pt-total">—</div><div class="stat-lbl">Bệnh nhân</div></div>
       </div>
     </div>
-
+ 
     <!-- Thiết bị cần chú ý -->
     <div class="sec-card">
       <div class="sec-head">
@@ -190,22 +214,19 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="ov-alerts-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
-
+ 
   <!-- THIẾT BỊ -->
   <div class="content" id="view-devices" style="display:none">
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">📱 Danh sách thiết bị</div>
-        <button class="btn-primary" onclick="openRegisterDevice()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nhập thiết bị mới
-        </button>
+ 
       </div>
       <div class="tbl-header dev-grid"><div>Serial</div><div>Bệnh nhân</div><div>Pin</div><div>Trạng thái</div><div>Online cuối</div><div>Thao tác</div></div>
       <div id="dev-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
-
+ 
   <!-- BỆNH NHÂN -->
   <div class="content" id="view-patients" style="display:none">
     <div class="sec-card">
@@ -220,7 +241,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="pt-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
-
+ 
   <!-- BÁC SĨ -->
   <div class="content" id="view-doctors" style="display:none">
     <div class="sec-card">
@@ -235,8 +256,27 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="doc-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
+ 
+  <!-- VIEW: LIÊN KẾT BÁC SĨ - BỆNH NHÂN -->
+  <div class="content" id="view-links" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🔗 Liên kết bác sĩ — Bệnh nhân</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <div class="srch-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="lnk-srch" placeholder="Tìm bệnh nhân..." oninput="filterLinks(this.value)"
+              style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:140px"/>
+          </div>
+          <button onclick="expandAllLinks()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
+          <button onclick="collapseAllLinks()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
+        </div>
+      </div>
+      <div id="links-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
 </div>
-
+ 
 <!-- MODAL: NHẬP THIẾT BỊ -->
 <div class="modal-bg" id="modal-device" onclick="if(event.target===this)closeModal('modal-device')">
   <div class="modal modal-sm">
@@ -257,7 +297,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL: GÁN THIẾT BỊ -->
 <div class="modal-bg" id="modal-assign" onclick="if(event.target===this)closeModal('modal-assign')">
   <div class="modal modal-sm">
@@ -278,13 +318,13 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL: THÊM BỆNH NHÂN -->
 <div class="modal-bg" id="modal-patient" onclick="if(event.target===this)closeModal('modal-patient')">
   <div class="modal">
     <button class="modal-x" onclick="closeModal('modal-patient')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="modal-ttl">🏥 Tiếp nhận bệnh nhân mới</div>
-
+ 
     <div class="divider">Thông tin cá nhân</div>
     <div class="field-row c2">
       <div class="field"><label>Họ tên *</label><input id="pt-name" type="text" placeholder="Nguyễn Văn A"/></div>
@@ -297,7 +337,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       </div>
     </div>
     <div class="field"><label>Email</label><input id="pt-email" type="email" placeholder="email@..."/></div>
-
+ 
     <div class="divider">Thông tin y tế</div>
     <div class="field-row c2">
       <div class="field"><label>Nhóm máu</label>
@@ -307,13 +347,13 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
     <div class="field"><label>Bệnh mãn tính</label><input id="pt-disease" type="text" placeholder="Tiểu đường, huyết áp..."/></div>
     <div class="field"><label>Tiền sử y tế</label><textarea id="pt-history" placeholder="Mô tả tiền sử..."></textarea></div>
-
+ 
     <div class="divider">Người liên hệ khẩn cấp</div>
     <div class="field-row c2">
       <div class="field"><label>Họ tên</label><input id="pt-ename" type="text" placeholder="Tên người liên hệ"/></div>
       <div class="field"><label>Số điện thoại</label><input id="pt-ephone" type="text" placeholder="0912..."/></div>
     </div>
-
+ 
     <div class="divider">Tạo tài khoản người nhà (tuỳ chọn)</div>
     <div id="fam-fields">
       <div class="field-row c2">
@@ -325,7 +365,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div class="field"><label>Mật khẩu app (mặc định: 123456)</label><input id="fam-pw" type="text" placeholder="123456"/></div>
       </div>
     </div>
-
+ 
     <div class="modal-msg" id="pt-msg"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('modal-patient')">Hủy</button>
@@ -333,7 +373,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL: PHÂN CÔNG BÁC SĨ -->
 <div class="modal-bg" id="modal-doc-assign" onclick="if(event.target===this)closeModal('modal-doc-assign')">
   <div class="modal modal-sm">
@@ -350,40 +390,41 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
-
+ 
 <script>
 // SESSION CHECK
 try {
   const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
   if(!s.userId || s.role !== 'sub_admin'){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
 } catch(_){ location.replace('index.html'); }
-
+ 
 const API = 'https://health-monitor-admin.onrender.com'; // Backend riêng cho Sub Admin
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const UID = SESS.userId;
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
+ 
 let devCache=[], ptCache=[], docCache=[];
 let assignDevId=null, assignDocPtId=null;
-
+ 
 function doLogout(){ if(!confirm('Đăng xuất?'))return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
-
+ 
 // ── VIEW SWITCHING ──
 function switchView(name, btn){
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  ['overview','devices','patients','doctors'].forEach(v=>{
+  ['overview','devices','patients','links','doctors'].forEach(v=>{
     document.getElementById('view-'+v).style.display='none';
   });
   document.getElementById('view-'+name).style.display='flex';
-  const titles={overview:'Dashboard',devices:'Thiết bị theo dõi',patients:'Bệnh nhân',doctors:'Bác sĩ'};
+  const titles={overview:'Dashboard',devices:'Thiết bị theo dõi',patients:'Bệnh nhân',links:'Liên kết bác sĩ — Bệnh nhân',doctors:'Bác sĩ'};
   document.getElementById('page-title').textContent = titles[name]||name;
   if(name==='overview') loadOverview();
   if(name==='devices') loadDevices();
   if(name==='patients') loadPatients();
+  if(name==='links') loadLinks();
   if(name==='doctors') loadDoctors();
 }
-
+ 
 // ── LOAD ADMIN INFO ──
 async function loadInfo(){
   try {
@@ -398,7 +439,7 @@ async function loadInfo(){
     }
   } catch(_){}
 }
-
+ 
 // ── OVERVIEW ──
 async function loadOverview(){
   try {
@@ -408,7 +449,7 @@ async function loadOverview(){
     document.getElementById('ov-dev-online').textContent=d.devices?.online??'—';
     document.getElementById('ov-dev-lowbat').textContent=d.devices?.lowBattery??'—';
     document.getElementById('ov-pt-total').textContent=d.patients?.total??'—';
-
+ 
     // Thiết bị cần chú ý
     const body=document.getElementById('ov-alerts-body');
     const alerts=(d.devices?.list||[]).filter(dev=>!dev.online||(dev.battery!=null&&dev.battery<20));
@@ -430,7 +471,7 @@ async function loadOverview(){
   } catch(e){ document.getElementById('ov-alerts-body').innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
   document.getElementById('last-upd').textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
 }
-
+ 
 // ── DEVICES ──
 async function loadDevices(){
   const body=document.getElementById('dev-body');
@@ -441,7 +482,7 @@ async function loadDevices(){
     renderDevices();
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
-
+ 
 function renderDevices(){
   const body=document.getElementById('dev-body');
   if(!devCache.length){body.innerHTML='<div class="loading">Chưa có thiết bị nào</div>';return;}
@@ -471,7 +512,7 @@ function renderDevices(){
       +'</div>';
   }).join('');
 }
-
+ 
 function openRegisterDevice(){
   document.getElementById('dev-serial').value='';
   document.getElementById('dev-fw').value='';
@@ -479,7 +520,7 @@ function openRegisterDevice(){
   document.getElementById('modal-device').classList.add('open');
   setTimeout(()=>document.getElementById('dev-serial').focus(),100);
 }
-
+ 
 async function registerDevice(){
   const serial=document.getElementById('dev-serial').value.trim();
   const fw=document.getElementById('dev-fw').value.trim();
@@ -500,7 +541,7 @@ async function registerDevice(){
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
   btn.disabled=false;
 }
-
+ 
 function openAssign(devId, serial){
   assignDevId=devId;
   document.getElementById('assign-dev-serial').value=serial;
@@ -511,7 +552,7 @@ function openAssign(devId, serial){
     +ptCache.filter(p=>!p.deviceId).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');
   document.getElementById('modal-assign').classList.add('open');
 }
-
+ 
 async function confirmAssign(){
   const ptId=document.getElementById('assign-pt-select').value;
   const msg=document.getElementById('assign-msg');
@@ -526,7 +567,7 @@ async function confirmAssign(){
     } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
 }
-
+ 
 async function unassignDevice(devId, serial){
   if(!confirm('Thu hồi thiết bị '+serial+'? Thiết bị sẽ về kho, ngắt liên kết với bệnh nhân.')) return;
   try {
@@ -535,7 +576,7 @@ async function unassignDevice(devId, serial){
     else alert('⚠️ Không thể thu hồi');
   } catch(e){ alert('⚠️ '+e.message); }
 }
-
+ 
 // ── PATIENTS ──
 async function loadPatients(){
   const body=document.getElementById('pt-body');
@@ -546,7 +587,7 @@ async function loadPatients(){
     renderPatients();
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
-
+ 
 function renderPatients(){
   const body=document.getElementById('pt-body');
   if(!ptCache.length){body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>';return;}
@@ -566,7 +607,7 @@ function renderPatients(){
       +'</div>';
   }).join('');
 }
-
+ 
 function openAddPatient(){
   ['pt-name','pt-phone','pt-dob','pt-email','pt-allergy','pt-disease','pt-history','pt-ename','pt-ephone','fam-name','fam-rel','fam-phone'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
@@ -577,14 +618,14 @@ function openAddPatient(){
   document.getElementById('pt-msg').textContent='';
   document.getElementById('modal-patient').classList.add('open');
 }
-
+ 
 async function savePatient(){
   const name=document.getElementById('pt-name').value.trim();
   const msg=document.getElementById('pt-msg');
   if(!name){msg.style.color='var(--danger)';msg.textContent='Vui lòng nhập họ tên';return;}
   const btn=document.getElementById('pt-save-btn');
   btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang tạo hồ sơ...';
-
+ 
   const payload={
     name, phone:document.getElementById('pt-phone').value.trim()||null,
     email:document.getElementById('pt-email').value.trim()||null,
@@ -597,12 +638,12 @@ async function savePatient(){
     emergencyName:document.getElementById('pt-ename').value.trim()||null,
     emergencyPhone:document.getElementById('pt-ephone').value.trim()||null,
   };
-
+ 
   try {
     const r=await fetch(AAPI+'/admin/'+UID+'/patients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const d=await r.json();
     if(!r.ok) throw new Error(d.error||'Lỗi tạo bệnh nhân');
-
+ 
     const pid=d.patientId;
     // Tạo người nhà nếu có
     const famName=document.getElementById('fam-name').value.trim();
@@ -616,14 +657,82 @@ async function savePatient(){
       })});
       if(!famR.ok){ const fd=await famR.json(); throw new Error('Tạo người nhà: '+(fd.error||'Lỗi')); }
     }
-
+ 
     msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo hồ sơ bệnh nhân!';
     setTimeout(()=>{ closeModal('modal-patient'); loadPatients(); loadOverview(); }, 1200);
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
   btn.disabled=false;
 }
-
+ 
 // ── DOCTORS ──
+// ── LIÊN KẾT BÁC SĨ - BỆNH NHÂN ──
+async function loadLinks(){
+  const body = document.getElementById('links-body');
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  document.getElementById('lnk-srch').value = '';
+  try {
+    // Load song song: patients + doctors + link data
+    const [rPt, rDoc] = await Promise.all([
+      fetch(AAPI+'/admin/'+UID+'/patients'),
+      fetch(AAPI+'/admin/'+UID+'/doctors'),
+    ]);
+    const patients = rPt.ok ? await rPt.json() : [];
+    docCache = rDoc.ok ? await rDoc.json() : [];
+ 
+    if(!patients.length){ body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>'; return; }
+ 
+    body.innerHTML = patients.map(function(p){
+      const init = (p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+      const dob = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+      const sid = (p.id||'').slice(0,8).toUpperCase();
+ 
+      // Doctor hiện tại của bệnh nhân này
+      const curDoc = p.doctor;
+      const docHtml = curDoc
+        ? '<div class="lnk-doc-row">'
+          + '<div class="lnk-doc-info">'
+          + '<div class="lnk-doc-av">' + (curDoc.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase() + '</div>'
+          + '<div><div style="font-size:.82rem;font-weight:600;color:var(--text)">' + esc(curDoc.name) + '</div>'
+          + '<div style="font-size:.68rem;color:var(--muted)">' + esc(curDoc.phone||curDoc.email||'Bác sĩ phụ trách') + '</div></div>'
+          + '</div>'
+          + '<span class="badge b-ok">Đang phụ trách</span>'
+          + '</div>'
+        : '<div class="lnk-empty">⚠️ Chưa có bác sĩ phụ trách</div>';
+ 
+      return '<div class="lnk-acc open" id="lnk-'+p.id+'" data-name="'+(p.name||'').toLowerCase()+'">'
+        + '<div class="lnk-head" onclick="this.closest(\'.lnk-acc\').classList.toggle(\'open\')">'
+        + '<div class="lnk-av">'+init+'</div>'
+        + '<div class="lnk-info">'
+        + '<div class="lnk-name">'+esc(p.name||'—')+'</div>'
+        + '<div class="lnk-sub">BN-'+sid+' · '+dob+(p.disease?' · '+esc(p.disease):'')+'</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+        + (p.deviceId ? '<span class="badge b-ok" style="font-size:.6rem">📱 Có thiết bị</span>' : '<span class="badge b-off" style="font-size:.6rem">Chưa có TB</span>')
+        + '</div>'
+        + '<svg class="lnk-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+        + '</div>'
+        + '<div class="lnk-body">'
+        + '<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Bác sĩ phụ trách</div>'
+        + docHtml
+        + '<button onclick="openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="margin-top:10px;display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;width:100%;justify-content:center">'
+        + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+        + (curDoc ? 'Đổi bác sĩ phụ trách' : 'Phân công bác sĩ')
+        + '</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+ 
+function filterLinks(q){
+  const kw = q.toLowerCase().trim();
+  document.querySelectorAll('.lnk-acc').forEach(function(el){
+    el.classList.toggle('hidden', kw!=='' && !(el.dataset.name||'').includes(kw));
+  });
+}
+function expandAllLinks(){ document.querySelectorAll('.lnk-acc:not(.hidden)').forEach(function(el){el.classList.add('open');}); }
+function collapseAllLinks(){ document.querySelectorAll('.lnk-acc').forEach(function(el){el.classList.remove('open');}); }
+ 
 async function loadDoctors(){
   const body=document.getElementById('doc-body');
   body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
@@ -639,7 +748,7 @@ async function loadDoctors(){
       +'</div>').join('');
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
-
+ 
 // ── DOCTOR ASSIGN ──
 function openDocAssign(ptId, ptName){
   assignDocPtId=ptId;
@@ -650,7 +759,7 @@ function openDocAssign(ptId, ptName){
     +docCache.map(d=>'<option value="'+d.id+'">'+esc(d.name)+' ('+d.patientCount+' BN)</option>').join('');
   document.getElementById('modal-doc-assign').classList.add('open');
 }
-
+ 
 async function confirmDocAssign(){
   const docId=document.getElementById('da-doc-select').value;
   const msg=document.getElementById('da-msg');
@@ -659,26 +768,26 @@ async function confirmDocAssign(){
   try {
     const r=await fetch(AAPI+'/admin/'+UID+'/assign-doctor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patientId:assignDocPtId,doctorId:docId})});
     const d=await r.json();
-    if(r.ok){ closeModal('modal-doc-assign'); loadPatients(); }
+    if(r.ok){ closeModal('modal-doc-assign'); loadPatients(); loadLinks(); }
     else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
 }
-
+ 
 // ── UTILS ──
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
-
+ 
 // INIT
 loadInfo();
 loadOverview();
 // Preload data
 fetch(AAPI+'/admin/'+UID+'/patients').then(r=>r.ok?r.json():[]).then(d=>{ptCache=d;}).catch(()=>{});
 fetch(AAPI+'/admin/'+UID+'/doctors').then(r=>r.ok?r.json():[]).then(d=>{docCache=d;}).catch(()=>{});
-
-
-
+ 
+ 
+ 
 // ── PROVISION (Web Serial API — ESP32) ──
 let provDevId=null, provDevSerial='', provPatientId=null, provConfig=null;
-
+ 
 function openProvision(devId, serial, currentPtName){
   provDevId=devId; provDevSerial=serial;
   document.getElementById('prov-serial').textContent=serial;
@@ -698,7 +807,7 @@ function openProvision(devId, serial, currentPtName){
   if(dev&&dev.assigned&&dev.assigned.patientId) sel.value=dev.assigned.patientId;
   document.getElementById('modal-provision').classList.add('open');
 }
-
+ 
 async function provisionStep2(){
   const ptId=document.getElementById('prov-pt-select').value;
   const msg=document.getElementById('prov-msg1');
@@ -727,12 +836,12 @@ async function provisionStep2(){
     msg.textContent='';
   } catch(e){ msg.style.color='var(--danger)';msg.textContent='⚠️ '+esc(e.message); }
 }
-
+ 
 function provBackStep1(){
   document.getElementById('prov-step1').style.display='block';
   document.getElementById('prov-step2').style.display='none';
 }
-
+ 
 function setSerialStatus(state, extra){
   const icon=document.getElementById('usb-status-icon');
   const title=document.getElementById('usb-status-title');
@@ -780,7 +889,7 @@ function setSerialStatus(state, extra){
     btn.disabled=false; btn.onclick=connectSerial;
   }
 }
-
+ 
 async function connectSerial(){
   const msg=document.getElementById('prov-msg2');
   // Check Web Serial API support
@@ -802,7 +911,7 @@ async function connectSerial(){
     });
     await port.open({ baudRate: 115200 });
     setSerialStatus('sending');
-
+ 
     // Build JSON payload — ESP32 firmware sẽ đọc dòng này qua Serial
     const payload = JSON.stringify({
       cmd: 'PROVISION',
@@ -812,12 +921,12 @@ async function connectSerial(){
       device_serial: provConfig.deviceSerial,
       ts: Date.now()
     }) + '\n';
-
+ 
     // Write to serial port
     const writer = port.writable.getWriter();
     const encoder = new TextEncoder();
     await writer.write(encoder.encode(payload));
-
+ 
     // Wait for ACK from device (max 5 seconds)
     const reader = port.readable.getReader();
     let ack = '';
@@ -833,7 +942,7 @@ async function connectSerial(){
         }
       } catch(e){ rej(e); }
     });
-
+ 
     try {
       await Promise.race([readAck, timeout]);
       reader.releaseLock(); writer.releaseLock();
@@ -843,10 +952,10 @@ async function connectSerial(){
       msg.style.color='var(--muted)';
       msg.textContent='⚠️ Không nhận được ACK từ thiết bị — cấu hình vẫn đã được gửi đi.';
     }
-
+ 
     await port.close();
     setSerialStatus('done');
-
+ 
   } catch(e){
     if(port) try{ await port.close(); }catch(_){}
     if(e.name==='NotFoundError' || e.message.includes('No port selected')){
@@ -857,7 +966,7 @@ async function connectSerial(){
     msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message);
   }
 }
-
+ 
 // ── TẠO BÁC SĨ ──
 function openAddDoctor(){
   ['doc-name','doc-phone','doc-email'].forEach(function(id){
@@ -867,7 +976,7 @@ function openAddDoctor(){
   document.getElementById('doc-msg').textContent='';
   document.getElementById('modal-doctor').classList.add('open');
 }
-
+ 
 async function saveDoctor(){
   const name=document.getElementById('doc-name').value.trim();
   const msg=document.getElementById('doc-msg');
@@ -893,14 +1002,14 @@ async function saveDoctor(){
   btn.disabled=false;
 }
 </script>
-
-
+ 
+ 
 <!-- MODAL: PROVISION (Web Serial) -->
 <div class="modal-bg" id="modal-provision" onclick="if(event.target===this)closeModal('modal-provision')">
   <div class="modal">
     <button class="modal-x" onclick="closeModal('modal-provision')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="modal-ttl">🔌 Cấu hình & gán thiết bị</div>
-
+ 
     <div id="prov-step1">
       <div style="background:var(--bg);border-radius:10px;padding:13px;margin-bottom:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
         <div style="font-size:1.4rem">📱</div>
@@ -921,7 +1030,7 @@ async function saveDoctor(){
         <button class="btn-save" onclick="provisionStep2()">Lưu & tiếp theo →</button>
       </div>
     </div>
-
+ 
     <div id="prov-step2" style="display:none">
       <div style="text-align:center;padding:8px 0 18px">
         <div id="usb-status-icon" style="font-size:2.8rem;margin-bottom:10px">🔌</div>
@@ -940,7 +1049,7 @@ async function saveDoctor(){
     </div>
   </div>
 </div>
-
+ 
 <!-- MODAL: TẠO BÁC SĨ -->
 <div class="modal-bg" id="modal-doctor" onclick="if(event.target===this)closeModal('modal-doctor')">
   <div class="modal modal-sm">
@@ -962,6 +1071,6 @@ async function saveDoctor(){
     </div>
   </div>
 </div>
-
+ 
 </body>
 </html>
