@@ -46,12 +46,51 @@ async function getAdminHospital(userId) {
   return user.co_so_y_te_id || null;
 }
 
+// GET /admin/:userId/me — thông tin sub-admin + CSYT
+app.get("/admin/:userId/me", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { data: user } = await supabase
+      .from("nguoi_dung")
+      .select("id, ho_ten, email, so_dien_thoai, co_so_y_te_id")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!user) return res.status(404).json({ error: "Không tìm thấy" });
+
+    let hospital = null;
+    if (user.co_so_y_te_id) {
+      const { data: hs } = await supabase
+        .from("co_so_y_te")
+        .select("id, ten_co_so, dia_chi, so_dien_thoai")
+        .eq("id", user.co_so_y_te_id)
+        .maybeSingle();
+      hospital = hs;
+    }
+    res.json({
+      userId:   user.id,
+      name:     user.ho_ten,
+      email:    user.email,
+      phone:    user.so_dien_thoai,
+      hospital: hospital ? {
+        id:      hospital.id,
+        name:    hospital.ten_co_so,
+        address: hospital.dia_chi,
+        phone:   hospital.so_dien_thoai,
+      } : null,
+    });
+  } catch (err) {
+    console.error("[GET /admin/:userId/me]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // ============================================================
 // AUTH
 // ============================================================
 
 // POST /admin/auth/login
-app.post("/admin/auth/login", async (req, res) => {
+app.post("/auth/login", async (req, res) => {
   try {
     const { login, password, hospitalId } = req.body;
     if (!login || !password)
@@ -103,7 +142,7 @@ app.post("/admin/auth/login", async (req, res) => {
 });
 
 // POST /admin/auth/change-password
-app.post("/admin/auth/change-password", async (req, res) => {
+app.post("/auth/change-password", async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
     if (!userId || !newPassword) return res.status(400).json({ error: "Thiếu thông tin" });
@@ -118,7 +157,7 @@ app.post("/admin/auth/change-password", async (req, res) => {
 });
 
 // GET /admin/hospitals
-app.get("/admin/hospitals", async (req, res) => {
+app.get("/hospitals", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("co_so_y_te").select("id, ten_co_so, dia_chi")
@@ -132,7 +171,7 @@ app.get("/admin/hospitals", async (req, res) => {
 // TỔNG QUAN
 // ============================================================
 
-app.get("/admin/overview/:userId", async (req, res) => {
+app.get("/admin/:userId/overview", async (req, res) => {
   try {
     const { userId } = req.params;
     const hsId = await getAdminHospital(userId);
@@ -195,7 +234,7 @@ app.get("/admin/overview/:userId", async (req, res) => {
 // THIẾT BỊ
 // ============================================================
 
-app.get("/admin/devices/:userId", async (req, res) => {
+app.get("/admin/:userId/devices", async (req, res) => {
   try {
     const { userId } = req.params;
     const hsId = await getAdminHospital(userId);
@@ -242,7 +281,7 @@ app.get("/admin/devices/:userId", async (req, res) => {
   }
 });
 
-app.post("/admin/devices/register/:userId", async (req, res) => {
+app.post("/admin/:userId/devices/register", async (req, res) => {
   try {
     const { userId } = req.params;
     const { serial, firmware } = req.body;
@@ -267,7 +306,7 @@ app.post("/admin/devices/register/:userId", async (req, res) => {
   }
 });
 
-app.post("/admin/devices/assign/:userId/:deviceId", async (req, res) => {
+app.post("/admin/:userId/devices/:deviceId/assign", async (req, res) => {
   try {
     const { userId, deviceId } = req.params;
     const { patientId } = req.body;
@@ -296,7 +335,7 @@ app.post("/admin/devices/assign/:userId/:deviceId", async (req, res) => {
   }
 });
 
-app.post("/admin/devices/unassign/:userId/:deviceId", async (req, res) => {
+app.post("/admin/:userId/devices/:deviceId/unassign", async (req, res) => {
   try {
     const { userId, deviceId } = req.params;
     const hsId = await getAdminHospital(userId);
@@ -317,7 +356,7 @@ app.post("/admin/devices/unassign/:userId/:deviceId", async (req, res) => {
   }
 });
 
-app.post("/admin/devices/provision/:userId/:deviceId", async (req, res) => {
+app.post("/admin/:userId/devices/:deviceId/provision", async (req, res) => {
   try {
     const { userId, deviceId } = req.params;
     const { patientId } = req.body;
@@ -363,7 +402,7 @@ app.post("/admin/devices/provision/:userId/:deviceId", async (req, res) => {
 // BỆNH NHÂN
 // ============================================================
 
-app.get("/admin/patients/:userId", async (req, res) => {
+app.get("/admin/:userId/patients", async (req, res) => {
   try {
     const { userId } = req.params;
     const hsId = await getAdminHospital(userId);
@@ -411,7 +450,7 @@ app.get("/admin/patients/:userId", async (req, res) => {
   }
 });
 
-app.post("/admin/patients/:userId", async (req, res) => {
+app.post("/admin/:userId/patients", async (req, res) => {
   try {
     const { userId } = req.params;
     const { name, phone, email, dob, gender, bloodType, disease, allergy, history, emergencyName, emergencyPhone } = req.body;
@@ -446,7 +485,7 @@ app.post("/admin/patients/:userId", async (req, res) => {
 // NGƯỜI NHÀ
 // ============================================================
 
-app.post("/admin/families/:userId", async (req, res) => {
+app.post("/admin/:userId/families", async (req, res) => {
   try {
     const { userId } = req.params;
     const { patientId, name, phone, email, relation, isPrimary, password } = req.body;
@@ -488,7 +527,7 @@ app.post("/admin/families/:userId", async (req, res) => {
 // BÁC SĨ
 // ============================================================
 
-app.get("/admin/doctors/:userId", async (req, res) => {
+app.get("/admin/:userId/doctors", async (req, res) => {
   try {
     const { userId } = req.params;
     const hsId = await getAdminHospital(userId);
@@ -520,7 +559,7 @@ app.get("/admin/doctors/:userId", async (req, res) => {
   }
 });
 
-app.post("/admin/doctors/:userId", async (req, res) => {
+app.post("/admin/:userId/doctors", async (req, res) => {
   try {
     const { userId } = req.params;
     const { name, phone, email, password } = req.body;
@@ -553,7 +592,7 @@ app.post("/admin/doctors/:userId", async (req, res) => {
   }
 });
 
-app.post("/admin/assign-doctor/:userId", async (req, res) => {
+app.post("/admin/:userId/assign-doctor", async (req, res) => {
   try {
     const { userId } = req.params;
     const { patientId, doctorId } = req.body;
