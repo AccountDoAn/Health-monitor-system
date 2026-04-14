@@ -1,0 +1,967 @@
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sub Admin — Health Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#2b5f8e;--sky:#85c8ee;--green:#5ab52a;--mint:#ceecd8;
+  --bg:#f0f7f4;--card:#fff;--text:#1a2e1e;--muted:#6b8f7a;
+  --border:#d0e8da;--danger:#e05252;--warn:#e8a930;--sw:220px;
+}
+[data-theme=dark]{--bg:#0f1a14;--card:#18261b;--text:#d4ead9;--border:#2a4030;}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sb{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sb-logo-icon{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.sb-logo-icon svg{color:var(--sky);width:17px;height:17px;}
+.sb-logo-name{font-size:.85rem;font-weight:800;color:#fff;line-height:1.2;}
+.sb-logo-name span{color:var(--mint);display:block;font-size:.65rem;font-weight:600;opacity:.8;}
+.sb-nav{flex:1;padding:10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sb-sec{padding:10px 10px 4px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:.78rem;font-weight:600;color:rgba(255,255,255,.65);transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left;}
+.sb-btn:hover,.sb-btn.active{background:rgba(255,255,255,.15);color:#fff;}
+.sb-btn svg{width:15px;height:15px;flex-shrink:0;}
+.sb-btn.red{color:rgba(224,82,82,.85);}
+.sb-btn.red:hover{background:rgba(224,82,82,.15);}
+.sb-bottom{padding:10px;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:2px;}
+.sb-user{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.08);margin-bottom:4px;}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
+.sb-uname{font-size:.76rem;font-weight:700;color:#fff;line-height:1.2;}
+.sb-urole{font-size:.62rem;color:rgba(255,255,255,.5);}
+
+/* MAIN */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:.92rem;font-weight:700;color:var(--navy);flex:1;}
+.topbar-hs{font-size:.7rem;color:var(--muted);font-family:'DM Mono',monospace;}
+.content{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
+
+/* CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;}
+.stat-ic{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stat-ic svg{width:20px;height:20px;}
+.stat-val{font-size:1.5rem;font-weight:800;font-family:'DM Mono',monospace;color:var(--navy);}
+.stat-lbl{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:2px;}
+
+/* SEC CARD */
+.sec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.sec-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sec-title{font-size:.84rem;font-weight:700;color:var(--navy);flex:1;}
+.sec-head .btn-primary{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;}
+.sec-head .btn-primary:hover{background:#1e4a72;}
+.sec-head .btn-outline{display:flex;align-items:center;gap:6px;padding:6px 12px;background:none;color:var(--navy);border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;}
+.sec-head .btn-outline:hover{border-color:var(--navy);}
+
+/* TABLE */
+.tbl-header,.tbl-row{display:grid;align-items:center;padding:10px 18px;gap:8px;}
+.tbl-header{background:var(--bg);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);}
+.tbl-row{border-bottom:1px solid var(--border);font-size:.78rem;transition:background .1s;}
+.tbl-row:last-child{border-bottom:none;}
+.tbl-row:hover{background:rgba(43,95,142,.03);}
+.mono{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:.62rem;font-weight:700;}
+.b-ok{background:#e6f7e6;color:#2d7a2d;}
+.b-off{background:#f0f0f0;color:#888;}
+.b-warn{background:#fff4e0;color:#8a5800;}
+.b-danger{background:#fdeaea;color:#c0392b;}
+
+/* GRID COLUMNS */
+.dev-grid{grid-template-columns:130px 1fr 80px 90px 100px 120px;}
+.pt-grid{grid-template-columns:1fr 100px 90px 100px 1fr 110px;}
+.doc-grid{grid-template-columns:1fr 130px 80px 130px;}
+
+/* LOADING */
+.loading{padding:32px;text-align:center;color:var(--muted);font-size:.82rem;}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:16px;padding:28px;width:460px;max-width:95vw;position:relative;max-height:90vh;overflow-y:auto;}
+.modal-sm{width:360px;}
+.modal-ttl{font-size:.92rem;font-weight:700;color:var(--navy);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.modal-x{position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;color:var(--muted);display:flex;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;}
+.field input,.field select,.field textarea{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.8rem;background:var(--bg);color:var(--text);outline:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--navy);}
+.field textarea{resize:vertical;min-height:70px;}
+.field-row{display:grid;gap:10px;}
+.field-row.c2{grid-template-columns:1fr 1fr;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.btn-cancel{padding:8px 18px;border:1.5px solid var(--border);border-radius:8px;background:none;font-family:'Sora',sans-serif;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;}
+.btn-save{padding:8px 20px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;}
+.btn-save:hover{background:#1e4a72;}
+.btn-save:disabled{opacity:.5;cursor:not-allowed;}
+.modal-msg{font-size:.72rem;text-align:center;min-height:16px;margin-top:8px;}
+.divider{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+/* ACTION BTNS */
+.act-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s;}
+.act-btn:hover{border-color:var(--navy);color:var(--navy);}
+.act-btn.red:hover{border-color:var(--danger);color:var(--danger);}
+
+/* SCAN */
+.scan-area{background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;margin-bottom:12px;}
+.scan-area input{border:none;background:none;font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:700;text-align:center;outline:none;width:100%;color:var(--navy);}
+.scan-hint{font-size:.7rem;color:var(--muted);margin-top:6px;}
+
+/* BATTERY BAR */
+.bat-bar{width:48px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px;}
+.bat-fill{height:100%;border-radius:4px;transition:width .3s;}
+</style>
+</head>
+<body>
+
+<aside class="sb">
+  <div class="sb-logo">
+    <div class="sb-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    <div class="sb-logo-name">HealthMonitor<span>Quản trị đơn vị</span></div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Tổng quan</div>
+    <button class="sb-btn active" onclick="switchView('overview',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+    </button>
+    <div class="sb-sec">Quản lý</div>
+    <button class="sb-btn" onclick="switchView('devices',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Thiết bị
+    </button>
+    <button class="sb-btn" onclick="switchView('patients',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Bệnh nhân
+    </button>
+    <button class="sb-btn" onclick="switchView('doctors',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-7m0 0V3m0 4L9 3m4 4v10M9 21H5a2 2 0 0 1-2-2v-5"/><circle cx="17" cy="17" r="3"/></svg>Bác sĩ
+    </button>
+  </div>
+  <div class="sb-bottom">
+    <div class="sb-user">
+      <div class="sb-av" id="sb-av">SA</div>
+      <div><div class="sb-uname" id="sb-name">Sub Admin</div><div class="sb-urole" id="sb-role">Quản trị đơn vị</div></div>
+    </div>
+    <button class="sb-btn red" onclick="doLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Đăng xuất
+    </button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-hs" id="hs-name">—</div>
+    <div class="last-upd" id="last-upd" style="font-size:.65rem;color:var(--muted);font-family:'DM Mono',monospace">—</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="content" id="view-overview">
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#e8f2fc"><svg viewBox="0 0 24 24" fill="none" stroke="#2b5f8e" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+        <div><div class="stat-val" id="ov-dev-total">—</div><div class="stat-lbl">Thiết bị</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#e6f7e6"><svg viewBox="0 0 24 24" fill="none" stroke="#2d7a2d" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div><div class="stat-val" id="ov-dev-online" style="color:var(--green)">—</div><div class="stat-lbl">Đang online</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#fff4e0"><svg viewBox="0 0 24 24" fill="none" stroke="#e8a930" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg></div>
+        <div><div class="stat-val" id="ov-dev-lowbat" style="color:var(--warn)">—</div><div class="stat-lbl">Pin yếu</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#ceecd8"><svg viewBox="0 0 24 24" fill="none" stroke="#2b5f8e" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+        <div><div class="stat-val" id="ov-pt-total">—</div><div class="stat-lbl">Bệnh nhân</div></div>
+      </div>
+    </div>
+
+    <!-- Thiết bị cần chú ý -->
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">⚠️ Thiết bị cần chú ý</div>
+        <button class="btn-outline" onclick="switchView('devices',document.querySelector('.sb-btn:nth-child(3)'))">Xem tất cả</button>
+      </div>
+      <div id="ov-alerts-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- THIẾT BỊ -->
+  <div class="content" id="view-devices" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">📱 Danh sách thiết bị</div>
+        <button class="btn-primary" onclick="openRegisterDevice()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nhập thiết bị mới
+        </button>
+      </div>
+      <div class="tbl-header dev-grid"><div>Serial</div><div>Bệnh nhân</div><div>Pin</div><div>Trạng thái</div><div>Online cuối</div><div>Thao tác</div></div>
+      <div id="dev-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- BỆNH NHÂN -->
+  <div class="content" id="view-patients" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🧑‍⚕️ Danh sách bệnh nhân</div>
+        <button class="btn-primary" onclick="openAddPatient()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Tiếp nhận bệnh nhân
+        </button>
+      </div>
+      <div class="tbl-header pt-grid"><div>Họ tên</div><div>Ngày sinh</div><div>Nhóm máu</div><div>Thiết bị</div><div>Bác sĩ phụ trách</div><div>Thao tác</div></div>
+      <div id="pt-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- BÁC SĨ -->
+  <div class="content" id="view-doctors" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">👨‍⚕️ Danh sách bác sĩ trong đơn vị</div>
+        <button class="btn-primary" onclick="openAddDoctor()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Tạo tài khoản bác sĩ
+        </button>
+      </div>
+      <div class="tbl-header doc-grid"><div>Họ tên</div><div>Số điện thoại</div><div>Bệnh nhân</div><div>Email</div></div>
+      <div id="doc-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NHẬP THIẾT BỊ -->
+<div class="modal-bg" id="modal-device" onclick="if(event.target===this)closeModal('modal-device')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-device')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">📦 Nhập thiết bị mới vào kho</div>
+    <div class="scan-area">
+      <input id="dev-serial" type="text" placeholder="Quét hoặc nhập số serial..." autofocus autocomplete="off" onkeydown="if(event.key==='Enter')registerDevice()"/>
+      <div class="scan-hint">Đặt con trỏ vào đây rồi quét mã vạch hoặc nhập thủ công</div>
+    </div>
+    <div class="field">
+      <label>Phiên bản firmware (tuỳ chọn)</label>
+      <input id="dev-fw" type="text" placeholder="VD: 1.2.0"/>
+    </div>
+    <div class="modal-msg" id="dev-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-device')">Đóng</button>
+      <button class="btn-save" id="dev-save-btn" onclick="registerDevice()">✅ Đăng ký thiết bị</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GÁN THIẾT BỊ -->
+<div class="modal-bg" id="modal-assign" onclick="if(event.target===this)closeModal('modal-assign')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-assign')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">🔗 Gán thiết bị cho bệnh nhân</div>
+    <div class="field">
+      <label>Thiết bị</label>
+      <input id="assign-dev-serial" type="text" disabled style="opacity:.7"/>
+    </div>
+    <div class="field">
+      <label>Chọn bệnh nhân</label>
+      <select id="assign-pt-select"><option value="">— Chọn bệnh nhân —</option></select>
+    </div>
+    <div class="modal-msg" id="assign-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-assign')">Hủy</button>
+      <button class="btn-save" onclick="confirmAssign()">✅ Xác nhận gán</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: THÊM BỆNH NHÂN -->
+<div class="modal-bg" id="modal-patient" onclick="if(event.target===this)closeModal('modal-patient')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-patient')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">🏥 Tiếp nhận bệnh nhân mới</div>
+
+    <div class="divider">Thông tin cá nhân</div>
+    <div class="field-row c2">
+      <div class="field"><label>Họ tên *</label><input id="pt-name" type="text" placeholder="Nguyễn Văn A"/></div>
+      <div class="field"><label>Số điện thoại</label><input id="pt-phone" type="text" placeholder="0912..."/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Ngày sinh</label><input id="pt-dob" type="date"/></div>
+      <div class="field"><label>Giới tính</label>
+        <select id="pt-gender"><option value="">— Chọn —</option><option value="nam">Nam</option><option value="nu">Nữ</option><option value="khac">Khác</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Email</label><input id="pt-email" type="email" placeholder="email@..."/></div>
+
+    <div class="divider">Thông tin y tế</div>
+    <div class="field-row c2">
+      <div class="field"><label>Nhóm máu</label>
+        <select id="pt-blood"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+      </div>
+      <div class="field"><label>Dị ứng</label><input id="pt-allergy" type="text" placeholder="Penicillin, ..."/></div>
+    </div>
+    <div class="field"><label>Bệnh mãn tính</label><input id="pt-disease" type="text" placeholder="Tiểu đường, huyết áp..."/></div>
+    <div class="field"><label>Tiền sử y tế</label><textarea id="pt-history" placeholder="Mô tả tiền sử..."></textarea></div>
+
+    <div class="divider">Người liên hệ khẩn cấp</div>
+    <div class="field-row c2">
+      <div class="field"><label>Họ tên</label><input id="pt-ename" type="text" placeholder="Tên người liên hệ"/></div>
+      <div class="field"><label>Số điện thoại</label><input id="pt-ephone" type="text" placeholder="0912..."/></div>
+    </div>
+
+    <div class="divider">Tạo tài khoản người nhà (tuỳ chọn)</div>
+    <div id="fam-fields">
+      <div class="field-row c2">
+        <div class="field"><label>Họ tên người nhà</label><input id="fam-name" type="text" placeholder="Nguyễn Thị B"/></div>
+        <div class="field"><label>Quan hệ</label><input id="fam-rel" type="text" placeholder="Vợ/Chồng/Con..."/></div>
+      </div>
+      <div class="field-row c2">
+        <div class="field"><label>SĐT người nhà</label><input id="fam-phone" type="text" placeholder="0912..."/></div>
+        <div class="field"><label>Mật khẩu app (mặc định: 123456)</label><input id="fam-pw" type="text" placeholder="123456"/></div>
+      </div>
+    </div>
+
+    <div class="modal-msg" id="pt-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-patient')">Hủy</button>
+      <button class="btn-save" id="pt-save-btn" onclick="savePatient()">✅ Tạo hồ sơ</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PHÂN CÔNG BÁC SĨ -->
+<div class="modal-bg" id="modal-doc-assign" onclick="if(event.target===this)closeModal('modal-doc-assign')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-doc-assign')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👨‍⚕️ Phân công bác sĩ</div>
+    <div class="field"><label>Bệnh nhân</label><input id="da-pt-name" type="text" disabled style="opacity:.7"/></div>
+    <div class="field"><label>Chọn bác sĩ phụ trách</label>
+      <select id="da-doc-select"><option value="">— Chọn bác sĩ —</option></select>
+    </div>
+    <div class="modal-msg" id="da-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-doc-assign')">Hủy</button>
+      <button class="btn-save" onclick="confirmDocAssign()">✅ Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// SESSION CHECK
+try {
+  const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  if(!s.userId || s.role !== 'sub_admin'){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
+} catch(_){ location.replace('index.html'); }
+
+const API = 'https://health-monitor-admin.onrender.com'; // Backend riêng cho Sub Admin
+const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
+const UID = SESS.userId;
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+let devCache=[], ptCache=[], docCache=[];
+let assignDevId=null, assignDocPtId=null;
+
+function doLogout(){ if(!confirm('Đăng xuất?'))return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
+
+// ── VIEW SWITCHING ──
+function switchView(name, btn){
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  ['overview','devices','patients','doctors'].forEach(v=>{
+    document.getElementById('view-'+v).style.display='none';
+  });
+  document.getElementById('view-'+name).style.display='flex';
+  const titles={overview:'Dashboard',devices:'Thiết bị theo dõi',patients:'Bệnh nhân',doctors:'Bác sĩ'};
+  document.getElementById('page-title').textContent = titles[name]||name;
+  if(name==='overview') loadOverview();
+  if(name==='devices') loadDevices();
+  if(name==='patients') loadPatients();
+  if(name==='doctors') loadDoctors();
+}
+
+// ── LOAD ADMIN INFO ──
+async function loadInfo(){
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/me');
+    if(r.ok){
+      const d=await r.json();
+      const i=(d.name||'SA').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+      document.getElementById('sb-av').textContent=i;
+      document.getElementById('sb-name').textContent=d.name||'Sub Admin';
+      document.getElementById('sb-role').textContent='Quản trị đơn vị';
+      document.getElementById('hs-name').textContent=d.hospital?.name||d.hospital?.ten_co_so||'—';
+    }
+  } catch(_){}
+}
+
+// ── OVERVIEW ──
+async function loadOverview(){
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/overview');
+    const d=r.ok?await r.json():{};
+    document.getElementById('ov-dev-total').textContent=d.devices?.total??'—';
+    document.getElementById('ov-dev-online').textContent=d.devices?.online??'—';
+    document.getElementById('ov-dev-lowbat').textContent=d.devices?.lowBattery??'—';
+    document.getElementById('ov-pt-total').textContent=d.patients?.total??'—';
+
+    // Thiết bị cần chú ý
+    const body=document.getElementById('ov-alerts-body');
+    const alerts=(d.devices?.list||[]).filter(dev=>!dev.online||(dev.battery!=null&&dev.battery<20));
+    if(!alerts.length){
+      body.innerHTML='<div class="loading" style="color:var(--green)">✅ Tất cả thiết bị đang hoạt động bình thường</div>';
+      return;
+    }
+    body.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:16px">'
+      +alerts.map(dev=>{
+        const batColor=dev.battery<10?'var(--danger)':dev.battery<20?'var(--warn)':'var(--green)';
+        const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN'):'—';
+        return '<div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">'
+          +'<div style="font-family:\'DM Mono\',monospace;font-weight:700;color:var(--navy);font-size:.85rem;margin-bottom:8px">'+esc(dev.serial)+'</div>'
+          +((!dev.online)?'<div style="font-size:.72rem;color:var(--danger);margin-bottom:4px">● Mất tín hiệu</div>':'')
+          +(dev.battery!=null&&dev.battery<20?'<div style="font-size:.72rem;color:var(--warn);margin-bottom:4px">🔋 Pin '+dev.battery+'%</div>':'')
+          +'<div style="font-size:.65rem;color:var(--muted)">Online cuối: '+esc(lastOn)+'</div>'
+          +'</div>';
+      }).join('')+'</div>';
+  } catch(e){ document.getElementById('ov-alerts-body').innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+  document.getElementById('last-upd').textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+}
+
+// ── DEVICES ──
+async function loadDevices(){
+  const body=document.getElementById('dev-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices');
+    devCache=r.ok?await r.json():[];
+    renderDevices();
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+
+function renderDevices(){
+  const body=document.getElementById('dev-body');
+  if(!devCache.length){body.innerHTML='<div class="loading">Chưa có thiết bị nào</div>';return;}
+  body.innerHTML=devCache.map(function(dev){
+    const bat=dev.battery!=null?dev.battery:null;
+    const batColor=bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
+    const statusBdg=dev.online?'<span class="badge b-ok">● Online</span>':'<span class="badge b-off">○ Offline</span>';
+    const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}):'—';
+    const ptName=dev.assigned?esc(dev.assigned.patientName||'Đã gán'):'<span style="color:var(--muted);font-style:italic">Chưa gán</span>';
+    const batHtml=bat!=null?('<div class="bat-bar"><div class="bat-fill" style="width:'+bat+'%;background:'+batColor+'"></div></div><span style="font-size:.72rem;color:'+batColor+'">'+bat+'%</span>'):'<span style="color:var(--muted)">—</span>';
+    let actions='<div style="display:flex;gap:5px">';
+    if(dev.assigned){
+      var pn = esc(dev.assigned.patientName||'');
+      actions += '<button class="act-btn" title="Cấu hình thiết bị (USB)" onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;'+pn+'&quot;)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg></button>';
+      actions += '<button class="act-btn red" title="Thu hồi thiết bị" onclick="unassignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>';
+    } else {
+      actions += '<button class="act-btn" title="Gán bệnh nhân + cấu hình" onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;&quot;)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>';
+    }
+    actions+='</div>';
+    return '<div class="tbl-row dev-grid">'
+      +'<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:.8rem;color:var(--navy)">'+esc(dev.serial)+'</div>'
+      +'<div>'+ptName+'</div>'
+      +'<div>'+batHtml+'</div>'
+      +'<div>'+statusBdg+'</div>'
+      +'<div class="mono">'+esc(lastOn)+'</div>'
+      +actions
+      +'</div>';
+  }).join('');
+}
+
+function openRegisterDevice(){
+  document.getElementById('dev-serial').value='';
+  document.getElementById('dev-fw').value='';
+  document.getElementById('dev-msg').textContent='';
+  document.getElementById('modal-device').classList.add('open');
+  setTimeout(()=>document.getElementById('dev-serial').focus(),100);
+}
+
+async function registerDevice(){
+  const serial=document.getElementById('dev-serial').value.trim();
+  const fw=document.getElementById('dev-fw').value.trim();
+  const msg=document.getElementById('dev-msg');
+  if(!serial){msg.style.color='var(--danger)';msg.textContent='Vui lòng nhập số serial';return;}
+  const btn=document.getElementById('dev-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang đăng ký...';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({serial,firmware:fw||null})});
+    const d=await r.json();
+    if(r.ok){
+      msg.style.color='var(--green)';
+      msg.textContent='✅ Đã đăng ký: '+serial;
+      document.getElementById('dev-serial').value='';
+      document.getElementById('dev-fw').value='';
+      loadDevices();
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
+
+function openAssign(devId, serial){
+  assignDevId=devId;
+  document.getElementById('assign-dev-serial').value=serial;
+  document.getElementById('assign-msg').textContent='';
+  // Đổ danh sách bệnh nhân chưa có thiết bị
+  const sel=document.getElementById('assign-pt-select');
+  sel.innerHTML='<option value="">— Chọn bệnh nhân —</option>'
+    +ptCache.filter(p=>!p.deviceId).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');
+  document.getElementById('modal-assign').classList.add('open');
+}
+
+async function confirmAssign(){
+  const ptId=document.getElementById('assign-pt-select').value;
+  const msg=document.getElementById('assign-msg');
+  if(!ptId){msg.style.color='var(--danger)';msg.textContent='Chọn bệnh nhân';return;}
+  msg.style.color='var(--muted)';msg.textContent='Đang gán...';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices/'+assignDevId+'/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patientId:ptId})});
+    const d=await r.json();
+    if(r.ok){
+      closeModal('modal-assign');
+      loadDevices(); loadPatients();
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+}
+
+async function unassignDevice(devId, serial){
+  if(!confirm('Thu hồi thiết bị '+serial+'? Thiết bị sẽ về kho, ngắt liên kết với bệnh nhân.')) return;
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices/'+devId+'/unassign',{method:'POST'});
+    if(r.ok){ loadDevices(); loadPatients(); loadOverview(); }
+    else alert('⚠️ Không thể thu hồi');
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ── PATIENTS ──
+async function loadPatients(){
+  const body=document.getElementById('pt-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/patients');
+    ptCache=r.ok?await r.json():[];
+    renderPatients();
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+
+function renderPatients(){
+  const body=document.getElementById('pt-body');
+  if(!ptCache.length){body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>';return;}
+  body.innerHTML=ptCache.map(p=>{
+    const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
+    const devBdg=p.deviceId?'<span class="badge b-ok">Đã gán</span>':'<span class="badge b-off">Chưa có</span>';
+    const docName=p.doctor?esc(p.doctor.name):'<span style="color:var(--muted);font-style:italic">Chưa phân công</span>';
+    return '<div class="tbl-row pt-grid">'
+      +'<div style="font-weight:600;font-size:.82rem">'+esc(p.name)+'</div>'
+      +'<div class="mono">'+dob+'</div>'
+      +'<div>'+(p.bloodType?'<span class="badge" style="background:#e8f2fc;color:var(--navy)">'+esc(p.bloodType)+'</span>':'<span class="mono">—</span>')+'</div>'
+      +'<div>'+devBdg+'</div>'
+      +'<div>'+docName+'</div>'
+      +'<div style="display:flex;gap:5px">'
+      +'<button class="act-btn" title="Phân công bác sĩ" onclick="openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function openAddPatient(){
+  ['pt-name','pt-phone','pt-dob','pt-email','pt-allergy','pt-disease','pt-history','pt-ename','pt-ephone','fam-name','fam-rel','fam-phone'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('pt-blood').value='';
+  document.getElementById('pt-gender').value='';
+  document.getElementById('fam-pw').value='123456';
+  document.getElementById('pt-msg').textContent='';
+  document.getElementById('modal-patient').classList.add('open');
+}
+
+async function savePatient(){
+  const name=document.getElementById('pt-name').value.trim();
+  const msg=document.getElementById('pt-msg');
+  if(!name){msg.style.color='var(--danger)';msg.textContent='Vui lòng nhập họ tên';return;}
+  const btn=document.getElementById('pt-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang tạo hồ sơ...';
+
+  const payload={
+    name, phone:document.getElementById('pt-phone').value.trim()||null,
+    email:document.getElementById('pt-email').value.trim()||null,
+    dob:document.getElementById('pt-dob').value||null,
+    gender:document.getElementById('pt-gender').value||null,
+    bloodType:document.getElementById('pt-blood').value||null,
+    disease:document.getElementById('pt-disease').value.trim()||null,
+    allergy:document.getElementById('pt-allergy').value.trim()||null,
+    history:document.getElementById('pt-history').value.trim()||null,
+    emergencyName:document.getElementById('pt-ename').value.trim()||null,
+    emergencyPhone:document.getElementById('pt-ephone').value.trim()||null,
+  };
+
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/patients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi tạo bệnh nhân');
+
+    const pid=d.patientId;
+    // Tạo người nhà nếu có
+    const famName=document.getElementById('fam-name').value.trim();
+    if(famName){
+      const famR=await fetch(AAPI+'/admin/'+UID+'/families',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        patientId:pid, name:famName,
+        phone:document.getElementById('fam-phone').value.trim()||null,
+        relation:document.getElementById('fam-rel').value.trim()||null,
+        password:document.getElementById('fam-pw').value.trim()||'123456',
+        isPrimary:true,
+      })});
+      if(!famR.ok){ const fd=await famR.json(); throw new Error('Tạo người nhà: '+(fd.error||'Lỗi')); }
+    }
+
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo hồ sơ bệnh nhân!';
+    setTimeout(()=>{ closeModal('modal-patient'); loadPatients(); loadOverview(); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+// ── DOCTORS ──
+async function loadDoctors(){
+  const body=document.getElementById('doc-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/doctors');
+    docCache=r.ok?await r.json():[];
+    if(!docCache.length){body.innerHTML='<div class="loading">Chưa có bác sĩ nào trong đơn vị</div>';return;}
+    body.innerHTML=docCache.map(d=>'<div class="tbl-row doc-grid">'
+      +'<div style="font-weight:600;font-size:.82rem">'+esc(d.name)+'</div>'
+      +'<div class="mono">'+esc(d.phone||'—')+'</div>'
+      +'<div><span class="badge b-ok">'+d.patientCount+' BN</span></div>'
+      +'<div class="mono" style="font-size:.7rem">'+esc(d.email||'—')+'</div>'
+      +'</div>').join('');
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+
+// ── DOCTOR ASSIGN ──
+function openDocAssign(ptId, ptName){
+  assignDocPtId=ptId;
+  document.getElementById('da-pt-name').value=ptName;
+  document.getElementById('da-msg').textContent='';
+  const sel=document.getElementById('da-doc-select');
+  sel.innerHTML='<option value="">— Chọn bác sĩ —</option>'
+    +docCache.map(d=>'<option value="'+d.id+'">'+esc(d.name)+' ('+d.patientCount+' BN)</option>').join('');
+  document.getElementById('modal-doc-assign').classList.add('open');
+}
+
+async function confirmDocAssign(){
+  const docId=document.getElementById('da-doc-select').value;
+  const msg=document.getElementById('da-msg');
+  if(!docId){msg.style.color='var(--danger)';msg.textContent='Chọn bác sĩ';return;}
+  msg.style.color='var(--muted)';msg.textContent='Đang phân công...';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/assign-doctor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patientId:assignDocPtId,doctorId:docId})});
+    const d=await r.json();
+    if(r.ok){ closeModal('modal-doc-assign'); loadPatients(); }
+    else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+}
+
+// ── UTILS ──
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// INIT
+loadInfo();
+loadOverview();
+// Preload data
+fetch(AAPI+'/admin/'+UID+'/patients').then(r=>r.ok?r.json():[]).then(d=>{ptCache=d;}).catch(()=>{});
+fetch(AAPI+'/admin/'+UID+'/doctors').then(r=>r.ok?r.json():[]).then(d=>{docCache=d;}).catch(()=>{});
+
+
+
+// ── PROVISION (Web Serial API — ESP32) ──
+let provDevId=null, provDevSerial='', provPatientId=null, provConfig=null;
+
+function openProvision(devId, serial, currentPtName){
+  provDevId=devId; provDevSerial=serial;
+  document.getElementById('prov-serial').textContent=serial;
+  document.getElementById('prov-msg1').textContent='';
+  document.getElementById('prov-step1').style.display='block';
+  document.getElementById('prov-step2').style.display='none';
+  document.getElementById('prov-config-box').style.display='none';
+  const sel=document.getElementById('prov-pt-select');
+  sel.innerHTML='<option value="">— Chọn bệnh nhân —</option>'
+    +ptCache.map(function(p){
+      const taken = p.deviceId && p.deviceId!==devId;
+      return '<option value="'+p.id+'"'+(taken?' disabled':'')+'>'
+        +esc(p.name)+(taken?' (đã có thiết bị)':'')+'</option>';
+    }).join('');
+  // Pre-select current patient if already assigned
+  const dev=devCache.find(function(d){return d.id===devId;});
+  if(dev&&dev.assigned&&dev.assigned.patientId) sel.value=dev.assigned.patientId;
+  document.getElementById('modal-provision').classList.add('open');
+}
+
+async function provisionStep2(){
+  const ptId=document.getElementById('prov-pt-select').value;
+  const msg=document.getElementById('prov-msg1');
+  if(!ptId){msg.style.color='var(--danger)';msg.textContent='Vui lòng chọn bệnh nhân';return;}
+  provPatientId=ptId;
+  msg.style.color='var(--muted)';msg.textContent='Đang xử lý...';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices/'+provDevId+'/provision',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({patientId:ptId})
+    });
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi server');
+    provConfig=d;
+    // Move to step 2
+    document.getElementById('prov-step1').style.display='none';
+    document.getElementById('prov-step2').style.display='block';
+    setSerialStatus('waiting');
+    document.getElementById('prov-config-box').style.display='block';
+    document.getElementById('prov-config-content').innerHTML=
+      'Bệnh nhân: <strong>'+esc(d.patientName)+'</strong><br>'
+      +'Patient ID: <span style="opacity:.7">'+esc(d.patientId)+'</span><br>'
+      +'API URL: <span style="opacity:.7">'+esc(d.apiEndpoint)+'</span><br>'
+      +'Serial: <strong>'+esc(d.deviceSerial)+'</strong>';
+    loadDevices(); loadPatients(); loadOverview();
+    msg.textContent='';
+  } catch(e){ msg.style.color='var(--danger)';msg.textContent='⚠️ '+esc(e.message); }
+}
+
+function provBackStep1(){
+  document.getElementById('prov-step1').style.display='block';
+  document.getElementById('prov-step2').style.display='none';
+}
+
+function setSerialStatus(state, extra){
+  const icon=document.getElementById('usb-status-icon');
+  const title=document.getElementById('usb-status-title');
+  const sub=document.getElementById('usb-status-sub');
+  const btn=document.getElementById('prov-usb-btn');
+  const msg=document.getElementById('prov-msg2');
+  msg.textContent='';
+  if(state==='waiting'){
+    icon.textContent='🔌';
+    title.textContent='Cắm cáp USB-C vào thiết bị';
+    sub.textContent='Cắm cáp USB-C từ máy tính vào thiết bị ESP32, sau đó nhấn "Kết nối Serial"';
+    btn.textContent='🔌 Kết nối Serial';
+    btn.disabled=false; btn.onclick=connectSerial;
+  } else if(state==='connecting'){
+    icon.textContent='⏳';
+    title.textContent='Đang kết nối...';
+    sub.textContent='Chọn cổng COM của thiết bị trong cửa sổ trình duyệt';
+    btn.disabled=true;
+  } else if(state==='sending'){
+    icon.textContent='📡';
+    title.textContent='Đang truyền cấu hình...';
+    sub.textContent='Vui lòng giữ nguyên cáp kết nối';
+    btn.disabled=true;
+  } else if(state==='done'){
+    icon.textContent='🎉';
+    title.textContent='Cấu hình thành công!';
+    sub.textContent='Thiết bị đã nhận cấu hình và sẵn sàng hoạt động. Có thể rút cáp.';
+    btn.textContent='✅ Đóng';
+    btn.disabled=false;
+    btn.onclick=function(){ closeModal('modal-provision'); };
+  } else if(state==='nosupport'){
+    icon.textContent='ℹ️';
+    title.textContent='Trình duyệt không hỗ trợ Web Serial';
+    sub.textContent='Cần Chrome/Edge 89+ và kết nối HTTPS. Cấu hình đã lưu server — thiết bị tự đồng bộ khi online.';
+    btn.textContent='✅ Hoàn tất (không cần USB)';
+    btn.disabled=false;
+    btn.onclick=function(){ closeModal('modal-provision'); };
+    msg.style.color='var(--muted)';
+    msg.textContent='✅ Cấu hình đã lưu trên server thành công.';
+  } else if(state==='error'){
+    icon.textContent='⚠️';
+    title.textContent='Lỗi kết nối';
+    sub.textContent=extra||'Kiểm tra lại cáp và thử lại';
+    btn.textContent='🔄 Thử lại';
+    btn.disabled=false; btn.onclick=connectSerial;
+  }
+}
+
+async function connectSerial(){
+  const msg=document.getElementById('prov-msg2');
+  // Check Web Serial API support
+  if(!('serial' in navigator)){
+    setSerialStatus('nosupport');
+    return;
+  }
+  setSerialStatus('connecting');
+  let port=null;
+  try {
+    // Request Serial port — user picks from list
+    port = await navigator.serial.requestPort({
+      filters: [
+        {usbVendorId: 0x10C4}, // Silicon Labs CP210x (ESP32 DevKit)
+        {usbVendorId: 0x1A86}, // CH340 (ESP32 clone boards)
+        {usbVendorId: 0x0403}, // FTDI FT232
+        {usbVendorId: 0x303A}, // Espressif native USB (ESP32-S2/S3)
+      ]
+    });
+    await port.open({ baudRate: 115200 });
+    setSerialStatus('sending');
+
+    // Build JSON payload — ESP32 firmware sẽ đọc dòng này qua Serial
+    const payload = JSON.stringify({
+      cmd: 'PROVISION',
+      patient_id: provConfig.patientId,
+      patient_name: provConfig.patientName,
+      api_url: provConfig.apiEndpoint,
+      device_serial: provConfig.deviceSerial,
+      ts: Date.now()
+    }) + '\n';
+
+    // Write to serial port
+    const writer = port.writable.getWriter();
+    const encoder = new TextEncoder();
+    await writer.write(encoder.encode(payload));
+
+    // Wait for ACK from device (max 5 seconds)
+    const reader = port.readable.getReader();
+    let ack = '';
+    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout — thiết bị không phản hồi')), 5000));
+    const readAck = new Promise(async (res,rej)=>{
+      try {
+        while(true){
+          const {value,done} = await reader.read();
+          if(done) break;
+          ack += new TextDecoder().decode(value);
+          if(ack.includes('OK') || ack.includes('PROV_OK')) { res(); break; }
+          if(ack.includes('ERR')) { rej(new Error('Thiết bị báo lỗi: '+ack.trim())); break; }
+        }
+      } catch(e){ rej(e); }
+    });
+
+    try {
+      await Promise.race([readAck, timeout]);
+      reader.releaseLock(); writer.releaseLock();
+    } catch(timeoutErr){
+      reader.releaseLock(); writer.releaseLock();
+      // Timeout không nhất thiết là lỗi — ESP32 có thể đang reboot
+      msg.style.color='var(--muted)';
+      msg.textContent='⚠️ Không nhận được ACK từ thiết bị — cấu hình vẫn đã được gửi đi.';
+    }
+
+    await port.close();
+    setSerialStatus('done');
+
+  } catch(e){
+    if(port) try{ await port.close(); }catch(_){}
+    if(e.name==='NotFoundError' || e.message.includes('No port selected')){
+      setSerialStatus('waiting');
+      return;
+    }
+    setSerialStatus('error', e.message);
+    msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message);
+  }
+}
+
+// ── TẠO BÁC SĨ ──
+function openAddDoctor(){
+  ['doc-name','doc-phone','doc-email'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('doc-pw').value='123456';
+  document.getElementById('doc-msg').textContent='';
+  document.getElementById('modal-doctor').classList.add('open');
+}
+
+async function saveDoctor(){
+  const name=document.getElementById('doc-name').value.trim();
+  const msg=document.getElementById('doc-msg');
+  if(!name){msg.style.color='var(--danger)';msg.textContent='Vui lòng nhập họ tên';return;}
+  const btn=document.getElementById('doc-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang tạo tài khoản...';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/doctors',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:name,
+        phone:document.getElementById('doc-phone').value.trim()||null,
+        email:document.getElementById('doc-email').value.trim()||null,
+        password:document.getElementById('doc-pw').value.trim()||'123456',
+      })
+    });
+    const d=await r.json();
+    if(r.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo: '+esc(name);
+      setTimeout(function(){ closeModal('modal-doctor'); loadDoctors(); }, 1200);
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
+</script>
+
+
+<!-- MODAL: PROVISION (Web Serial) -->
+<div class="modal-bg" id="modal-provision" onclick="if(event.target===this)closeModal('modal-provision')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-provision')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">🔌 Cấu hình & gán thiết bị</div>
+
+    <div id="prov-step1">
+      <div style="background:var(--bg);border-radius:10px;padding:13px;margin-bottom:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
+        <div style="font-size:1.4rem">📱</div>
+        <div>
+          <div style="font-size:.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Thiết bị</div>
+          <div id="prov-serial" style="font-family:'DM Mono',monospace;font-size:.95rem;font-weight:700;color:var(--navy)">—</div>
+        </div>
+      </div>
+      <div class="field"><label>Gán cho bệnh nhân *</label>
+        <select id="prov-pt-select"><option value="">— Chọn bệnh nhân —</option></select>
+      </div>
+      <div style="background:#fffbea;border:1px solid #f0d060;border-radius:8px;padding:10px 12px;font-size:.7rem;color:#7a5800;margin-bottom:4px">
+        💡 Sau bước này, bạn sẽ cắm cáp USB để truyền cấu hình trực tiếp vào thiết bị ESP32.
+      </div>
+      <div class="modal-msg" id="prov-msg1"></div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-provision')">Hủy</button>
+        <button class="btn-save" onclick="provisionStep2()">Lưu & tiếp theo →</button>
+      </div>
+    </div>
+
+    <div id="prov-step2" style="display:none">
+      <div style="text-align:center;padding:8px 0 18px">
+        <div id="usb-status-icon" style="font-size:2.8rem;margin-bottom:10px">🔌</div>
+        <div id="usb-status-title" style="font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:5px">—</div>
+        <div id="usb-status-sub" style="font-size:.72rem;color:var(--muted);line-height:1.5">—</div>
+      </div>
+      <div id="prov-config-box" style="display:none;background:var(--bg);border-radius:9px;padding:12px;margin-bottom:12px;border:1px solid var(--border)">
+        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Cấu hình truyền vào thiết bị</div>
+        <div id="prov-config-content" style="font-family:'DM Mono',monospace;font-size:.71rem;color:var(--text);line-height:1.9"></div>
+      </div>
+      <div class="modal-msg" id="prov-msg2"></div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="provBackStep1()">← Quay lại</button>
+        <button class="btn-save" id="prov-usb-btn">🔌 Kết nối Serial</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: TẠO BÁC SĨ -->
+<div class="modal-bg" id="modal-doctor" onclick="if(event.target===this)closeModal('modal-doctor')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-doctor')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👨‍⚕️ Tạo tài khoản bác sĩ</div>
+    <div class="field"><label>Họ tên *</label><input id="doc-name" type="text" placeholder="BS. Nguyễn Văn A"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="doc-phone" type="text" placeholder="0912..."/></div>
+      <div class="field"><label>Email (để đăng nhập)</label><input id="doc-email" type="email" placeholder="bs@hospital.vn"/></div>
+    </div>
+    <div class="field"><label>Mật khẩu tạm — bác sĩ tự đổi sau</label><input id="doc-pw" type="text" value="123456"/></div>
+    <div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:.7rem;color:var(--muted);margin-bottom:4px">
+      💡 Bác sĩ đăng nhập bằng email + mật khẩu tạm, sau đó đổi mật khẩu trong Cài đặt.
+    </div>
+    <div class="modal-msg" id="doc-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-doctor')">Hủy</button>
+      <button class="btn-save" id="doc-save-btn" onclick="saveDoctor()">✅ Tạo tài khoản</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
