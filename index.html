@@ -714,11 +714,8 @@ async function doLogin(){
   btn.innerHTML = `<div class="btn-spinner"></div> Đang đăng nhập...`;
  
   try {
-    // Sub-admin gọi backend riêng, còn lại dùng backend chung
-    const SUBADMIN_API = 'https://health-monitor-subadmin.onrender.com';
-    const loginAPI = (role === 'sub_admin') ? SUBADMIN_API : API;
- 
-    const res = await fetch(`${loginAPI}/auth/login`, {
+    // Tất cả role đều dùng chung backend
+    const res = await fetch(`${API}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ login, password: pass, hospitalId: hospitalId || null, selectedRole: role }),
