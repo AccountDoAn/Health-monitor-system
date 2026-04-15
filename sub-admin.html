@@ -399,7 +399,7 @@ try {
   if(!s.userId || !_roles.includes('sub_admin')){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
 } catch(_){ location.replace('index.html'); }
  
-const AAPI = 'https://health-monitor-subadmin.onrender.com'; // Backend Sub Admin
+const AAPI = 'https://health-monitor-system-twts.onrender.com'; // Dùng chung backend với health-monitor
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const UID = SESS.userId;
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
