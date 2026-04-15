@@ -19,9 +19,9 @@
       --danger:#e05252;
       --warn:  #e8a930;
     }
- 
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
+
     body {
       font-family: 'Sora', sans-serif;
       background: var(--bg);
@@ -33,7 +33,7 @@
       position: relative;
       overflow: hidden;
     }
- 
+
     /* Background pattern */
     body::before {
       content: '';
@@ -46,7 +46,7 @@
       pointer-events: none;
       z-index: 0;
     }
- 
+
     /* Floating ECG line decoration */
     body::after {
       content: '';
@@ -67,12 +67,12 @@
       z-index: 0;
       animation: scanLine 6s ease-in-out infinite;
     }
- 
+
     @keyframes scanLine {
       0%, 100% { opacity: 0.3; transform: translateY(-50%) scaleX(0.8); }
       50%       { opacity: 0.7; transform: translateY(-50%) scaleX(1); }
     }
- 
+
     /* Card container */
     .login-wrap {
       position: relative;
@@ -81,7 +81,7 @@
       max-width: 420px;
       padding: 20px;
     }
- 
+
     /* Brand */
     .brand {
       display: flex;
@@ -90,7 +90,7 @@
       margin-bottom: 32px;
       justify-content: center;
     }
- 
+
     .brand-icon {
       width: 44px; height: 44px;
       background: var(--navy);
@@ -98,18 +98,18 @@
       display: flex; align-items: center; justify-content: center;
       box-shadow: 0 4px 16px rgba(43,95,142,0.3);
     }
- 
+
     .brand-icon svg { color: var(--sky); width: 24px; height: 24px; }
- 
+
     .brand-name {
       font-size: 1.4rem;
       font-weight: 800;
       color: var(--navy);
       letter-spacing: -0.02em;
     }
- 
+
     .brand-name span { color: var(--green); }
- 
+
     /* Card */
     .card {
       background: var(--white);
@@ -120,16 +120,16 @@
         0 20px 60px rgba(43,95,142,0.10);
       overflow: hidden;
     }
- 
+
     /* Views */
     .view { display: none; padding: 36px 32px; }
     .view.active { display: block; animation: fadeUp 0.3s ease; }
- 
+
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(12px); }
       to   { opacity: 1; transform: translateY(0); }
     }
- 
+
     /* View headers */
     .view-title {
       font-size: 1.2rem;
@@ -137,17 +137,17 @@
       color: var(--navy);
       margin-bottom: 4px;
     }
- 
+
     .view-sub {
       font-size: 0.78rem;
       color: var(--muted);
       margin-bottom: 28px;
       line-height: 1.5;
     }
- 
+
     /* Form fields */
     .field { margin-bottom: 16px; }
- 
+
     .field label {
       display: block;
       font-size: 0.72rem;
@@ -157,11 +157,11 @@
       color: var(--muted);
       margin-bottom: 7px;
     }
- 
+
     .field-input-wrap {
       position: relative;
     }
- 
+
     .field-input-wrap > svg:first-child {
       position: absolute;
       left: 13px; top: 50%; transform: translateY(-50%);
@@ -170,7 +170,7 @@
       pointer-events: none;
       z-index: 1;
     }
- 
+
     .field input {
       width: 100%;
       padding: 11px 14px 11px 40px;
@@ -183,23 +183,23 @@
       outline: none;
       transition: border-color 0.15s, background 0.15s;
     }
- 
+
     /* Input có nút toggle mật khẩu → thêm padding phải để không bị đè */
     .field-input-wrap .pass-toggle ~ input,
     .field-input-wrap input:has(~ .pass-toggle),
     .has-toggle input {
       padding-right: 44px;
     }
- 
+
     .field input:focus {
       border-color: var(--navy);
       background: var(--white);
     }
- 
+
     .field input::placeholder { color: var(--muted); opacity: 0.7; }
- 
+
     .field input.error { border-color: var(--danger); }
- 
+
     /* Password toggle */
     .pass-toggle {
       position: absolute;
@@ -214,15 +214,15 @@
     }
     .pass-toggle:hover { color: var(--navy); background: rgba(43,95,142,0.08); }
     .pass-toggle svg { width: 16px; height: 16px; pointer-events: none; }
- 
+
     /* Strength bar */
     .pw-strength {
       margin-top: 6px;
       display: none;
     }
- 
+
     .pw-strength.show { display: block; }
- 
+
     .pw-strength-bar {
       height: 3px;
       border-radius: 2px;
@@ -230,19 +230,19 @@
       overflow: hidden;
       margin-bottom: 4px;
     }
- 
+
     .pw-strength-fill {
       height: 100%;
       border-radius: 2px;
       transition: width 0.3s, background 0.3s;
       width: 0%;
     }
- 
+
     .pw-strength-label {
       font-size: 0.68rem;
       color: var(--muted);
     }
- 
+
     /* Forgot link */
     .forgot-link {
       display: block;
@@ -255,9 +255,9 @@
       margin-bottom: 20px;
       cursor: pointer;
     }
- 
+
     .forgot-link:hover { text-decoration: underline; }
- 
+
     /* Submit button */
     .btn-submit {
       width: 100%;
@@ -275,12 +275,12 @@
       box-shadow: 0 4px 14px rgba(43,95,142,0.25);
       letter-spacing: 0.02em;
     }
- 
+
     .btn-submit:hover  { background: #1e4a72; box-shadow: 0 6px 20px rgba(43,95,142,0.35); }
     .btn-submit:active { transform: scale(0.98); }
     .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
     .btn-submit svg { width: 16px; height: 16px; }
- 
+
     /* Spinner inside button */
     .btn-spinner {
       width: 16px; height: 16px;
@@ -290,7 +290,7 @@
       animation: spin 0.65s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
- 
+
     /* Error / info banners */
     .banner {
       border-radius: 9px;
@@ -307,7 +307,7 @@
     .banner.info  { background: #e8f2fc; color: var(--navy); }
     .banner.warn  { background: #fff4e0; color: #8a5800; }
     .banner svg   { flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; }
- 
+
     /* Back link */
     .back-link {
       display: inline-flex;
@@ -321,14 +321,14 @@
       transition: color 0.12s;
     }
     .back-link:hover { color: var(--navy); }
- 
+
     /* Divider */
     .divider {
       height: 1px;
       background: var(--border);
       margin: 20px 0;
     }
- 
+
     /* Role badge for "coming soon" */
     .role-badge {
       display: inline-flex; align-items: center; gap: 6px;
@@ -337,7 +337,7 @@
       font-size: 0.8rem; font-weight: 600; color: var(--muted);
       margin-bottom: 8px; width: 100%;
     }
- 
+
     /* Footer note */
     .login-footer {
       text-align: center;
@@ -345,33 +345,33 @@
       font-size: 0.7rem;
       color: var(--muted);
     }
- 
+
     /* Coming soon overlay */
     .coming-soon-box {
       text-align: center;
       padding: 8px 0 4px;
     }
- 
+
     .coming-soon-box .cs-icon {
       font-size: 2.8rem;
       margin-bottom: 12px;
       display: block;
     }
- 
+
     .coming-soon-box .cs-title {
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--navy);
       margin-bottom: 6px;
     }
- 
+
     .coming-soon-box .cs-sub {
       font-size: 0.8rem;
       color: var(--muted);
       line-height: 1.6;
       margin-bottom: 20px;
     }
- 
+
     .cs-role-chip {
       display: inline-flex; align-items: center; gap: 5px;
       background: #e8f2fc; color: var(--navy);
@@ -382,7 +382,7 @@
   </style>
 </head>
 <body>
- 
+
 <div class="login-wrap">
   <!-- Brand -->
   <div class="brand">
@@ -393,19 +393,19 @@
     </div>
     <div class="brand-name">Health<span>Monitor</span></div>
   </div>
- 
+
   <div class="card">
- 
+
     <!-- ── VIEW 1: ĐĂNG NHẬP ── -->
     <div class="view active" id="view-login">
       <div class="view-title">Chào mừng trở lại</div>
       <div class="view-sub">Đăng nhập để tiếp tục theo dõi bệnh nhân</div>
- 
+
       <div class="banner error" id="login-error">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span id="login-error-msg"></span>
       </div>
- 
+
       <!-- 1. Vai trò -->
       <div class="field">
         <label>Vai trò</label>
@@ -419,7 +419,7 @@
           </select>
         </div>
       </div>
- 
+
       <!-- 2. Cơ sở y tế (ẩn khi chọn Admin) -->
       <div class="field" id="field-hospital">
         <label>Cơ sở y tế</label>
@@ -430,7 +430,7 @@
           </select>
         </div>
       </div>
- 
+
       <!-- 3. Email / SĐT -->
       <div class="field">
         <label>Email hoặc số điện thoại</label>
@@ -440,7 +440,7 @@
             autocomplete="username" oninput="clearLoginError()"/>
         </div>
       </div>
- 
+
       <!-- 4. Mật khẩu -->
       <div class="field">
         <label>Mật khẩu</label>
@@ -454,32 +454,32 @@
           </button>
         </div>
       </div>
- 
+
       <span class="forgot-link" onclick="showView('view-forgot')">Quên mật khẩu?</span>
- 
+
       <button class="btn-submit" id="login-btn" onclick="doLogin()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
         Đăng nhập
       </button>
- 
+
       <div class="login-footer">Chỉ dành cho nhân viên y tế được cấp quyền</div>
     </div>
- 
+
     <!-- ── VIEW 2: ĐỔI MẬT KHẨU LẦN ĐẦU ── -->
     <div class="view" id="view-change-pass">
       <div class="banner warn show">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <span>Đây là lần đăng nhập đầu tiên. Vui lòng đặt mật khẩu cá nhân mới để tiếp tục.</span>
       </div>
- 
+
       <div class="view-title">Đặt mật khẩu mới</div>
       <div class="view-sub" id="change-pass-sub">Mật khẩu mới phải có ít nhất 6 ký tự</div>
- 
+
       <div class="banner error" id="cp-error">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span id="cp-error-msg"></span>
       </div>
- 
+
       <div class="field">
         <label>Mật khẩu mới</label>
         <div class="field-input-wrap has-toggle">
@@ -496,7 +496,7 @@
           <div class="pw-strength-label" id="pw-label"></div>
         </div>
       </div>
- 
+
       <div class="field">
         <label>Xác nhận mật khẩu</label>
         <div class="field-input-wrap has-toggle">
@@ -509,33 +509,33 @@
           </button>
         </div>
       </div>
- 
+
       <button class="btn-submit" id="cp-btn" onclick="doChangePass()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         Xác nhận & Đăng nhập
       </button>
     </div>
- 
+
     <!-- ── VIEW 3: QUÊN MẬT KHẨU ── -->
     <div class="view" id="view-forgot">
       <span class="back-link" onclick="showView('view-login')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
         Quay lại đăng nhập
       </span>
- 
+
       <div class="view-title">Quên mật khẩu</div>
       <div class="view-sub">Nhập email tài khoản — chúng tôi sẽ gửi link đặt lại mật khẩu trong vòng 1 giờ.</div>
- 
+
       <div class="banner error" id="forgot-error">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span id="forgot-error-msg"></span>
       </div>
- 
+
       <div class="banner info" id="forgot-success" style="background:#e8f8ec;color:#2d8a3e">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         <span id="forgot-success-msg"></span>
       </div>
- 
+
       <div class="field" id="forgot-email-field">
         <label>Email tài khoản</label>
         <div class="field-input-wrap">
@@ -544,13 +544,13 @@
             autocomplete="email" onkeydown="if(event.key==='Enter')doForgotPassword()"/>
         </div>
       </div>
- 
+
       <button class="btn-submit" id="forgot-btn" onclick="doForgotPassword()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         Gửi email đặt lại mật khẩu
       </button>
     </div>
- 
+
     <!-- ── VIEW 4: ĐANG PHÁT TRIỂN (Admin/SubAdmin) ── -->
     <div class="view" id="view-coming-soon">
       <div class="coming-soon-box">
@@ -570,13 +570,13 @@
         </button>
       </div>
     </div>
- 
+
   </div><!-- .card -->
 </div><!-- .login-wrap -->
- 
+
 <script>
-const API = 'https://health-monitor-system-twts.onrender.com';
- 
+const API = 'https://health-monitor-system-doctor.onrender.com';
+
 // ── SESSION CHECK — chạy ngay trước khi render ──
 (function checkSession(){
   try {
@@ -590,11 +590,11 @@ const API = 'https://health-monitor-system-twts.onrender.com';
     // admin/sub_admin: để DOMContentLoaded xử lý bên dưới
   } catch(_){}
 })();
- 
+
 // Tạm lưu userId khi cần đổi mật khẩu
 let pendingUserId   = null;
 let pendingUserRole = null;
- 
+
 // ── LOAD HOSPITALS ──
 async function loadHospitals(){
   try {
@@ -611,7 +611,7 @@ async function loadHospitals(){
   } catch(_){}
 }
 loadHospitals();
- 
+
 // ── ROLE CHANGE → ẩn/hiện CSYT ──
 function onRoleChange(role){
   const fieldHospital = document.getElementById('field-hospital');
@@ -620,13 +620,13 @@ function onRoleChange(role){
   if(role === 'admin') document.getElementById('hospital-select').value = '';
   clearLoginError();
 }
- 
+
 // ── NAVIGATION ──
 function showView(id){
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
- 
+
 // ── PASS TOGGLE ──
 function togglePass(inputId, btn){
   const inp = document.getElementById(inputId);
@@ -636,7 +636,7 @@ function togglePass(inputId, btn){
     ? `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
     : `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 }
- 
+
 // ── PASSWORD STRENGTH ──
 function checkStrength(pw){
   const bar   = document.getElementById('pw-strength');
@@ -663,14 +663,14 @@ function checkStrength(pw){
   label.textContent     = lv.t;
   label.style.color     = lv.c;
 }
- 
+
 // ── CLEAR ERROR ──
 function clearLoginError(){
   document.getElementById('login-input').classList.remove('error');
   document.getElementById('login-pass').classList.remove('error');
   hideBanner('login-error');
 }
- 
+
 function showBanner(id, msg){ const b=document.getElementById(id); b.classList.add('show'); const s=b.querySelector('span[id]'); if(s)s.textContent=msg; }
 function hideBanner(id){ document.getElementById(id).classList.remove('show'); }
 function setBtn(id, loading, text){
@@ -679,11 +679,11 @@ function setBtn(id, loading, text){
     ? `<div class="btn-spinner"></div> ${text||'Đang xử lý...'}`
     : b.dataset.originalHtml || b.innerHTML;
 }
- 
+
 // Save original button HTML
 document.getElementById('login-btn').dataset.originalHtml = document.getElementById('login-btn').innerHTML;
 document.getElementById('cp-btn').dataset.originalHtml    = document.getElementById('cp-btn').innerHTML;
- 
+
 // ── ĐĂNG NHẬP ──
 async function doLogin(){
   const role       = document.getElementById('role-select').value;
@@ -691,28 +691,28 @@ async function doLogin(){
   const pass       = document.getElementById('login-pass').value;
   const hospitalId = (role === 'admin') ? null : document.getElementById('hospital-select').value;
   clearLoginError();
- 
+
   if(!role){
     showBanner('login-error', 'Vui lòng chọn vai trò của bạn');
     document.getElementById('role-select').style.borderColor = 'var(--danger)';
     return;
   }
   document.getElementById('role-select').style.borderColor = '';
- 
+
   if(role !== 'admin' && !hospitalId){
     showBanner('login-error', 'Vui lòng chọn cơ sở y tế');
     document.getElementById('hospital-select').style.borderColor = 'var(--danger)';
     return;
   }
   document.getElementById('hospital-select').style.borderColor = '';
- 
+
   if(!login){ showBanner('login-error','Vui lòng nhập email hoặc số điện thoại'); document.getElementById('login-input').classList.add('error'); return; }
   if(!pass)  { showBanner('login-error','Vui lòng nhập mật khẩu'); document.getElementById('login-pass').classList.add('error'); return; }
- 
+
   const btn = document.getElementById('login-btn');
   btn.disabled = true;
   btn.innerHTML = `<div class="btn-spinner"></div> Đang đăng nhập...`;
- 
+
   try {
     // Tất cả role đều dùng chung backend
     const res = await fetch(`${API}/auth/login`, {
@@ -720,9 +720,9 @@ async function doLogin(){
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ login, password: pass, hospitalId: hospitalId || null, selectedRole: role }),
     });
- 
+
     const data = await res.json();
- 
+
     if(!res.ok){
       showBanner('login-error', data.error || 'Đăng nhập thất bại');
       document.getElementById('login-input').classList.add('error');
@@ -731,9 +731,9 @@ async function doLogin(){
       btn.innerHTML = btn.dataset.originalHtml;
       return;
     }
- 
+
     const primaryRole = data.roles?.[0] || '';
- 
+
     // Đăng nhập lần đầu → đổi mật khẩu
     if(data.isFirstLogin){
       pendingUserId   = data.userId;
@@ -745,10 +745,10 @@ async function doLogin(){
       showView('view-change-pass');
       return;
     }
- 
+
     // Redirect theo vai trò
     redirectByRole(primaryRole, data.userId, data.name, { hospitalId: data.hospitalId });
- 
+
   } catch(e) {
     showBanner('login-error', 'Không thể kết nối tới máy chủ. Vui lòng thử lại.');
     btn.disabled = false;
@@ -756,46 +756,46 @@ async function doLogin(){
     console.error(e);
   }
 }
- 
+
 // ── ĐỔI MẬT KHẨU ──
 async function doChangePass(){
   const np = document.getElementById('new-pass').value;
   const cp = document.getElementById('confirm-pass').value;
   hideBanner('cp-error');
- 
+
   if(np.length < 6){ showBanner('cp-error','Mật khẩu phải có ít nhất 6 ký tự'); return; }
   if(np !== cp)     { showBanner('cp-error','Mật khẩu xác nhận không khớp'); return; }
- 
+
   const btn = document.getElementById('cp-btn');
   btn.disabled = true;
   btn.innerHTML = `<div class="btn-spinner"></div> Đang lưu...`;
- 
+
   try {
     const res = await fetch(`${API}/auth/change-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: pendingUserId, newPassword: np }),
     });
- 
+
     const data = await res.json();
- 
+
     if(!res.ok){
       showBanner('cp-error', data.error || 'Không thể đổi mật khẩu');
       btn.disabled = false;
       btn.innerHTML = btn.dataset.originalHtml;
       return;
     }
- 
+
     // Đổi thành công → redirect
     redirectByRole(pendingUserRole, pendingUserId);
- 
+
   } catch(e) {
     showBanner('cp-error', 'Không thể kết nối tới máy chủ');
     btn.disabled = false;
     btn.innerHTML = btn.dataset.originalHtml;
   }
 }
- 
+
 // ── SESSION HELPERS ──
 function saveSession(userId, role, name, extra){
   localStorage.setItem('hm_session', JSON.stringify({
@@ -807,7 +807,7 @@ function saveSession(userId, role, name, extra){
 function clearSession(){
   localStorage.removeItem('hm_session');
 }
- 
+
 // ── REDIRECT THEO VAI TRÒ ──
 function redirectByRole(role, userId, name, extra){
   saveSession(userId, role, name, extra);
@@ -823,26 +823,26 @@ function redirectByRole(role, userId, name, extra){
     showView('view-login');
   }
 }
- 
+
 // ── QUÊN MẬT KHẨU ──
 async function doForgotPassword(){
   const email = document.getElementById('forgot-email').value.trim();
   hideBanner('forgot-error');
   hideBanner('forgot-success');
- 
+
   if(!email){ showBanner('forgot-error', 'Vui lòng nhập email'); return; }
- 
+
   const btn = document.getElementById('forgot-btn');
   btn.disabled = true;
   btn.innerHTML = `<div class="btn-spinner"></div> Đang gửi...`;
- 
+
   try{
     const res = await fetch(`${API}/auth/forgot-password`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ email }),
     });
     const data = await res.json();
- 
+
     if(!res.ok){
       showBanner('forgot-error', data.error || 'Không thể gửi email');
     } else {
@@ -857,11 +857,11 @@ async function doForgotPassword(){
   }catch(e){
     showBanner('forgot-error', 'Không thể kết nối tới máy chủ');
   }
- 
+
   btn.disabled = false;
   btn.innerHTML = btn.dataset.originalForgotHtml || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Gửi email đặt lại mật khẩu`;
 }
- 
+
 // ── ĐĂNG XUẤT ──
 function doLogout(){
   clearSession();
@@ -869,7 +869,7 @@ function doLogout(){
   document.getElementById('login-input').value = '';
   document.getElementById('login-pass').value  = '';
 }
- 
+
 // Restore session nếu admin/subadmin quay lại trang login
 window.addEventListener('DOMContentLoaded', function(){
   try {
@@ -885,7 +885,7 @@ window.addEventListener('DOMContentLoaded', function(){
     // user_bs đã được redirect ở session check script trên đầu trang
   } catch(_){}
 });
- 
+
 // Enter key
 document.getElementById('login-input').addEventListener('keydown', e => {
   if(e.key === 'Enter') document.getElementById('login-pass').focus();
