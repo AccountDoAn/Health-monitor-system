@@ -14,7 +14,7 @@
 }
 [data-theme=dark]{--bg:#0f1a14;--card:#18261b;--text:#d4ead9;--border:#2a4030;}
 body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
- 
+
 /* SIDEBAR */
 .sb{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
 .sb-logo{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid rgba(255,255,255,.1);}
@@ -34,14 +34,14 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
 .sb-uname{font-size:.76rem;font-weight:700;color:#fff;line-height:1.2;}
 .sb-urole{font-size:.62rem;color:rgba(255,255,255,.5);}
- 
+
 /* MAIN */
 .main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
 .topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
 .topbar-title{font-size:.92rem;font-weight:700;color:var(--navy);flex:1;}
 .topbar-hs{font-size:.7rem;color:var(--muted);font-family:'DM Mono',monospace;}
 .content{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
- 
+
 /* CARDS */
 .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;}
@@ -49,7 +49,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .stat-ic svg{width:20px;height:20px;}
 .stat-val{font-size:1.5rem;font-weight:800;font-family:'DM Mono',monospace;color:var(--navy);}
 .stat-lbl{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:2px;}
- 
+
 /* SEC CARD */
 .sec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .sec-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
@@ -58,7 +58,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .sec-head .btn-primary:hover{background:#1e4a72;}
 .sec-head .btn-outline{display:flex;align-items:center;gap:6px;padding:6px 12px;background:none;color:var(--navy);border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;}
 .sec-head .btn-outline:hover{border-color:var(--navy);}
- 
+
 /* TABLE */
 .tbl-header,.tbl-row{display:grid;align-items:center;padding:10px 18px;gap:8px;}
 .tbl-header{background:var(--bg);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);}
@@ -71,17 +71,17 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .b-off{background:#f0f0f0;color:#888;}
 .b-warn{background:#fff4e0;color:#8a5800;}
 .b-danger{background:#fdeaea;color:#c0392b;}
- 
+
 /* GRID COLUMNS */
 .dev-grid{grid-template-columns:130px 1fr 80px 90px 100px 120px;}
 .pt-grid{grid-template-columns:1fr 100px 90px 100px 1fr 110px;}
 .doc-grid{grid-template-columns:1fr 130px 80px 130px;}
- 
+
 /* LOADING */
 .loading{padding:32px;text-align:center;color:var(--muted);font-size:.82rem;}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
- 
+
 /* MODAL */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;align-items:center;justify-content:center;}
 .modal-bg.open{display:flex;}
@@ -103,17 +103,17 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .btn-save:disabled{opacity:.5;cursor:not-allowed;}
 .modal-msg{font-size:.72rem;text-align:center;min-height:16px;margin-top:8px;}
 .divider{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
- 
+
 /* ACTION BTNS */
 .act-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s;}
 .act-btn:hover{border-color:var(--navy);color:var(--navy);}
 .act-btn.red:hover{border-color:var(--danger);color:var(--danger);}
- 
+
 /* SCAN */
 .scan-area{background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;margin-bottom:12px;}
 .scan-area input{border:none;background:none;font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:700;text-align:center;outline:none;width:100%;color:var(--navy);}
 .scan-hint{font-size:.7rem;color:var(--muted);margin-top:6px;}
- 
+
 /* BATTERY BAR */
 .bat-bar{width:48px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px;}
 .bat-fill{height:100%;border-radius:4px;transition:width .3s;}
@@ -141,7 +141,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 </style>
 </head>
 <body>
- 
+
 <aside class="sb">
   <div class="sb-logo">
     <div class="sb-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
@@ -176,57 +176,63 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </button>
   </div>
 </aside>
- 
+
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="page-title">Dashboard</div>
     <div class="topbar-hs" id="hs-name">—</div>
     <div class="last-upd" id="last-upd" style="font-size:.65rem;color:var(--muted);font-family:'DM Mono',monospace">—</div>
   </div>
- 
+
   <!-- DASHBOARD -->
   <div class="content" id="view-overview">
-    <div class="stat-row">
-      <div class="stat-card">
-        <div class="stat-ic" style="background:#e8f2fc"><svg viewBox="0 0 24 24" fill="none" stroke="#2b5f8e" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
-        <div><div class="stat-val" id="ov-dev-total">—</div><div class="stat-lbl">Thiết bị</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-ic" style="background:#e6f7e6"><svg viewBox="0 0 24 24" fill="none" stroke="#2d7a2d" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        <div><div class="stat-val" id="ov-dev-online" style="color:var(--green)">—</div><div class="stat-lbl">Đang online</div></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-ic" style="background:#fff4e0"><svg viewBox="0 0 24 24" fill="none" stroke="#e8a930" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M13 2v7h7"/></svg></div>
-        <div><div class="stat-val" id="ov-dev-lowbat" style="color:var(--warn)">—</div><div class="stat-lbl">Pin yếu</div></div>
-      </div>
+    <!-- 3 stat cards -->
+    <div class="stat-row" style="grid-template-columns:repeat(3,1fr)">
       <div class="stat-card">
         <div class="stat-ic" style="background:#ceecd8"><svg viewBox="0 0 24 24" fill="none" stroke="#2b5f8e" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
         <div><div class="stat-val" id="ov-pt-total">—</div><div class="stat-lbl">Bệnh nhân</div></div>
       </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#e6f7e6"><svg viewBox="0 0 24 24" fill="none" stroke="#2d7a2d" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+        <div><div class="stat-val" id="ov-dev-online" style="color:var(--green)">—</div><div class="stat-lbl">Thiết bị Online</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#e8f2fc"><svg viewBox="0 0 24 24" fill="none" stroke="#2b5f8e" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+        <div><div class="stat-val" id="ov-dev-total">—</div><div class="stat-lbl">Tổng thiết bị</div></div>
+      </div>
     </div>
- 
-    <!-- Thiết bị cần chú ý -->
+
+    <!-- Bảng liên kết -->
     <div class="sec-card">
       <div class="sec-head">
-        <div class="sec-title">⚠️ Thiết bị cần chú ý</div>
-        <button class="btn-outline" onclick="switchView('devices',document.querySelector('.sb-btn:nth-child(3)'))">Xem tất cả</button>
+        <div class="sec-title">🔗 Liên kết Bệnh nhân — Thiết bị — Bác sĩ</div>
+        <button class="btn-outline" onclick="loadOverview()" style="display:flex;align-items:center;gap:5px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
+        </button>
       </div>
-      <div id="ov-alerts-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+      <!-- Table header -->
+      <div style="display:grid;grid-template-columns:1fr 140px 90px 80px 1fr;gap:8px;padding:10px 18px;background:var(--bg);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)">
+        <div>Bệnh nhân</div>
+        <div>Thiết bị</div>
+        <div>Pin</div>
+        <div>Trạng thái</div>
+        <div>Bác sĩ phụ trách</div>
+      </div>
+      <div id="ov-links-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
- 
+
   <!-- THIẾT BỊ -->
   <div class="content" id="view-devices" style="display:none">
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">📱 Danh sách thiết bị</div>
- 
+
       </div>
-      <div class="tbl-header dev-grid"><div>Serial</div><div>Bệnh nhân</div><div>Pin</div><div>Trạng thái</div><div>Online cuối</div><div>Thao tác</div></div>
       <div id="dev-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
- 
+
   <!-- BỆNH NHÂN -->
   <div class="content" id="view-patients" style="display:none">
     <div class="sec-card">
@@ -241,7 +247,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="pt-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
- 
+
   <!-- BÁC SĨ -->
   <div class="content" id="view-doctors" style="display:none">
     <div class="sec-card">
@@ -256,7 +262,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="doc-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
- 
+
   <!-- VIEW: LIÊN KẾT BÁC SĨ - BỆNH NHÂN -->
   <div class="content" id="view-links" style="display:none">
     <div class="sec-card">
@@ -276,7 +282,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <!-- MODAL: NHẬP THIẾT BỊ -->
 <div class="modal-bg" id="modal-device" onclick="if(event.target===this)closeModal('modal-device')">
   <div class="modal modal-sm">
@@ -297,7 +303,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <!-- MODAL: GÁN THIẾT BỊ -->
 <div class="modal-bg" id="modal-assign" onclick="if(event.target===this)closeModal('modal-assign')">
   <div class="modal modal-sm">
@@ -318,13 +324,13 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <!-- MODAL: THÊM BỆNH NHÂN -->
 <div class="modal-bg" id="modal-patient" onclick="if(event.target===this)closeModal('modal-patient')">
   <div class="modal">
     <button class="modal-x" onclick="closeModal('modal-patient')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="modal-ttl">🏥 Tiếp nhận bệnh nhân mới</div>
- 
+
     <div class="divider">Thông tin cá nhân</div>
     <div class="field-row c2">
       <div class="field"><label>Họ tên *</label><input id="pt-name" type="text" placeholder="Nguyễn Văn A"/></div>
@@ -337,7 +343,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       </div>
     </div>
     <div class="field"><label>Email</label><input id="pt-email" type="email" placeholder="email@..."/></div>
- 
+
     <div class="divider">Thông tin y tế</div>
     <div class="field-row c2">
       <div class="field"><label>Nhóm máu</label>
@@ -347,13 +353,13 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
     <div class="field"><label>Bệnh mãn tính</label><input id="pt-disease" type="text" placeholder="Tiểu đường, huyết áp..."/></div>
     <div class="field"><label>Tiền sử y tế</label><textarea id="pt-history" placeholder="Mô tả tiền sử..."></textarea></div>
- 
+
     <div class="divider">Người liên hệ khẩn cấp</div>
     <div class="field-row c2">
       <div class="field"><label>Họ tên</label><input id="pt-ename" type="text" placeholder="Tên người liên hệ"/></div>
       <div class="field"><label>Số điện thoại</label><input id="pt-ephone" type="text" placeholder="0912..."/></div>
     </div>
- 
+
     <div class="divider">Tạo tài khoản người nhà (tuỳ chọn)</div>
     <div id="fam-fields">
       <div class="field-row c2">
@@ -365,7 +371,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div class="field"><label>Mật khẩu app (mặc định: 123456)</label><input id="fam-pw" type="text" placeholder="123456"/></div>
       </div>
     </div>
- 
+
     <div class="modal-msg" id="pt-msg"></div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('modal-patient')">Hủy</button>
@@ -373,7 +379,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <!-- MODAL: PHÂN CÔNG BÁC SĨ -->
 <div class="modal-bg" id="modal-doc-assign" onclick="if(event.target===this)closeModal('modal-doc-assign')">
   <div class="modal modal-sm">
@@ -390,7 +396,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
- 
+
 <script>
 // SESSION CHECK
 try {
@@ -398,17 +404,17 @@ try {
   const _roles = s.roles || (s.role ? [s.role] : []);
   if(!s.userId || !_roles.includes('sub_admin')){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
 } catch(_){ location.replace('index.html'); }
- 
-const AAPI = 'https://health-monitor-system-twts.onrender.com'; // Dùng chung backend với health-monitor
+
+const AAPI = 'https://health-monitor-subadmin.onrender.com';
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const UID = SESS.userId;
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
- 
+
 let devCache=[], ptCache=[], docCache=[];
 let assignDevId=null, assignDocPtId=null;
- 
+
 function doLogout(){ if(!confirm('Đăng xuất?'))return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
- 
+
 // ── VIEW SWITCHING ──
 function switchView(name, btn){
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
@@ -425,7 +431,7 @@ function switchView(name, btn){
   if(name==='links') loadLinks();
   if(name==='doctors') loadDoctors();
 }
- 
+
 // ── LOAD ADMIN INFO ──
 async function loadInfo(){
   try {
@@ -440,39 +446,88 @@ async function loadInfo(){
     }
   } catch(_){}
 }
- 
+
 // ── OVERVIEW ──
 async function loadOverview(){
+  const linksBody = document.getElementById('ov-links-body');
+  linksBody.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
-    const r=await fetch(AAPI+'/admin/'+UID+'/overview');
-    const d=r.ok?await r.json():{};
-    document.getElementById('ov-dev-total').textContent=d.devices?.total??'—';
-    document.getElementById('ov-dev-online').textContent=d.devices?.online??'—';
-    document.getElementById('ov-dev-lowbat').textContent=d.devices?.lowBattery??'—';
-    document.getElementById('ov-pt-total').textContent=d.patients?.total??'—';
- 
-    // Thiết bị cần chú ý
-    const body=document.getElementById('ov-alerts-body');
-    const alerts=(d.devices?.list||[]).filter(dev=>!dev.online||(dev.battery!=null&&dev.battery<20));
-    if(!alerts.length){
-      body.innerHTML='<div class="loading" style="color:var(--green)">✅ Tất cả thiết bị đang hoạt động bình thường</div>';
+    // Load song song: overview stats + patients (có doctor + device info)
+    const [rOv, rPt] = await Promise.all([
+      fetch(AAPI+'/admin/'+UID+'/overview'),
+      fetch(AAPI+'/admin/'+UID+'/patients'),
+    ]);
+    const ov = rOv.ok ? await rOv.json() : {};
+    const patients = rPt.ok ? await rPt.json() : [];
+
+    // Cập nhật stat cards
+    document.getElementById('ov-pt-total').textContent  = ov.patients?.total ?? patients.length ?? '—';
+    document.getElementById('ov-dev-online').textContent = ov.devices?.online ?? '—';
+    document.getElementById('ov-dev-total').textContent  = ov.devices?.total  ?? '—';
+    document.getElementById('last-upd').textContent = new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+
+    // Render bảng liên kết
+    if(!patients.length){
+      linksBody.innerHTML='<div class="loading">Chưa có dữ liệu</div>';
       return;
     }
-    body.innerHTML='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;padding:16px">'
-      +alerts.map(dev=>{
-        const batColor=dev.battery<10?'var(--danger)':dev.battery<20?'var(--warn)':'var(--green)';
-        const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN'):'—';
-        return '<div style="background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)">'
-          +'<div style="font-family:\'DM Mono\',monospace;font-weight:700;color:var(--navy);font-size:.85rem;margin-bottom:8px">'+esc(dev.serial)+'</div>'
-          +((!dev.online)?'<div style="font-size:.72rem;color:var(--danger);margin-bottom:4px">● Mất tín hiệu</div>':'')
-          +(dev.battery!=null&&dev.battery<20?'<div style="font-size:.72rem;color:var(--warn);margin-bottom:4px">🔋 Pin '+dev.battery+'%</div>':'')
-          +'<div style="font-size:.65rem;color:var(--muted)">Online cuối: '+esc(lastOn)+'</div>'
-          +'</div>';
-      }).join('')+'</div>';
-  } catch(e){ document.getElementById('ov-alerts-body').innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
-  document.getElementById('last-upd').textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
+
+    linksBody.innerHTML = patients.map(function(p){
+      const dob = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+      // Device
+      const devHtml = p.deviceId
+        ? '<div style="font-family:\'DM Mono\',monospace;font-size:.76rem;font-weight:700;color:var(--navy)">'
+          + esc(p.serial || p.deviceId.slice(0,8).toUpperCase()) + '</div>'
+        : '<span style="color:var(--muted);font-size:.74rem;font-style:italic">Chưa có TB</span>';
+
+      // Battery
+      const bat = p.battery;
+      const batHtml = bat != null
+        ? (function(){
+            var bc = bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)';
+            return '<div style="display:flex;align-items:center;gap:4px">'
+              +'<div class="bat-bar" style="width:36px"><div class="bat-fill" style="width:'+bat+'%;background:'+bc+'"></div></div>'
+              +'<span style="font-size:.7rem;color:'+bc+'">'+bat+'%</span>'
+              +'</div>';
+          })()
+        : '<span style="color:var(--muted);font-size:.74rem">—</span>';
+
+      // Online status
+      const onlineBadge = p.online
+        ? '<span class="badge b-ok" style="font-size:.6rem">● Online</span>'
+        : '<span class="badge b-off" style="font-size:.6rem">○ Offline</span>';
+
+      // Doctor
+      const docHtml = p.doctor
+        ? '<div style="font-size:.8rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'
+          +'<div style="font-size:.66rem;color:var(--muted)">'+esc(p.doctor.phone||p.doctor.email||'')+'</div>'
+        : '<span style="color:var(--muted);font-size:.74rem;font-style:italic">Chưa phân công</span>';
+
+      return '<div style="display:grid;grid-template-columns:1fr 140px 90px 80px 1fr;gap:8px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background=\'rgba(43,95,142,.03)\'" onmouseout="this.style.background=\'\'">'
+        // Bệnh nhân
+        +'<div style="display:flex;align-items:center;gap:9px">'
+        +'<div style="width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;flex-shrink:0">'
+        +(p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
+        +'</div>'
+        +'<div><div style="font-size:.82rem;font-weight:600;color:var(--text)">'+esc(p.name)+'</div>'
+        +'<div style="font-size:.66rem;color:var(--muted)">'+dob+'</div></div>'
+        +'</div>'
+        // Thiết bị
+        +'<div>'+devHtml+'</div>'
+        // Pin
+        +'<div>'+batHtml+'</div>'
+        // Trạng thái
+        +'<div>'+(p.deviceId ? onlineBadge : '<span style="color:var(--muted);font-size:.7rem">—</span>')+'</div>'
+        // Bác sĩ
+        +'<div>'+docHtml+'</div>'
+        +'</div>';
+    }).join('');
+
+  } catch(e){
+    document.getElementById('ov-links-body').innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>';
+  }
 }
- 
+
 // ── DEVICES ──
 async function loadDevices(){
   const body=document.getElementById('dev-body');
@@ -483,37 +538,77 @@ async function loadDevices(){
     renderDevices();
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
- 
+
 function renderDevices(){
   const body=document.getElementById('dev-body');
-  if(!devCache.length){body.innerHTML='<div class="loading">Chưa có thiết bị nào</div>';return;}
-  body.innerHTML=devCache.map(function(dev){
-    const bat=dev.battery!=null?dev.battery:null;
-    const batColor=bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
-    const statusBdg=dev.online?'<span class="badge b-ok">● Online</span>':'<span class="badge b-off">○ Offline</span>';
-    const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}):'—';
-    const ptName=dev.assigned?esc(dev.assigned.patientName||'Đã gán'):'<span style="color:var(--muted);font-style:italic">Chưa gán</span>';
-    const batHtml=bat!=null?('<div class="bat-bar"><div class="bat-fill" style="width:'+bat+'%;background:'+batColor+'"></div></div><span style="font-size:.72rem;color:'+batColor+'">'+bat+'%</span>'):'<span style="color:var(--muted)">—</span>';
-    let actions='<div style="display:flex;gap:5px">';
-    if(dev.assigned){
-      var pn = esc(dev.assigned.patientName||'');
-      actions += '<button class="act-btn" title="Cấu hình thiết bị (USB)" onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;'+pn+'&quot;)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg></button>';
-      actions += '<button class="act-btn red" title="Thu hồi thiết bị" onclick="unassignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>';
-    } else {
-      actions += '<button class="act-btn" title="Gán bệnh nhân + cấu hình" onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;&quot;)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>';
-    }
-    actions+='</div>';
-    return '<div class="tbl-row dev-grid">'
-      +'<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:.8rem;color:var(--navy)">'+esc(dev.serial)+'</div>'
-      +'<div>'+ptName+'</div>'
-      +'<div>'+batHtml+'</div>'
-      +'<div>'+statusBdg+'</div>'
-      +'<div class="mono">'+esc(lastOn)+'</div>'
-      +actions
-      +'</div>';
-  }).join('');
+  if(!devCache.length){body.innerHTML='<div class="loading">Chưa có thiết bị nào trong đơn vị</div>';return;}
+
+  body.innerHTML='<div class="page-grid" style="padding:18px">'
+    +devCache.map(function(dev){
+      const bat=dev.battery!=null?dev.battery:null;
+      const batColor=bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
+      const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}):'—';
+
+      // Status badge
+      const statusBadge=dev.online
+        ?'<span style="font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#e6f7e6;color:#2d7a2d">● Online</span>'
+        :'<span style="font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#f0f0f0;color:#888">○ Offline</span>';
+
+      // Battery
+      const batHtml=bat!=null
+        ?'<div style="display:flex;align-items:center;gap:6px">'
+          +'<div class="bat-bar"><div class="bat-fill" style="width:'+bat+'%;background:'+batColor+'"></div></div>'
+          +'<span style="font-size:.72rem;font-weight:700;color:'+batColor+'">🔋 '+bat+'%</span>'
+          +'</div>'
+        :'<span style="font-size:.72rem;color:var(--muted)">Pin: —</span>';
+
+      // Patient
+      const ptHtml=dev.assigned
+        ?'<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--border);margin-top:10px">'
+          +'<div style="width:28px;height:28px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;flex-shrink:0">'
+          +(dev.assigned.patientName||'BN').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
+          +'</div>'
+          +'<div style="min-width:0;flex:1">'
+          +'<div style="font-size:.78rem;font-weight:600;color:var(--text)">'+esc(dev.assigned.patientName||'Bệnh nhân')+'</div>'
+          +'<div style="font-size:.64rem;color:var(--muted)">Gán từ: '+(dev.assigned.assignedAt?new Date(dev.assigned.assignedAt).toLocaleDateString('vi-VN'):'—')+'</div>'
+          +'</div>'
+          +'</div>'
+        :'<div style="font-size:.76rem;color:var(--muted);font-style:italic;padding:10px 0;border-top:1px solid var(--border);margin-top:10px">Chưa gán bệnh nhân</div>';
+
+      // Action buttons
+      var pn=esc((dev.assigned&&dev.assigned.patientName)||'');
+      var btns='<div style="display:flex;gap:6px;margin-top:10px">';
+      if(dev.assigned){
+        btns+='<button onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;'+pn+'&quot;)" style="flex:1;padding:7px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer">⚙️ Cấu hình USB</button>';
+        btns+='<button onclick="unassignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" title="Thu hồi" style="width:32px;height:32px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>';
+      } else {
+        btns+='<button onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;&quot;)" style="flex:1;padding:7px;background:var(--mint);color:var(--navy);border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer">🔗 Gán bệnh nhân</button>';
+      }
+      btns+='</div>';
+
+      return '<div class="page-card">'
+        // Header: serial + status
+        +'<div class="page-card-head" style="display:flex;align-items:center;gap:10px">'
+        +'<div style="width:36px;height:36px;border-radius:9px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>'
+        +'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:.88rem;color:var(--navy)">'+esc(dev.serial)+'</div>'
+        +'<div style="font-size:.65rem;color:var(--muted);margin-top:1px">Online cuối: '+esc(lastOn)+'</div>'
+        +'</div>'
+        +statusBadge
+        +'</div>'
+        // Body
+        +'<div class="page-card-body">'
+        +batHtml
+        +ptHtml
+        +btns
+        +'</div>'
+        +'</div>';
+    }).join('')
+  +'</div>';
 }
- 
+
 function openRegisterDevice(){
   document.getElementById('dev-serial').value='';
   document.getElementById('dev-fw').value='';
@@ -521,7 +616,7 @@ function openRegisterDevice(){
   document.getElementById('modal-device').classList.add('open');
   setTimeout(()=>document.getElementById('dev-serial').focus(),100);
 }
- 
+
 async function registerDevice(){
   const serial=document.getElementById('dev-serial').value.trim();
   const fw=document.getElementById('dev-fw').value.trim();
@@ -542,7 +637,7 @@ async function registerDevice(){
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
   btn.disabled=false;
 }
- 
+
 function openAssign(devId, serial){
   assignDevId=devId;
   document.getElementById('assign-dev-serial').value=serial;
@@ -553,7 +648,7 @@ function openAssign(devId, serial){
     +ptCache.filter(p=>!p.deviceId).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');
   document.getElementById('modal-assign').classList.add('open');
 }
- 
+
 async function confirmAssign(){
   const ptId=document.getElementById('assign-pt-select').value;
   const msg=document.getElementById('assign-msg');
@@ -568,7 +663,7 @@ async function confirmAssign(){
     } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
 }
- 
+
 async function unassignDevice(devId, serial){
   if(!confirm('Thu hồi thiết bị '+serial+'? Thiết bị sẽ về kho, ngắt liên kết với bệnh nhân.')) return;
   try {
@@ -577,7 +672,7 @@ async function unassignDevice(devId, serial){
     else alert('⚠️ Không thể thu hồi');
   } catch(e){ alert('⚠️ '+e.message); }
 }
- 
+
 // ── PATIENTS ──
 async function loadPatients(){
   const body=document.getElementById('pt-body');
@@ -588,7 +683,7 @@ async function loadPatients(){
     renderPatients();
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
- 
+
 function renderPatients(){
   const body=document.getElementById('pt-body');
   if(!ptCache.length){body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>';return;}
@@ -608,7 +703,7 @@ function renderPatients(){
       +'</div>';
   }).join('');
 }
- 
+
 function openAddPatient(){
   ['pt-name','pt-phone','pt-dob','pt-email','pt-allergy','pt-disease','pt-history','pt-ename','pt-ephone','fam-name','fam-rel','fam-phone'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
@@ -619,14 +714,14 @@ function openAddPatient(){
   document.getElementById('pt-msg').textContent='';
   document.getElementById('modal-patient').classList.add('open');
 }
- 
+
 async function savePatient(){
   const name=document.getElementById('pt-name').value.trim();
   const msg=document.getElementById('pt-msg');
   if(!name){msg.style.color='var(--danger)';msg.textContent='Vui lòng nhập họ tên';return;}
   const btn=document.getElementById('pt-save-btn');
   btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang tạo hồ sơ...';
- 
+
   const payload={
     name, phone:document.getElementById('pt-phone').value.trim()||null,
     email:document.getElementById('pt-email').value.trim()||null,
@@ -639,12 +734,12 @@ async function savePatient(){
     emergencyName:document.getElementById('pt-ename').value.trim()||null,
     emergencyPhone:document.getElementById('pt-ephone').value.trim()||null,
   };
- 
+
   try {
     const r=await fetch(AAPI+'/admin/'+UID+'/patients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const d=await r.json();
     if(!r.ok) throw new Error(d.error||'Lỗi tạo bệnh nhân');
- 
+
     const pid=d.patientId;
     // Tạo người nhà nếu có
     const famName=document.getElementById('fam-name').value.trim();
@@ -658,13 +753,13 @@ async function savePatient(){
       })});
       if(!famR.ok){ const fd=await famR.json(); throw new Error('Tạo người nhà: '+(fd.error||'Lỗi')); }
     }
- 
+
     msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo hồ sơ bệnh nhân!';
     setTimeout(()=>{ closeModal('modal-patient'); loadPatients(); loadOverview(); }, 1200);
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
   btn.disabled=false;
 }
- 
+
 // ── DOCTORS ──
 // ── LIÊN KẾT BÁC SĨ - BỆNH NHÂN ──
 async function loadLinks(){
@@ -679,14 +774,14 @@ async function loadLinks(){
     ]);
     const patients = rPt.ok ? await rPt.json() : [];
     docCache = rDoc.ok ? await rDoc.json() : [];
- 
+
     if(!patients.length){ body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>'; return; }
- 
+
     body.innerHTML = patients.map(function(p){
       const init = (p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
       const dob = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
       const sid = (p.id||'').slice(0,8).toUpperCase();
- 
+
       // Doctor hiện tại của bệnh nhân này
       const curDoc = p.doctor;
       const docHtml = curDoc
@@ -699,7 +794,7 @@ async function loadLinks(){
           + '<span class="badge b-ok">Đang phụ trách</span>'
           + '</div>'
         : '<div class="lnk-empty">⚠️ Chưa có bác sĩ phụ trách</div>';
- 
+
       return '<div class="lnk-acc open" id="lnk-'+p.id+'" data-name="'+(p.name||'').toLowerCase()+'">'
         + '<div class="lnk-head" onclick="this.closest(\'.lnk-acc\').classList.toggle(\'open\')">'
         + '<div class="lnk-av">'+init+'</div>'
@@ -724,7 +819,7 @@ async function loadLinks(){
     }).join('');
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
- 
+
 function filterLinks(q){
   const kw = q.toLowerCase().trim();
   document.querySelectorAll('.lnk-acc').forEach(function(el){
@@ -733,7 +828,7 @@ function filterLinks(q){
 }
 function expandAllLinks(){ document.querySelectorAll('.lnk-acc:not(.hidden)').forEach(function(el){el.classList.add('open');}); }
 function collapseAllLinks(){ document.querySelectorAll('.lnk-acc').forEach(function(el){el.classList.remove('open');}); }
- 
+
 async function loadDoctors(){
   const body=document.getElementById('doc-body');
   body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
@@ -749,7 +844,7 @@ async function loadDoctors(){
       +'</div>').join('');
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
- 
+
 // ── DOCTOR ASSIGN ──
 function openDocAssign(ptId, ptName){
   assignDocPtId=ptId;
@@ -760,7 +855,7 @@ function openDocAssign(ptId, ptName){
     +docCache.map(d=>'<option value="'+d.id+'">'+esc(d.name)+' ('+d.patientCount+' BN)</option>').join('');
   document.getElementById('modal-doc-assign').classList.add('open');
 }
- 
+
 async function confirmDocAssign(){
   const docId=document.getElementById('da-doc-select').value;
   const msg=document.getElementById('da-msg');
@@ -773,22 +868,22 @@ async function confirmDocAssign(){
     else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
 }
- 
+
 // ── UTILS ──
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
- 
+
 // INIT
 loadInfo();
 loadOverview();
 // Preload data
 fetch(AAPI+'/admin/'+UID+'/patients').then(r=>r.ok?r.json():[]).then(d=>{ptCache=d;}).catch(()=>{});
 fetch(AAPI+'/admin/'+UID+'/doctors').then(r=>r.ok?r.json():[]).then(d=>{docCache=d;}).catch(()=>{});
- 
- 
- 
+
+
+
 // ── PROVISION (Web Serial API — ESP32) ──
 let provDevId=null, provDevSerial='', provPatientId=null, provConfig=null;
- 
+
 function openProvision(devId, serial, currentPtName){
   provDevId=devId; provDevSerial=serial;
   document.getElementById('prov-serial').textContent=serial;
@@ -808,7 +903,7 @@ function openProvision(devId, serial, currentPtName){
   if(dev&&dev.assigned&&dev.assigned.patientId) sel.value=dev.assigned.patientId;
   document.getElementById('modal-provision').classList.add('open');
 }
- 
+
 async function provisionStep2(){
   const ptId=document.getElementById('prov-pt-select').value;
   const msg=document.getElementById('prov-msg1');
@@ -837,12 +932,12 @@ async function provisionStep2(){
     msg.textContent='';
   } catch(e){ msg.style.color='var(--danger)';msg.textContent='⚠️ '+esc(e.message); }
 }
- 
+
 function provBackStep1(){
   document.getElementById('prov-step1').style.display='block';
   document.getElementById('prov-step2').style.display='none';
 }
- 
+
 function setSerialStatus(state, extra){
   const icon=document.getElementById('usb-status-icon');
   const title=document.getElementById('usb-status-title');
@@ -890,7 +985,7 @@ function setSerialStatus(state, extra){
     btn.disabled=false; btn.onclick=connectSerial;
   }
 }
- 
+
 async function connectSerial(){
   const msg=document.getElementById('prov-msg2');
   // Check Web Serial API support
@@ -912,7 +1007,7 @@ async function connectSerial(){
     });
     await port.open({ baudRate: 115200 });
     setSerialStatus('sending');
- 
+
     // Build JSON payload — ESP32 firmware sẽ đọc dòng này qua Serial
     const payload = JSON.stringify({
       cmd: 'PROVISION',
@@ -922,12 +1017,12 @@ async function connectSerial(){
       device_serial: provConfig.deviceSerial,
       ts: Date.now()
     }) + '\n';
- 
+
     // Write to serial port
     const writer = port.writable.getWriter();
     const encoder = new TextEncoder();
     await writer.write(encoder.encode(payload));
- 
+
     // Wait for ACK from device (max 5 seconds)
     const reader = port.readable.getReader();
     let ack = '';
@@ -943,7 +1038,7 @@ async function connectSerial(){
         }
       } catch(e){ rej(e); }
     });
- 
+
     try {
       await Promise.race([readAck, timeout]);
       reader.releaseLock(); writer.releaseLock();
@@ -953,10 +1048,10 @@ async function connectSerial(){
       msg.style.color='var(--muted)';
       msg.textContent='⚠️ Không nhận được ACK từ thiết bị — cấu hình vẫn đã được gửi đi.';
     }
- 
+
     await port.close();
     setSerialStatus('done');
- 
+
   } catch(e){
     if(port) try{ await port.close(); }catch(_){}
     if(e.name==='NotFoundError' || e.message.includes('No port selected')){
@@ -967,7 +1062,7 @@ async function connectSerial(){
     msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message);
   }
 }
- 
+
 // ── TẠO BÁC SĨ ──
 function openAddDoctor(){
   ['doc-name','doc-phone','doc-email'].forEach(function(id){
@@ -977,7 +1072,7 @@ function openAddDoctor(){
   document.getElementById('doc-msg').textContent='';
   document.getElementById('modal-doctor').classList.add('open');
 }
- 
+
 async function saveDoctor(){
   const name=document.getElementById('doc-name').value.trim();
   const msg=document.getElementById('doc-msg');
@@ -1003,14 +1098,14 @@ async function saveDoctor(){
   btn.disabled=false;
 }
 </script>
- 
- 
+
+
 <!-- MODAL: PROVISION (Web Serial) -->
 <div class="modal-bg" id="modal-provision" onclick="if(event.target===this)closeModal('modal-provision')">
   <div class="modal">
     <button class="modal-x" onclick="closeModal('modal-provision')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
     <div class="modal-ttl">🔌 Cấu hình & gán thiết bị</div>
- 
+
     <div id="prov-step1">
       <div style="background:var(--bg);border-radius:10px;padding:13px;margin-bottom:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
         <div style="font-size:1.4rem">📱</div>
@@ -1031,7 +1126,7 @@ async function saveDoctor(){
         <button class="btn-save" onclick="provisionStep2()">Lưu & tiếp theo →</button>
       </div>
     </div>
- 
+
     <div id="prov-step2" style="display:none">
       <div style="text-align:center;padding:8px 0 18px">
         <div id="usb-status-icon" style="font-size:2.8rem;margin-bottom:10px">🔌</div>
@@ -1050,7 +1145,7 @@ async function saveDoctor(){
     </div>
   </div>
 </div>
- 
+
 <!-- MODAL: TẠO BÁC SĨ -->
 <div class="modal-bg" id="modal-doctor" onclick="if(event.target===this)closeModal('modal-doctor')">
   <div class="modal modal-sm">
@@ -1072,6 +1167,6 @@ async function saveDoctor(){
     </div>
   </div>
 </div>
- 
+
 </body>
 </html>
