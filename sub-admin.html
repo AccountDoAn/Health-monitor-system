@@ -243,7 +243,6 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           Tiếp nhận bệnh nhân
         </button>
       </div>
-      <div class="tbl-header pt-grid"><div>Họ tên</div><div>Ngày sinh</div><div>Nhóm máu</div><div>Thiết bị</div><div>Bác sĩ phụ trách</div><div>Thao tác</div></div>
       <div id="pt-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
@@ -258,7 +257,6 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           Tạo tài khoản bác sĩ
         </button>
       </div>
-      <div class="tbl-header doc-grid"><div>Họ tên</div><div>Số điện thoại</div><div>Bệnh nhân</div><div>Email</div></div>
       <div id="doc-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
@@ -687,21 +685,57 @@ async function loadPatients(){
 function renderPatients(){
   const body=document.getElementById('pt-body');
   if(!ptCache.length){body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>';return;}
-  body.innerHTML=ptCache.map(p=>{
-    const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
-    const devBdg=p.deviceId?'<span class="badge b-ok">Đã gán</span>':'<span class="badge b-off">Chưa có</span>';
-    const docName=p.doctor?esc(p.doctor.name):'<span style="color:var(--muted);font-style:italic">Chưa phân công</span>';
-    return '<div class="tbl-row pt-grid">'
-      +'<div style="font-weight:600;font-size:.82rem">'+esc(p.name)+'</div>'
-      +'<div class="mono">'+dob+'</div>'
-      +'<div>'+(p.bloodType?'<span class="badge" style="background:#e8f2fc;color:var(--navy)">'+esc(p.bloodType)+'</span>':'<span class="mono">—</span>')+'</div>'
-      +'<div>'+devBdg+'</div>'
-      +'<div>'+docName+'</div>'
-      +'<div style="display:flex;gap:5px">'
-      +'<button class="act-btn" title="Phân công bác sĩ" onclick="openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></button>'
-      +'</div>'
-      +'</div>';
-  }).join('');
+  body.innerHTML='<div class="page-grid" style="padding:18px">'
+    +ptCache.map(function(p){
+      const init=(p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+      const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
+      const gender=p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':'—';
+
+      // Device badge
+      const devBadge=p.deviceId
+        ?'<span class="badge b-ok">📱 Có thiết bị</span>'
+        :'<span class="badge b-off">Chưa có TB</span>';
+
+      // Doctor info
+      const docHtml=p.doctor
+        ?'<div style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">'
+          +'<div style="width:26px;height:26px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">'
+          +(p.doctor.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
+          +'</div>'
+          +'<div style="min-width:0">'
+          +'<div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'
+          +'<div style="font-size:.63rem;color:var(--muted)">Bác sĩ phụ trách</div>'
+          +'</div>'
+          +'</div>'
+        :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;padding:6px 0">Chưa có bác sĩ phụ trách</div>';
+
+      return '<div class="page-card">'
+        // Header
+        +'<div class="page-card-head" style="display:flex;align-items:center;gap:11px">'
+        +'<div style="width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:800;flex-shrink:0">'+init+'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:.9rem;font-weight:700;color:var(--navy)">'+esc(p.name)+'</div>'
+        +'<div style="font-size:.67rem;color:var(--muted);margin-top:2px;font-family:\'DM Mono\',monospace">'+dob+' · '+gender+'</div>'
+        +'</div>'
+        +(p.bloodType?'<span style="font-size:.65rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:3px 8px;border-radius:8px;flex-shrink:0">'+esc(p.bloodType)+'</span>':'')
+        +'</div>'
+        // Body
+        +'<div class="page-card-body" style="display:flex;flex-direction:column;gap:10px">'
+        // Row 1: thiết bị + bệnh mãn
+        +'<div style="display:flex;align-items:center;justify-content:space-between">'
+        +devBadge
+        +(p.disease?'<span style="font-size:.68rem;color:var(--muted);max-width:160px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(p.disease)+'">'+esc(p.disease)+'</span>':'')
+        +'</div>'
+        // Bác sĩ
+        +docHtml
+        // Nút phân công
+        +'<button onclick="openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="width:100%;padding:7px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer">'
+        +(p.doctor?'🔄 Đổi bác sĩ':'👨‍⚕️ Phân công bác sĩ')
+        +'</button>'
+        +'</div>'
+        +'</div>';
+    }).join('')
+  +'</div>';
 }
 
 function openAddPatient(){
@@ -836,12 +870,37 @@ async function loadDoctors(){
     const r=await fetch(AAPI+'/admin/'+UID+'/doctors');
     docCache=r.ok?await r.json():[];
     if(!docCache.length){body.innerHTML='<div class="loading">Chưa có bác sĩ nào trong đơn vị</div>';return;}
-    body.innerHTML=docCache.map(d=>'<div class="tbl-row doc-grid">'
-      +'<div style="font-weight:600;font-size:.82rem">'+esc(d.name)+'</div>'
-      +'<div class="mono">'+esc(d.phone||'—')+'</div>'
-      +'<div><span class="badge b-ok">'+d.patientCount+' BN</span></div>'
-      +'<div class="mono" style="font-size:.7rem">'+esc(d.email||'—')+'</div>'
-      +'</div>').join('');
+    body.innerHTML='<div class="page-grid" style="padding:18px">'
+      +docCache.map(function(d){
+        const init=(d.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+        return '<div class="page-card">'
+          +'<div class="page-card-head" style="display:flex;align-items:center;gap:12px">'
+          +'<div style="width:42px;height:42px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:800;flex-shrink:0">'+init+'</div>'
+          +'<div style="min-width:0;flex:1">'
+          +'<div style="font-size:.9rem;font-weight:700;color:var(--navy)">'+esc(d.name)+'</div>'
+          +'<div style="font-size:.68rem;color:var(--muted);margin-top:2px">Bác sĩ phụ trách</div>'
+          +'</div>'
+          +'<span class="badge b-ok" style="font-size:.68rem;flex-shrink:0">'+d.patientCount+' bệnh nhân</span>'
+          +'</div>'
+          +'<div class="page-card-body" style="display:flex;flex-direction:column;gap:8px">'
+          // SĐT
+          +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<div style="width:28px;height:28px;border-radius:7px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+          +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.15 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.05 1h3a2 2 0 0 1 2 1.72c.13.96.37 1.9.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 5.49 5.49l1.27-1.27a2 2 0 0 1 2.11-.45c.91.33 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>'
+          +'</div>'
+          +'<span style="font-family:\'DM Mono\',monospace;font-size:.78rem;color:var(--text)">'+esc(d.phone||'—')+'</span>'
+          +'</div>'
+          // Email
+          +'<div style="display:flex;align-items:center;gap:8px">'
+          +'<div style="width:28px;height:28px;border-radius:7px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+          +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
+          +'</div>'
+          +'<span style="font-size:.78rem;color:var(--text);word-break:break-all">'+esc(d.email||'—')+'</span>'
+          +'</div>'
+          +'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
 
