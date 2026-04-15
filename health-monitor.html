@@ -396,7 +396,7 @@ try {
   if(!s.userId || s.role !== 'user_bs'){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
 } catch(_){ location.replace('index.html'); }
 
-const API = 'https://health-monitor-system-twts.onrender.com';
+const API = 'https://health-monitor-system-doctor.onrender.com';
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const DID = SESS.userId;
 
