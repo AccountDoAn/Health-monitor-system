@@ -117,6 +117,16 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 /* BATTERY BAR */
 .bat-bar{width:48px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px;}
 .bat-fill{height:100%;border-radius:4px;transition:width .3s;}
+/* Card grid */
+.page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.page-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.page-card-head{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
+.page-card-body{padding:14px 16px;}
+/* Device list item */
+.dev-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+.dev-item:last-child{margin-bottom:0;}
+.dev-item-head{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
+.dev-item-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
 /* Search wrap */
 .srch-wrap{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 11px;}
 .srch-wrap:focus-within{border-color:var(--navy);}
@@ -541,65 +551,64 @@ function renderDevices(){
   const body=document.getElementById('dev-body');
   if(!devCache.length){body.innerHTML='<div class="loading">Chưa có thiết bị nào trong đơn vị</div>';return;}
 
-  body.innerHTML='<div class="page-grid" style="padding:18px">'
+  body.innerHTML='<div style="padding:16px;display:flex;flex-direction:column;gap:12px">'
     +devCache.map(function(dev){
       const bat=dev.battery!=null?dev.battery:null;
       const batColor=bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
       const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}):'—';
 
-      // Status badge
       const statusBadge=dev.online
-        ?'<span style="font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#e6f7e6;color:#2d7a2d">● Online</span>'
-        :'<span style="font-size:.65rem;font-weight:700;padding:3px 9px;border-radius:10px;background:#f0f0f0;color:#888">○ Offline</span>';
+        ?'<span style="font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:10px;background:#e6f7e6;color:#2d7a2d;flex-shrink:0">● Online</span>'
+        :'<span style="font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:10px;background:#f0f0f0;color:#888;flex-shrink:0">○ Offline</span>';
 
-      // Battery
       const batHtml=bat!=null
-        ?'<div style="display:flex;align-items:center;gap:6px">'
-          +'<div class="bat-bar"><div class="bat-fill" style="width:'+bat+'%;background:'+batColor+'"></div></div>'
-          +'<span style="font-size:.72rem;font-weight:700;color:'+batColor+'">🔋 '+bat+'%</span>'
+        ?'<div style="display:flex;align-items:center;gap:8px">'
+          +'<div class="bat-bar" style="width:80px"><div class="bat-fill" style="width:'+bat+'%;background:'+batColor+'"></div></div>'
+          +'<span style="font-size:.74rem;font-weight:700;color:'+batColor+'">'+bat+'%</span>'
           +'</div>'
         :'<span style="font-size:.72rem;color:var(--muted)">Pin: —</span>';
 
-      // Patient
-      const ptHtml=dev.assigned
-        ?'<div style="display:flex;align-items:center;gap:8px;padding:10px 0;border-top:1px solid var(--border);margin-top:10px">'
-          +'<div style="width:28px;height:28px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;flex-shrink:0">'
+      // Patient section
+      const ptSection=dev.assigned
+        ?'<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:9px;border:1px solid var(--border)">'
+          +'<div style="width:32px;height:32px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:800;flex-shrink:0">'
           +(dev.assigned.patientName||'BN').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
           +'</div>'
-          +'<div style="min-width:0;flex:1">'
-          +'<div style="font-size:.78rem;font-weight:600;color:var(--text)">'+esc(dev.assigned.patientName||'Bệnh nhân')+'</div>'
-          +'<div style="font-size:.64rem;color:var(--muted)">Gán từ: '+(dev.assigned.assignedAt?new Date(dev.assigned.assignedAt).toLocaleDateString('vi-VN'):'—')+'</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:.82rem;font-weight:600;color:var(--text)">'+esc(dev.assigned.patientName||'Bệnh nhân')+'</div>'
+          +'<div style="font-size:.66rem;color:var(--muted)">Gán từ: '+(dev.assigned.assignedAt?new Date(dev.assigned.assignedAt).toLocaleDateString('vi-VN'):'—')+'</div>'
           +'</div>'
+          +'<span style="font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:8px;background:#e8f2fc;color:var(--navy);flex-shrink:0">Đang theo dõi</span>'
           +'</div>'
-        :'<div style="font-size:.76rem;color:var(--muted);font-style:italic;padding:10px 0;border-top:1px solid var(--border);margin-top:10px">Chưa gán bệnh nhân</div>';
+        :'<div style="font-size:.76rem;color:var(--muted);font-style:italic;padding:8px 12px;background:var(--bg);border-radius:9px;border:1px dashed var(--border)">Chưa gán bệnh nhân</div>';
 
-      // Action buttons
+      // Buttons
       var pn=esc((dev.assigned&&dev.assigned.patientName)||'');
-      var btns='<div style="display:flex;gap:6px;margin-top:10px">';
+      var btns='<div style="display:flex;gap:8px;padding-top:2px">';
       if(dev.assigned){
-        btns+='<button onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;'+pn+'&quot;)" style="flex:1;padding:7px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer">⚙️ Cấu hình USB</button>';
-        btns+='<button onclick="unassignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" title="Thu hồi" style="width:32px;height:32px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--danger);flex-shrink:0"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>';
+        btns+='<button onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;'+pn+'&quot;)" style="flex:1;padding:8px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">⚙️ Cấu hình USB</button>';
+        btns+='<button onclick="unassignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" title="Thu hồi thiết bị" style="padding:8px 12px;border:1.5px solid #fdeaea;border-radius:8px;background:#fdeaea;cursor:pointer;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;flex-shrink:0">Thu hồi</button>';
       } else {
-        btns+='<button onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;&quot;)" style="flex:1;padding:7px;background:var(--mint);color:var(--navy);border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:700;cursor:pointer">🔗 Gán bệnh nhân</button>';
+        btns+='<button onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;&quot;)" style="flex:1;padding:8px;background:var(--mint);color:var(--navy);border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">🔗 Gán bệnh nhân</button>';
       }
       btns+='</div>';
 
-      return '<div class="page-card">'
-        // Header: serial + status
-        +'<div class="page-card-head" style="display:flex;align-items:center;gap:10px">'
-        +'<div style="width:36px;height:36px;border-radius:9px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-        +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>'
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'
+        // Header
+        +'<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--border)">'
+        +'<div style="width:38px;height:38px;border-radius:10px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+        +'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>'
         +'</div>'
         +'<div style="flex:1;min-width:0">'
-        +'<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:.88rem;color:var(--navy)">'+esc(dev.serial)+'</div>'
-        +'<div style="font-size:.65rem;color:var(--muted);margin-top:1px">Online cuối: '+esc(lastOn)+'</div>'
+        +'<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:.9rem;color:var(--navy)">'+esc(dev.serial)+'</div>'
+        +'<div style="font-size:.66rem;color:var(--muted);margin-top:2px">Online cuối: '+esc(lastOn)+'</div>'
         +'</div>'
         +statusBadge
         +'</div>'
         // Body
-        +'<div class="page-card-body">'
+        +'<div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">'
         +batHtml
-        +ptHtml
+        +ptSection
         +btns
         +'</div>'
         +'</div>';
