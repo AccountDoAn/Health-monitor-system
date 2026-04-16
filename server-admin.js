@@ -128,34 +128,25 @@ async function logAction(userId, action, targetType, targetId, detail) {
 // GET /dashboard
 app.get("/dashboard", async (req, res) => {
   try {
-    const [hsResult, devResult, ptResult, alertResult] = await Promise.all([
-      supabase.from("co_so_y_te").select("id, trang_thai_hoat_dong").eq("trang_thai_hoat_dong", true),
-      supabase.from("thiet_bi_iot").select("id, trang_thai_hoat_dong, lan_online_cuoi"),
-      supabase.from("lich_su_gan_thiet_bi").select("id").eq("trang_thai_hoat_dong", true),
-      supabase.from("canh_bao_suc_khoe")
-        .select("id, muc_do_nghiem_trong")
-        .gte("thoi_gian_phat_hien", new Date(Date.now() - 86400000).toISOString()),
+    const [hsResult, devResult, saResult] = await Promise.all([
+      supabase.from("co_so_y_te").select("id").eq("trang_thai_hoat_dong", true),
+      supabase.from("thiet_bi_iot").select("id, lan_online_cuoi"),
+      supabase.from("vai_tro").select("id").eq("ten_vai_tro","sub_admin").maybeSingle()
+        .then(async ({data:role}) => {
+          if(!role) return {data:[]};
+          return supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id",role.id);
+        }),
     ]);
 
     const now = Date.now();
     const devices = devResult.data || [];
-    const onlineCount = devices.filter(d =>
-      d.lan_online_cuoi && now - new Date(d.lan_online_cuoi).getTime() < 60000
-    ).length;
+    const onlineCount  = devices.filter(d => d.lan_online_cuoi && now - new Date(d.lan_online_cuoi).getTime() < 60000).length;
+    const offlineCount = devices.length - onlineCount;
 
     res.json({
-      hospitals:      { total: (hsResult.data || []).length },
-      devices: {
-        total:   devices.length,
-        online:  onlineCount,
-        offline: devices.length - onlineCount,
-      },
-      patients:       { total: (ptResult.data || []).length },
-      alerts: {
-        total:   (alertResult.data || []).length,
-        danger:  (alertResult.data || []).filter(a => a.muc_do_nghiem_trong === "nguy_hiem").length,
-        warning: (alertResult.data || []).filter(a => a.muc_do_nghiem_trong === "canh_bao").length,
-      },
+      hospitals:  { total: (hsResult.data || []).length },
+      devices:    { total: devices.length, online: onlineCount, offline: offlineCount },
+      subadmins:  { total: (saResult.data || []).length },
     });
   } catch (err) {
     console.error("[GET /dashboard]", err.message);
