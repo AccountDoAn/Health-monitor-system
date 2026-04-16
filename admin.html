@@ -177,11 +177,11 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       </div>
       <div class="stat-card">
         <div class="stat-ic" style="background:#f0eeff"><svg viewBox="0 0 24 24" fill="none" stroke="#6c5ce7" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-        <div><div class="stat-val" id="d-patients" style="color:#6c5ce7">—</div><div class="stat-lbl">Bệnh nhân</div><div class="stat-sub">đang theo dõi</div></div>
+        <div><div class="stat-val" id="d-subadmins" style="color:#6c5ce7">—</div><div class="stat-lbl">Sub Admin</div><div class="stat-sub">trên toàn hệ thống</div></div>
       </div>
       <div class="stat-card">
-        <div class="stat-ic" style="background:#fdeaea"><svg viewBox="0 0 24 24" fill="none" stroke="#e05252" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-        <div><div class="stat-val" id="d-alerts" style="color:#e05252">—</div><div class="stat-lbl">Cảnh báo hôm nay</div><div class="stat-sub" id="d-alerts-sub">trong 24 giờ qua</div></div>
+        <div class="stat-ic" style="background:#fff4e0"><svg viewBox="0 0 24 24" fill="none" stroke="#e8a930" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/><line x1="9" y1="9" x2="15" y2="9"/></svg></div>
+        <div><div class="stat-val" id="d-dev-offline" style="color:#e8a930">—</div><div class="stat-lbl">Thiết bị offline</div><div class="stat-sub">cần kiểm tra</div></div>
       </div>
     </div>
 
@@ -419,11 +419,11 @@ async function loadDashboard(){
     const d = rDash.ok ? await rDash.json() : {};
     hospitalsCache = rHs.ok ? await rHs.json() : [];
 
-    document.getElementById('d-hospitals').textContent  = d.hospitals?.total ?? '—';
-    document.getElementById('d-dev-online').textContent = d.devices?.online  ?? '—';
-    document.getElementById('d-dev-total').textContent  = '/ '+( d.devices?.total ?? '—')+' thiết bị';
-    document.getElementById('d-patients').textContent   = d.patients?.total  ?? '—';
-    document.getElementById('d-alerts').textContent     = d.alerts?.total    ?? '—';
+    document.getElementById('d-hospitals').textContent   = d.hospitals?.total  ?? '—';
+    document.getElementById('d-dev-online').textContent  = d.devices?.online   ?? '—';
+    document.getElementById('d-dev-total').textContent   = '/ '+(d.devices?.total ?? '—')+' thiết bị';
+    document.getElementById('d-subadmins').textContent   = d.subadmins?.total  ?? '—';
+    document.getElementById('d-dev-offline').textContent = d.devices?.offline  ?? '—';
     document.getElementById('last-upd').textContent     = new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
 
     // Bảng CSYT nhanh
