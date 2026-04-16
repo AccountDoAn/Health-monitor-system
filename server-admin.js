@@ -84,7 +84,7 @@ app.post("/auth/login", async (req, res) => {
       .update({ lan_dang_nhap_cuoi: new Date().toISOString() })
       .eq("id", user.id);
 
-    res.json({ userId: user.id, name: user.ho_ten, email: user.email, role: "admin" });
+    res.json({ userId: user.id, name: user.ho_ten, email: user.email, role: "admin", roles: ["admin"] });
   } catch (err) {
     console.error("[POST /auth/login]", err.message);
     res.status(500).json({ error: err.message });
