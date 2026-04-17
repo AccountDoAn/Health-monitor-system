@@ -933,8 +933,7 @@ app.get("/hospitals", async (req, res) => {
     const { data, error } = await supabase
       .from("co_so_y_te")
       .select("id, ten_co_so, dia_chi, so_dien_thoai, email_lien_he, loai_hinh, trang_thai_hoat_dong, ngay_tao")
-      .eq("trang_thai_hoat_dong", true)
-      .order("ten_co_so");
+      .order("ten_co_so");  // Bỏ filter trang_thai — hiện tất cả cho dropdown login
 
     if (error) throw error;
     res.json(data);
