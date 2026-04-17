@@ -147,6 +147,7 @@ app.post("/auth/login", async (req, res) => {
       name:         user.ho_ten,
       email:        user.email,
       role:         "sub_admin",
+      roles:        ["sub_admin"],
       hospitalId:   user.co_so_y_te_id,
       hospitalName: hospital?.ten_co_so || "—",
     });
@@ -176,7 +177,7 @@ app.get("/hospitals", async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("co_so_y_te").select("id, ten_co_so, dia_chi")
-      .eq("trang_thai_hoat_dong", true).order("ten_co_so");
+      .order("ten_co_so");  // Bỏ filter — hiện tất cả cho dropdown login
     if (error) throw error;
     res.json(data || []);
   } catch (err) { res.status(500).json({ error: err.message }); }
