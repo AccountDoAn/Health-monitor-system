@@ -675,6 +675,8 @@ async function changePw(){
 
 // ── DATE PICKER CHO TRANG BỆNH NHÂN ──
 let ptSelDate = null;
+let ptCalM = new Date().getMonth();
+let ptCalY = new Date().getFullYear();
 
 function togglePtDD(e){
   if(e) e.stopPropagation();
@@ -701,16 +703,15 @@ function renderPtCal(){
   if(!dd) return;
   const ptDates = (selPid && vcache[selPid]) ? vcache[selPid].dates : [];
 
-  // Build calendar giống tổng quan
   const mNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
-  const today = new Date().toISOString().slice(0,10);
-  const firstDay = new Date(calY, calM, 1).getDay();
-  const daysInMonth = new Date(calY, calM+1, 0).getDate();
+  const today    = new Date().toISOString().slice(0,10);
+  const firstDay = new Date(ptCalY, ptCalM, 1).getDay();
+  const daysInMonth = new Date(ptCalY, ptCalM+1, 0).getDate();
 
   // Month nav
   let html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">'
     + '<button onclick="ptCalMove(-1)" style="background:none;border:1px solid var(--border);border-radius:7px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--navy)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg></button>'
-    + '<div style="font-size:.8rem;font-weight:700;color:var(--navy)">' + mNames[calM] + ' ' + calY + '</div>'
+    + '<div style="font-size:.8rem;font-weight:700;color:var(--navy)">' + mNames[ptCalM] + ' ' + ptCalY + '</div>'
     + '<button onclick="ptCalMove(1)" style="background:none;border:1px solid var(--border);border-radius:7px;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--navy)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg></button>'
     + '</div>';
 
@@ -723,14 +724,14 @@ function renderPtCal(){
   html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px">';
   for(let i=0;i<firstDay;i++) html += '<div></div>';
   for(let d=1;d<=daysInMonth;d++){
-    const key = `${calY}-${String(calM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const key = `${ptCalY}-${String(ptCalM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
     const has = ptDates.includes(key);
     const isActive = key===ptSelDate;
-    const isToday = key===today;
-    let style = 'font-size:.72rem;text-align:center;padding:5px 2px;border-radius:6px;';
-    if(isActive) style += 'background:var(--navy);color:#fff;cursor:pointer;font-weight:700;';
-    else if(has) style += 'background:var(--mint);color:var(--navy);cursor:pointer;font-weight:700;';
-    else style += 'color:var(--border);cursor:default;';
+    const isToday  = key===today;
+    let style = 'font-size:.72rem;text-align:center;padding:5px 2px;border-radius:6px;cursor:'+(has?'pointer':'default')+';';
+    if(isActive)     style += 'background:var(--navy);color:#fff;font-weight:700;';
+    else if(has)     style += 'background:var(--mint);color:var(--navy);font-weight:700;';
+    else             style += 'color:var(--border);';
     if(isToday && !isActive) style += 'outline:2px solid var(--green);outline-offset:-1px;';
     html += `<div style="${style}" ${has?`onclick="pickPtDate('${key}')"`:''}>${d}</div>`;
   }
@@ -738,7 +739,7 @@ function renderPtCal(){
 
   // Buttons
   html += '<div style="display:flex;gap:6px;margin-top:8px">'
-    + `<button onclick="pickPtDate(null)" style="flex:1;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">✕ Tất cả ngày</button>`
+    + `<button onclick="pickPtDate(null)" style="flex:1;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">✕ Tất cả ngày</button>`
     + '</div>';
 
   // Legend
@@ -751,9 +752,9 @@ function renderPtCal(){
 }
 
 function ptCalMove(dir){
-  calM += dir;
-  if(calM>11){calM=0;calY++;}
-  if(calM<0){calM=11;calY--;}
+  ptCalM += dir;
+  if(ptCalM>11){ptCalM=0;ptCalY++;}
+  if(ptCalM<0){ptCalM=11;ptCalY--;}
   renderPtCal();
 }
 
@@ -1039,6 +1040,11 @@ function clickPt(pid){
 
   // Reset date picker & summary
   ptSelDate = null;
+  vtPage = 1;
+  vtCurrentRows = [];
+  const now = new Date();
+  ptCalY = now.getFullYear();
+  ptCalM = now.getMonth();
   document.getElementById('pt-date-lbl').textContent = 'Tất cả ngày';
   document.getElementById('pt-ok').textContent = '—';
   document.getElementById('pt-warn').textContent = '—';
@@ -1096,7 +1102,15 @@ async function showV(pid){
       body.innerHTML = '<div class="loading">Không có dữ liệu</div>';
       return;
     }
-    const show = ptSelDate && cache.byDate[ptSelDate] ? ptSelDate : cache.dates[0];
+
+    // Nhảy calendar về tháng có data mới nhất
+    const latestDate = cache.dates[0]; // đã sort desc
+    const [ly, lm] = latestDate.split('-').map(Number);
+    ptCalY = ly; ptCalM = lm - 1;
+
+    const show = ptSelDate && cache.byDate[ptSelDate] ? ptSelDate : latestDate;
+    if(!ptSelDate) ptSelDate = latestDate; // tự chọn ngày mới nhất
+    document.getElementById('pt-date-lbl').textContent = ptSelDate.split('-').reverse().join('/');
     renderVT(cache.byDate[show] || []);
     updPatientSum(pid);
     renderPtCal();
@@ -1106,22 +1120,71 @@ async function showV(pid){
 }
 
 
+let vtPage = 1;
+const VT_PER_PAGE = 100;
+let vtCurrentRows = [];
+
 function renderVT(rows){
-  const body=document.getElementById('vbody');
+  vtCurrentRows = rows;
+  vtPage = 1;
+  renderVTPage();
+}
+
+function renderVTPage(){
+  const body = document.getElementById('vbody');
+  if(!body) return;
+  const rows = vtCurrentRows;
   if(!rows.length){body.innerHTML='<div class="loading">Không có dữ liệu trong ngày này</div>';return;}
+
+  const totalPages = Math.ceil(rows.length / VT_PER_PAGE);
+  const start = (vtPage-1)*VT_PER_PAGE;
+  const slice = rows.slice(start, start+VT_PER_PAGE);
+
   const mL={nghi_ngoi:'Nghỉ ngơi',thay_doi:'Thay đổi',canh_bao:'Cảnh báo'};
-  body.innerHTML=`<div class="vcount">Hiển thị ${Math.min(rows.length,500)}/${rows.length} bản ghi</div>
-  <div class="vtw"><table class="vt">
-    <thead><tr><th>Thời gian</th><th>Nhịp tim</th><th>Δ HR</th><th>SpO₂</th><th>Δ SpO₂</th><th>Chế độ</th></tr></thead>
-    <tbody>${rows.slice(0,500).map(r=>{
-      const hr=r.hr,spo2=r.spo2;
-      const hc=hr!=null&&(hr>100||hr<50)?'var(--danger)':hr!=null?'var(--green)':'var(--muted)';
-      const sc=spo2!=null&&spo2<93?'var(--danger)':'var(--navy)';
-      const ts=r.time?new Date(r.time).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
-      const dHR=r.dHR!=null?(r.dHR>0?'+':'')+r.dHR:'—';
-      const dS=r.dS!=null?(r.dS>0?'+':'')+Number(r.dS).toFixed(1):'—';
-      return`<tr><td>${ts}</td><td style="color:${hc};font-weight:700">${hr!=null?hr+' bpm':'—'}</td><td style="color:${r.dHR>0?'var(--danger)':r.dHR<0?'var(--green)':'var(--muted)'}">${dHR}</td><td style="color:${sc};font-weight:700">${spo2!=null?spo2+'%':'—'}</td><td style="color:${r.dS>0?'var(--navy)':r.dS<0?'var(--warn)':'var(--muted)'}">${dS}</td><td><span style="background:var(--mint);color:var(--navy);padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700">${mL[r.mode]||r.mode||'—'}</span></td></tr>`;
-    }).join('')}</tbody></table></div>`;
+  const modeColor={nghi_ngoi:'background:#e8f2fc;color:var(--navy)',thay_doi:'background:var(--mint);color:var(--navy)',canh_bao:'background:#fff4e0;color:#8a5800'};
+
+  let html = `<div class="vcount">Trang ${vtPage}/${totalPages} — Hiển thị ${start+1}–${Math.min(start+VT_PER_PAGE,rows.length)} trong ${rows.length} bản ghi</div>`;
+  html += '<div class="vtw"><table class="vt"><thead><tr><th>Thời gian</th><th>Nhịp tim</th><th>Δ HR</th><th>SpO₂</th><th>Δ SpO₂</th><th>Chế độ</th></tr></thead><tbody>';
+  html += slice.map(r=>{
+    const hr=r.hr, spo2=r.spo2;
+    const hc=hr!=null&&(hr>100||hr<50)?'var(--danger)':hr!=null?'var(--green)':'var(--muted)';
+    const sc=spo2!=null&&spo2<93?'var(--danger)':'var(--navy)';
+    const ts=r.time?new Date(r.time).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+    const dHR=r.dHR!=null?(r.dHR>0?'+':'')+r.dHR:'—';
+    const dS=r.dS!=null?(r.dS>0?'+':'')+Number(r.dS).toFixed(1):'—';
+    const mc=modeColor[r.mode]||'background:var(--mint);color:var(--navy)';
+    return`<tr><td>${ts}</td><td style="color:${hc};font-weight:700">${hr!=null?hr+' bpm':'—'}</td><td style="color:${r.dHR>0?'var(--danger)':r.dHR<0?'var(--green)':'var(--muted)'}">${dHR}</td><td style="color:${sc};font-weight:700">${spo2!=null?spo2+'%':'—'}</td><td style="color:${r.dS>0?'var(--navy)':r.dS<0?'var(--warn)':'var(--muted)'}">${dS}</td><td><span style="${mc};padding:2px 7px;border-radius:10px;font-size:.61rem;font-weight:700">${mL[r.mode]||r.mode||'—'}</span></td></tr>`;
+  }).join('');
+  html += '</tbody></table></div>';
+
+  // Phân trang
+  if(totalPages > 1){
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border)">'
+      + `<span style="font-size:.7rem;color:var(--muted)">Tổng ${rows.length} bản ghi</span>`
+      + '<div style="display:flex;gap:6px">'
+      + `<button onclick="vtGoPage(${vtPage-1})" ${vtPage<=1?'disabled':''} style="padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;${vtPage<=1?'opacity:.4':''}">← Trước</button>`
+      + Array.from({length:Math.min(totalPages,7)},(_,i)=>{
+          let p = i+1;
+          if(totalPages>7){
+            const range=[1,2,vtPage-1,vtPage,vtPage+1,totalPages-1,totalPages].filter(x=>x>=1&&x<=totalPages);
+            p = [...new Set(range)].sort((a,b)=>a-b)[i];
+            if(!p) return '';
+          }
+          return `<button onclick="vtGoPage(${p})" style="padding:5px 10px;border:1.5px solid ${p===vtPage?'var(--navy)':'var(--border)'};border-radius:7px;background:${p===vtPage?'var(--navy)':'var(--card)'};color:${p===vtPage?'#fff':'var(--muted)'};font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer">${p}</button>`;
+        }).join('')
+      + `<button onclick="vtGoPage(${vtPage+1})" ${vtPage>=totalPages?'disabled':''} style="padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;${vtPage>=totalPages?'opacity:.4':''}">Tiếp →</button>`
+      + '</div></div>';
+  }
+
+  body.innerHTML = html;
+}
+
+function vtGoPage(p){
+  const total = Math.ceil(vtCurrentRows.length / VT_PER_PAGE);
+  if(p<1||p>total) return;
+  vtPage = p;
+  renderVTPage();
+  document.getElementById('view-patient')?.scrollTo({top:0,behavior:'smooth'});
 }
 
 document.getElementById('srch').addEventListener('input',function(){renderPts(pts,this.value);});
