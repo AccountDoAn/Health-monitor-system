@@ -895,7 +895,7 @@ function renderPts(list,q=''){
     const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
     const sid=(p.id||'').slice(0,8).toUpperCase();
     const bdg=sbadge(hr,spo2);
-    return `<div class="pt-row${selPid===p.id?' sel':''}" onclick="clickPt('${p.id}')" onmouseenter="showTip(event,'${p.id}')" onmouseleave="hideTip()">
+    return `<div class="pt-row${selPid===p.id?' sel':''}" onclick="clickPt('${p.id}')" data-tip-pid="${p.id}">
       <div class="mono">BN-${sid}</div>
       <div style="font-size:.82rem;font-weight:600">${esc(p.name)}</div>
       <div class="mono">${dob}</div>
@@ -1012,8 +1012,41 @@ function showTip(e,pid){
   _tip.style.left=(x+250>innerWidth?x-264:x)+'px';
   _tip.style.top=(y+280>innerHeight?y-280+20:y)+'px';
   _tip.style.display='block';
+  // Đánh dấu pid đang hover để mousemove global check
+  _tip._pid = pid;
 }
-function hideTip(){if(_tip)_tip.style.display='none';}
+
+function hideTip(){
+  if(_tip){ _tip.style.display='none'; _tip._pid=null; }
+}
+
+// Tooltip: dùng mouseover/mouseout trên document thay vì inline handler
+// mouseout có relatedTarget — biết chính xác chuột đi đâu, không bị miss
+document.addEventListener('mouseover', function(e){
+  const row = e.target.closest('[data-tip-pid]');
+  if(row){
+    showTip(e, row.dataset.tipPid);
+  }
+});
+
+document.addEventListener('mouseout', function(e){
+  const row = e.target.closest('[data-tip-pid]');
+  if(!row) return;
+  // relatedTarget = element chuột đi vào tiếp theo
+  // Nếu vẫn trong cùng row (di chuyển sang child element) thì không ẩn
+  if(row.contains(e.relatedTarget)) return;
+  hideTip();
+});
+
+// Backup: ẩn tooltip khi click bất kỳ đâu
+document.addEventListener('click', function(){
+  hideTip();
+});
+
+// Backup: ẩn khi scroll
+document.addEventListener('scroll', function(){
+  hideTip();
+}, true);
 
 // CLICK PATIENT → mở trang chi tiết riêng
 function clickPt(pid){
