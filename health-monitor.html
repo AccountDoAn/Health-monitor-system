@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Health Monitor</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{--navy:#2b5f8e;--sky:#85c8ee;--green:#5ab52a;--mint:#ceecd8;--white:#fff;--bg:#f0f7f4;--card:#fff;--text:#1a2e1e;--muted:#6b8f7a;--border:#d0e8da;--danger:#e05252;--warn:#e8a930;--sw:240px;}
@@ -399,6 +400,111 @@ try {
 const API = 'https://health-monitor-system-doctor.onrender.com';
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const DID = SESS.userId;
+
+// ── SUPABASE REALTIME ──
+const _sb = supabase.createClient(
+  'https://czgberdpnfultxkljhko.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
+);
+
+// Realtime indicator
+function showRealtimePulse(){
+  const el = document.getElementById('last-upd');
+  if(!el) return;
+  el.style.color = 'var(--green)';
+  setTimeout(()=>{ el.style.color = ''; }, 1000);
+}
+
+// Xử lý khi có bản ghi vitals mới
+async function onNewVital(payload){
+  const v = payload.new;
+  if(!v) return;
+  showRealtimePulse();
+
+  // 1. Cập nhật live data của bệnh nhân trong danh sách
+  const pid = v.nguoi_dung_tb_id;
+  const pt = pts.find(p => p.id === pid);
+  if(pt){
+    pt.hr   = v.nhip_tim   ?? pt.hr;
+    pt.spo2 = v.spo2       ?? pt.spo2;
+    pt.last = v.thoi_gian_do;
+    renderPts(pts, document.getElementById('srch').value);
+    updSum();
+    document.getElementById('last-upd').textContent =
+      new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) + ' ●';
+  }
+
+  // 2. Nếu đang xem trang chi tiết đúng bệnh nhân này → thêm row vào bảng
+  if(selPid === pid && document.getElementById('view-patient').style.display !== 'none'){
+    const cache = vcache[pid];
+    if(cache){
+      const row = {
+        hr:   v.nhip_tim,
+        spo2: v.spo2,
+        dHR:  v.delta_nhip_tim,
+        dS:   v.delta_spo2,
+        mode: v.che_do_lay_mau,
+        time: v.thoi_gian_do,
+      };
+      if(row.time){
+        const d = new Date(new Date(row.time).getTime() + 7*3600000);
+        const k = d.toISOString().slice(0,10);
+        if(!cache.byDate[k]){ cache.byDate[k]=[]; cache.dates.unshift(k); cache.dates.sort((a,b)=>b.localeCompare(a)); }
+        const exists = cache.byDate[k].some(x=>x.time===row.time);
+        if(!exists){
+          cache.byDate[k].unshift(row);
+          // Re-render nếu đang xem đúng ngày này
+          const showing = ptSelDate || cache.dates[0];
+          if(showing === k){
+            renderVT(cache.byDate[k]);
+            updPatientSum(pid);
+          }
+          renderPtCal();
+        }
+      }
+    }
+  }
+}
+
+// Xử lý khi có cảnh báo mới
+function onNewAlert(payload){
+  const a = payload.new;
+  if(!a) return;
+  showRealtimePulse();
+  // Refresh lại summary để cập nhật số cảnh báo
+  updSum();
+}
+
+// Subscribe Realtime — lắng nghe INSERT vào du_lieu_sinh_ton và canh_bao_suc_khoe
+function setupRealtime(){
+  // Channel vitals — filter theo bệnh nhân của bác sĩ này
+  _sb.channel('vitals-live')
+    .on('postgres_changes', {
+      event:  'INSERT',
+      schema: 'public',
+      table:  'du_lieu_sinh_ton',
+    }, onNewVital)
+    .subscribe(function(status){
+      console.log('[Realtime vitals]', status);
+    });
+
+  // Channel alerts
+  _sb.channel('alerts-live')
+    .on('postgres_changes', {
+      event:  'INSERT',
+      schema: 'public',
+      table:  'canh_bao_suc_khoe',
+    }, onNewAlert)
+    .subscribe(function(status){
+      console.log('[Realtime alerts]', status);
+    });
+}
+
+// Khởi động Realtime sau khi load xong danh sách bệnh nhân
+// (cần pts[] để biết bệnh nhân nào thuộc bác sĩ này)
+function startRealtime(){
+  setupRealtime();
+}
 
 let pts=[], vcache={}, selPid=null, selDate=null, allDates=[], curCPid=null, ccache={};
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -879,6 +985,8 @@ async function loadData(){
     document.getElementById('last-upd').textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
     loadSbDoc();
     try { const rd=await fetch(`${API}/vitals/days`); if(rd.ok){allDates=(await rd.json()).sort((a,b)=>b.localeCompare(a));buildDD();} } catch(_){}
+    // Khởi động Realtime sau khi có danh sách bệnh nhân
+    startRealtime();
   } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   btn.disabled=false;
 }
@@ -1279,6 +1387,101 @@ document.getElementById('cinp').addEventListener('keydown',e=>{if(e.key==='Enter
 document.getElementById('cinp').addEventListener('input',function(){this.style.height='auto';this.style.height=Math.min(this.scrollHeight,68)+'px';});
 
 loadData();
+
+// ── AUTO REFRESH (fallback 60s — Realtime WebSocket là nguồn chính) ──
+const REFRESH_INTERVAL = 60000; // 60 giây fallback
+
+async function silentRefresh(){
+  // Luôn refresh danh sách + live data (không hiện spinner)
+  try {
+    const r = await fetch(`${API}/doctor/${DID}/patients`);
+    if(!r.ok) return;
+    const raw = await r.json();
+    const newPts = raw.map(p=>({
+      id:p.patientId, name:p.patientName, dob:p.dob, gender:p.gender,
+      serial:p.device?.serial||'—',
+      hr:p.live?.heartRate??null, spo2:p.live?.spo2??null,
+      last:p.live?.updatedAt,
+      blood:p.profile?.nhom_mau, disease:p.profile?.benh_man_tinh, phone:p.phone
+    }));
+
+    // Cập nhật pts và re-render danh sách (giữ nguyên search filter)
+    pts = newPts;
+    renderPts(pts, document.getElementById('srch').value);
+    updSum();
+    document.getElementById('last-upd').textContent =
+      new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})
+      + ' ↻';
+  } catch(_){}
+
+  // Nếu đang xem trang chi tiết bệnh nhân → refresh vitals của ngày đang chọn
+  if(selPid && document.getElementById('view-patient').style.display !== 'none'){
+    try {
+      // Chỉ fetch data mới nhất (limit nhỏ để nhanh), merge vào cache
+      const r = await fetch(`${API}/vitals/${selPid}?limit=50`);
+      if(!r.ok) return;
+      const raw = await r.json();
+      if(!raw.length) return;
+
+      const cache = vcache[selPid];
+      if(!cache) return;
+
+      let updated = false;
+      raw.forEach(function(v){
+        const row = {
+          hr:   v.heartRate   != null ? v.heartRate   : v.nhip_tim,
+          spo2: v.spo2,
+          dHR:  v.deltaHeartRate != null ? v.deltaHeartRate : v.delta_nhip_tim,
+          dS:   v.deltaSpo2   != null ? v.deltaSpo2   : v.delta_spo2,
+          mode: v.samplingMode || v.che_do_lay_mau,
+          time: v.time        || v.thoi_gian_do,
+        };
+        if(!row.time) return;
+        const d = new Date(new Date(row.time).getTime() + 7*3600000);
+        const k = d.toISOString().slice(0,10);
+        if(!cache.byDate[k]) { cache.byDate[k]=[]; cache.dates.unshift(k); cache.dates.sort((a,b)=>b.localeCompare(a)); }
+        // Thêm nếu chưa có (tránh duplicate theo time)
+        const exists = cache.byDate[k].some(x=>x.time===row.time);
+        if(!exists){ cache.byDate[k].unshift(row); updated=true; }
+      });
+
+      // Re-render nếu có data mới và đang xem đúng ngày đó
+      if(updated){
+        const show = ptSelDate && cache.byDate[ptSelDate] ? ptSelDate : cache.dates[0];
+        renderVT(cache.byDate[show]||[]);
+        updPatientSum(selPid);
+        renderPtCal();
+      }
+    } catch(_){}
+  }
+}
+
+// Bắt đầu auto-refresh
+let _refreshTimer = setInterval(silentRefresh, REFRESH_INTERVAL);
+
+// Hiển thị đồng hồ đếm ngược refresh
+let _countdown = REFRESH_INTERVAL / 1000;
+setInterval(function(){
+  _countdown--;
+  if(_countdown <= 0) _countdown = REFRESH_INTERVAL / 1000;
+  const el = document.getElementById('last-upd');
+  if(el && !el.textContent.includes('↻')){
+    // Chỉ hiện countdown nếu không đang refresh
+    const base = el.textContent.replace(/\s*\(.*\)$/,'');
+    el.title = 'Tự làm mới sau ' + _countdown + 's';
+  }
+}, 1000);
+
+// Tạm dừng refresh khi tab bị ẩn, tiếp tục khi quay lại
+document.addEventListener('visibilitychange', function(){
+  if(document.hidden){
+    clearInterval(_refreshTimer);
+  } else {
+    silentRefresh(); // Refresh ngay khi quay lại tab
+    _countdown = REFRESH_INTERVAL / 1000;
+    _refreshTimer = setInterval(silentRefresh, REFRESH_INTERVAL);
+  }
+});
 </script>
 <!-- DATE PICKER POPUP — tách riêng khỏi trigger để tránh event bubble -->
 <div id="date-dd" style="display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.18);z-index:999;width:292px;padding:14px;">
