@@ -258,7 +258,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div class="tb-label">Ngày xem:</div>
       <div class="tb-date" id="date-trigger" onclick="toggleDD(event)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span id="date-lbl">Tất cả ngày</span>
+        <span id="date-lbl">Hôm nay</span>
       </div>
       <button class="btn-ref" id="btn-ref" onclick="loadData()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
@@ -298,7 +298,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div class="tb-label">Ngày xem:</div>
       <div class="tb-date" id="pt-date-trigger" onclick="togglePtDD(event)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span id="pt-date-lbl">Tất cả ngày</span>
+        <span id="pt-date-lbl">Hôm nay</span>
       </div>
     </div>
     <div class="sec-card">
@@ -852,7 +852,7 @@ function renderPtCal(){
 
   // Buttons
   html += '<div style="display:flex;gap:6px;margin-top:8px">'
-    + `<button onclick="pickPtDate(null)" style="flex:1;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">✕ Tất cả ngày</button>`
+    + `<button onclick="pickPtToday()" style="flex:1;padding:6px;background:none;border:1px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">📅 Hôm nay</button>`
     + '</div>';
 
   // Legend
@@ -873,7 +873,7 @@ function ptCalMove(dir){
 
 function pickPtDate(d){
   ptSelDate = d;
-  document.getElementById('pt-date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
+  document.getElementById('pt-date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Hôm nay';
   document.getElementById('pt-date-dd').style.display = 'none';
   if(selPid && vcache[selPid]){
     const cache = vcache[selPid];
@@ -971,11 +971,45 @@ function goToday(){
 
 function pickDate(d){
   selDate = d;
-  document.getElementById('date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Tất cả ngày';
+  document.getElementById('date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Hôm nay';
   if(d) document.getElementById('date-dd').style.display = 'none';
   calRender();
   if(selPid) showV(selPid);
   updSum();
+}
+
+// Chọn hôm nay — nếu không có data thì nhảy về ngày gần nhất
+function pickToday(){
+  const today = new Date().toISOString().slice(0,10);
+  // Kiểm tra xem hôm nay có data không (từ bất kỳ bệnh nhân nào)
+  const hasToday = allDates.includes(today)
+    || Object.values(vcache).some(c => c.byDate[today]?.length > 0);
+  if(hasToday){
+    pickDate(today);
+  } else if(allDates.length){
+    // Nhảy về ngày gần nhất có data
+    pickDate(allDates[0]);
+    const d = allDates[0].split('-').reverse().join('/');
+    document.getElementById('date-lbl').textContent = d + ' (gần nhất)';
+  } else {
+    pickDate(null);
+  }
+  document.getElementById('date-dd').style.display = 'none';
+}
+
+// Tương tự cho trang bệnh nhân
+function pickPtToday(){
+  const today = new Date().toISOString().slice(0,10);
+  const cache = selPid ? vcache[selPid] : null;
+  if(cache && cache.byDate[today]?.length > 0){
+    pickPtDate(today);
+  } else if(cache && cache.dates.length){
+    pickPtDate(cache.dates[0]);
+    document.getElementById('pt-date-lbl').textContent =
+      cache.dates[0].split('-').reverse().join('/') + ' (gần nhất)';
+  } else {
+    pickPtDate(null);
+  }
 }
 
 // Preload vitals cho tất cả bệnh nhân song song (background, không block UI)
@@ -1043,8 +1077,10 @@ async function loadData(){
     try { const rd=await fetch(`${API}/vitals/days`); if(rd.ok){allDates=(await rd.json()).sort((a,b)=>b.localeCompare(a));buildDD();} } catch(_){}
     // Khởi động Realtime sau khi có danh sách bệnh nhân
     startRealtime();
-    // Preload vcache cho tất cả bệnh nhân — để sum cards hoạt động ngay khi chọn ngày
+    // Preload vcache cho tất cả bệnh nhân
     preloadAllVitals();
+    // Tự động chọn hôm nay (hoặc ngày gần nhất) ngay khi vào
+    pickToday();
   } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   btn.disabled=false;
 }
@@ -1237,7 +1273,7 @@ function clickPt(pid){
   const now = new Date();
   ptCalY = now.getFullYear();
   ptCalM = now.getMonth();
-  document.getElementById('pt-date-lbl').textContent = 'Tất cả ngày';
+  document.getElementById('pt-date-lbl').textContent = 'Hôm nay';
   document.getElementById('pt-ok').textContent = '—';
   document.getElementById('pt-warn').textContent = '—';
   document.getElementById('pt-danger').textContent = '—';
@@ -1245,8 +1281,11 @@ function clickPt(pid){
   // Đặt spinner trước
   document.getElementById('vbody').innerHTML = '<div class="loading"><span class="spin"></span>Đang tải dữ liệu...</div>';
 
-  // Load vitals (dùng setTimeout để đảm bảo DOM đã render)
-  setTimeout(()=>showV(pid), 0);
+  // Load vitals → sau khi xong tự chọn hôm nay hoặc ngày gần nhất
+  setTimeout(async ()=>{
+    await showV(pid);
+    pickPtToday();
+  }, 0);
 }
 
 function backToOverview(){
@@ -1548,7 +1587,7 @@ document.addEventListener('visibilitychange', function(){
   <div class="cal-dow-row"><div class="cal-dow">CN</div><div class="cal-dow">T2</div><div class="cal-dow">T3</div><div class="cal-dow">T4</div><div class="cal-dow">T5</div><div class="cal-dow">T6</div><div class="cal-dow">T7</div></div>
   <div class="cal-grid" id="cal-grid"></div>
   <div style="display:flex;gap:6px;margin-top:8px">
-    <button class="cal-reset" onclick="pickDate(null)" style="flex:1">✕ Tất cả ngày</button>
+    <button class="cal-reset" onclick="pickToday()" style="flex:1">📅 Hôm nay</button>
     <button class="cal-reset" onclick="goToday()" style="flex:1;color:var(--navy);font-weight:700">📅 Hôm nay</button>
   </div>
   <div style="display:flex;align-items:center;gap:5px;font-size:.62rem;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
