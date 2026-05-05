@@ -425,9 +425,16 @@ async function onNewVital(payload){
   const pid = v.nguoi_dung_tb_id;
   const pt = pts.find(p => p.id === pid);
   if(pt){
-    pt.hr   = v.nhip_tim   ?? pt.hr;
-    pt.spo2 = v.spo2       ?? pt.spo2;
-    pt.last = v.thoi_gian_do;
+    pt.hr         = v.nhip_tim   ?? pt.hr;
+    pt.spo2       = v.spo2       ?? pt.spo2;
+    pt.last       = v.thoi_gian_do;
+    // Tính lại alertLevel từ data mới
+    const hr = pt.hr != null ? Number(pt.hr) : null;
+    const sp = pt.spo2 != null ? Number(pt.spo2) : null;
+    if(hr==null && sp==null) pt.alertLevel = 'binh_thuong';
+    else if((sp!=null&&sp<90)||(hr!=null&&(hr>120||hr<45))) pt.alertLevel = 'nguy_hiem';
+    else if((sp!=null&&sp<94)||(hr!=null&&(hr>100||hr<50))) pt.alertLevel = 'canh_bao';
+    else pt.alertLevel = 'binh_thuong';
     renderPts(pts, document.getElementById('srch').value);
     updSum();
     document.getElementById('last-upd').textContent =
@@ -979,7 +986,15 @@ async function loadData(){
     const r=await fetch(`${API}/doctor/${DID}/patients`);
     if(!r.ok) throw new Error('HTTP '+r.status);
     const raw=await r.json();
-    pts=raw.map(p=>({id:p.patientId,name:p.patientName,dob:p.dob,gender:p.gender,serial:p.device?.serial||'—',hr:p.live?.heartRate??null,spo2:p.live?.spo2??null,last:p.live?.updatedAt,blood:p.profile?.nhom_mau,disease:p.profile?.benh_man_tinh,phone:p.phone}));
+    pts=raw.map(p=>({
+      id:p.patientId, name:p.patientName, dob:p.dob, gender:p.gender,
+      serial:p.device?.serial||'—',
+      hr:p.live?.heartRate??null, spo2:p.live?.spo2??null,
+      last:p.live?.updatedAt,
+      alertLevel:p.live?.alertLevel||'binh_thuong',
+      deviceStatus:p.live?.deviceStatus||null,
+      blood:p.profile?.nhom_mau, disease:p.profile?.benh_man_tinh, phone:p.phone
+    }));
     renderPts(pts);
     updSum();
     document.getElementById('last-upd').textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -1075,14 +1090,12 @@ function updSum(){
     document.getElementById('sub-warn').textContent  = 'bản ghi';
     document.getElementById('sub-danger').textContent= 'bản ghi';
   } else {
-    // Không chọn ngày → dùng live data từ pts[] (có ngay khi load)
+    // Không chọn ngày → dùng alertLevel từ DB (chính xác nhất)
     pts.forEach(p=>{
-      const hr   = p.hr   != null ? Number(p.hr)   : null;
-      const spo2 = p.spo2 != null ? Number(p.spo2) : null;
-      if(hr==null && spo2==null) return;
-      if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
-      else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
-      else ok++;
+      const lv = p.alertLevel || 'binh_thuong';
+      if(lv === 'nguy_hiem')   d++;
+      else if(lv === 'canh_bao') w++;
+      else                       ok++;
     });
     document.getElementById('sub-ok').textContent    = 'bệnh nhân';
     document.getElementById('sub-warn').textContent  = 'bệnh nhân';
