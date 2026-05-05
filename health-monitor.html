@@ -64,7 +64,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .cal-selects{display:flex;gap:6px;margin-bottom:8px;}
 .cal-sel{flex:1;border:1px solid var(--border);border-radius:7px;padding:4px 6px;font-family:'Sora',sans-serif;font-size:.72rem;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
 .btn-ref{display:flex;align-items:center;gap:6px;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:700;margin-left:auto;}
-.btn-ref:hover{background:#88bae8;}
+.btn-ref:hover{background:#1e4a72;}
 .btn-ref:disabled{opacity:.5;cursor:not-allowed;}
 .sec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
 .sec-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
@@ -1059,7 +1059,7 @@ function updSum(){
   let ok=0, w=0, d=0;
 
   if(selDate){
-    // Chọn ngày → đếm số bản ghi theo trạng thái trong ngày đó
+    // Chọn ngày cụ thể → đếm bản ghi từ vcache
     pts.forEach(p=>{
       if(!vcache[p.id] || !vcache[p.id].byDate[selDate]) return;
       vcache[p.id].byDate[selDate].forEach(r=>{
@@ -1075,23 +1075,18 @@ function updSum(){
     document.getElementById('sub-warn').textContent  = 'bản ghi';
     document.getElementById('sub-danger').textContent= 'bản ghi';
   } else {
-    // Không chọn ngày → đếm tất cả bản ghi từ mọi cache
+    // Không chọn ngày → dùng live data từ pts[] (có ngay khi load)
     pts.forEach(p=>{
-      if(!vcache[p.id]) return;
-      Object.values(vcache[p.id].byDate).forEach(rows=>{
-        rows.forEach(r=>{
-          const hr   = r.hr   != null ? Number(r.hr)   : null;
-          const spo2 = r.spo2 != null ? Number(r.spo2) : null;
-          if(hr==null && spo2==null) return;
-          if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
-          else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
-          else ok++;
-        });
-      });
+      const hr   = p.hr   != null ? Number(p.hr)   : null;
+      const spo2 = p.spo2 != null ? Number(p.spo2) : null;
+      if(hr==null && spo2==null) return;
+      if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
+      else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
+      else ok++;
     });
-    document.getElementById('sub-ok').textContent    = 'bản ghi';
-    document.getElementById('sub-warn').textContent  = 'bản ghi';
-    document.getElementById('sub-danger').textContent= 'bản ghi';
+    document.getElementById('sub-ok').textContent    = 'bệnh nhân';
+    document.getElementById('sub-warn').textContent  = 'bệnh nhân';
+    document.getElementById('sub-danger').textContent= 'bệnh nhân';
   }
 
   document.getElementById('s-ok').textContent     = ok;
