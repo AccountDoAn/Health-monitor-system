@@ -978,6 +978,47 @@ function pickDate(d){
   updSum();
 }
 
+// Preload vitals cho tất cả bệnh nhân song song (background, không block UI)
+async function preloadAllVitals(){
+  if(!pts.length) return;
+  // Fetch song song tất cả, giới hạn concurrency 3 để không quá tải
+  const chunks = [];
+  for(let i=0;i<pts.length;i+=3) chunks.push(pts.slice(i,i+3));
+  for(const chunk of chunks){
+    await Promise.all(chunk.map(async function(p){
+      if(vcache[p.id]) return; // đã có rồi thì bỏ qua
+      try {
+        const r = await fetch(API+'/vitals/'+p.id+'?limit=2000');
+        if(!r.ok) return;
+        const raw = await r.json();
+        const rows = raw.map(function(v){return{
+          hr:   v.heartRate   != null ? v.heartRate   : v.nhip_tim,
+          spo2: v.spo2,
+          dHR:  v.deltaHeartRate != null ? v.deltaHeartRate : v.delta_nhip_tim,
+          dS:   v.deltaSpo2   != null ? v.deltaSpo2   : v.delta_spo2,
+          mode: v.samplingMode || v.che_do_lay_mau,
+          time: v.time        || v.thoi_gian_do
+        };}).filter(function(v){return v.time;})
+          .sort(function(a,b){return new Date(b.time)-new Date(a.time);});
+        const byDate = {};
+        rows.forEach(function(v){
+          const d = new Date(new Date(v.time).getTime()+7*3600000);
+          const k = d.toISOString().slice(0,10);
+          if(!byDate[k]) byDate[k]=[];
+          byDate[k].push(v);
+        });
+        const dates = Object.keys(byDate).sort(function(a,b){return b.localeCompare(a);});
+        vcache[p.id] = {byDate:byDate, dates:dates};
+      } catch(_){}
+    }));
+    // Sau mỗi chunk → cập nhật sum cards ngay nếu đang chọn ngày
+    if(selDate) updSum();
+  }
+  // Cập nhật lần cuối sau khi preload xong hết
+  updSum();
+  calRender();
+}
+
 // LOAD DATA
 async function loadData(){
   const btn=document.getElementById('btn-ref'); btn.disabled=true;
@@ -1002,6 +1043,8 @@ async function loadData(){
     try { const rd=await fetch(`${API}/vitals/days`); if(rd.ok){allDates=(await rd.json()).sort((a,b)=>b.localeCompare(a));buildDD();} } catch(_){}
     // Khởi động Realtime sau khi có danh sách bệnh nhân
     startRealtime();
+    // Preload vcache cho tất cả bệnh nhân — để sum cards hoạt động ngay khi chọn ngày
+    preloadAllVitals();
   } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
   btn.disabled=false;
 }
