@@ -532,11 +532,23 @@ let alertCache = [];
 async function loadActiveAlerts(){
   try {
     const r = await fetch(`${API}/doctor/${DID}/active-alerts`);
-    if(!r.ok) return;
+    if(!r.ok){
+      const err = await r.json().catch(()=>({}));
+      console.warn('[active-alerts] Server error:', err);
+      // Vẫn render popup với cache cũ, không clear
+      return;
+    }
     alertCache = await r.json();
     renderAlertPopup();
     updateBellBadge();
-  } catch(_){}
+  } catch(e){
+    console.warn('[active-alerts] Fetch error:', e.message);
+    // Nếu popup đang mở, hiện thông báo lỗi kết nối
+    const body = document.getElementById('alert-popup-body');
+    if(body && document.getElementById('alert-popup').classList.contains('open')){
+      body.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:.78rem">⚠️ Không thể tải dữ liệu cảnh báo</div>';
+    }
+  }
 }
 
 function updateBellBadge(){
@@ -610,9 +622,15 @@ function renderAlertPopup(){
 }
 
 function toggleAlertPopup(){
-  const popup=document.getElementById('alert-popup');
-  if(popup.classList.contains('open')){popup.classList.remove('open');return;}
+  const popup = document.getElementById('alert-popup');
+  if(popup.classList.contains('open')){
+    popup.classList.remove('open');
+    return;
+  }
   popup.classList.add('open');
+  // Render ngay từ cache trước (không hiện "Đang tải...")
+  renderAlertPopup();
+  // Sau đó fetch mới để cập nhật
   loadActiveAlerts();
 }
 
