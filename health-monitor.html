@@ -550,7 +550,15 @@ async function loadActiveAlerts(){
 }
 
 function updateBellBadge(){
-  const n = alertCache.length;
+  // Đếm số bệnh nhân đang có cảnh báo active (thiet_bi_het_gio, không có thiet_bi_bam_nut)
+  const activePids = new Set();
+  (alertCache||[]).forEach(function(a){
+    const methods = a.methods||[];
+    if(methods.includes('thiet_bi_het_gio') && !methods.includes('thiet_bi_bam_nut')){
+      activePids.add(a.patientId);
+    }
+  });
+  const n = activePids.size;
   const btn   = document.getElementById('bell-btn');
   const badge = document.getElementById('bell-badge');
   const countBadge = document.getElementById('alert-count-badge');
@@ -558,46 +566,49 @@ function updateBellBadge(){
     btn.classList.add('has-alert');
     badge.style.display='flex';
     badge.textContent = n > 99 ? '99+' : n;
-    countBadge.textContent = n;
+    if(countBadge) countBadge.textContent = n;
   } else {
     btn.classList.remove('has-alert');
     badge.style.display='none';
-    countBadge.textContent = '0';
+    if(countBadge) countBadge.textContent = '0';
   }
 }
 
 function renderAlertPopup(){
   const body = document.getElementById('alert-popup-body');
-  if(!alertCache.length){
-    body.innerHTML='<div style="padding:28px;text-align:center;color:var(--green);font-size:.8rem">✅ Không có cảnh báo nào</div>';
+  if(!pts.length){
+    body.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:.78rem">Chưa có bệnh nhân</div>';
     return;
   }
 
-  // Sắp xếp: nguy_hiem trước → canh_bao → mới nhất trước
-  const sevOrder = {nguy_hiem:0, canh_bao:1, binh_thuong:2};
-  const sorted = [...alertCache].sort(function(a,b){
-    const sd = (sevOrder[a.severity]||2) - (sevOrder[b.severity]||2);
-    return sd !== 0 ? sd : new Date(b.detectedAt) - new Date(a.detectedAt);
+  // Map alertCache theo patientId để check trạng thái nhanh
+  const alertMap = {};
+  (alertCache||[]).forEach(function(a){
+    // Chỉ bật tam giác nếu có thiet_bi_het_gio và KHÔNG có thiet_bi_bam_nut
+    const methods = a.methods||[];
+    const active = methods.includes('thiet_bi_het_gio') && !methods.includes('thiet_bi_bam_nut');
+    if(active){
+      // Giữ mức độ nguy hiểm nhất nếu có nhiều cảnh báo
+      if(!alertMap[a.patientId] || a.severity==='nguy_hiem'){
+        alertMap[a.patientId] = a.severity;
+      }
+    }
   });
 
-  body.innerHTML = sorted.map(function(a){
-    // Kiểm tra có thiet_bi_het_gio không → hiện tam giác
-    const hasHetGio = (a.methods||[]).includes('thiet_bi_het_gio')
-                   && !(a.methods||[]).includes('thiet_bi_bam_nut');
-    const triColor = a.severity==='nguy_hiem' ? 'var(--danger)' : 'var(--warn)';
+  body.innerHTML = pts.map(function(p){
+    const sev = alertMap[p.id]; // undefined = không có cảnh báo
+    const triColor = sev==='nguy_hiem' ? 'var(--danger)' : sev==='canh_bao' ? 'var(--warn)' : 'transparent';
 
-    const triangle = hasHetGio
-      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="'+triColor+'" flex-shrink="0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>'
-        +'<line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="1.8"/>'
-        +'<circle cx="12" cy="17" r="1" fill="#fff"/>'
-        +'</svg>'
-      : '<div style="width:20px"></div>'; // placeholder để alignment nhất quán
-
-    return '<div class="alert-item" onclick="gotoPatient(\''+a.patientId+'\')">'
-      + triangle
+    return '<div class="alert-item" onclick="gotoPatient(\''+p.id+'\')">'
+      // Tam giác — luôn có trong DOM, chỉ đổi màu fill
+      +'<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;transition:fill .3s" fill="'+triColor+'">'
+      +'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>'
+      +(sev?'<line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="17" r="1" fill="#fff"/>':'')
+      +'</svg>'
+      // Tên + serial
       +'<div class="alert-item-info">'
-      +'<div class="alert-item-name">'+esc(a.patientName)+'</div>'
-      +'<div class="alert-item-serial">'+esc(a.serial||'—')+'</div>'
+      +'<div class="alert-item-name">'+esc(p.name)+'</div>'
+      +'<div class="alert-item-serial">'+esc(p.serial||'—')+'</div>'
       +'</div>'
       +'</div>';
   }).join('');
