@@ -1764,6 +1764,7 @@ app.get("/doctor/:doctorId/active-alerts", async (req, res) => {
       alertType:    a.loai_canh_bao,
       severity:     a.muc_do_nghiem_trong,
       detectedAt:   a.thoi_gian_phat_hien,
+      methods:      confMap[a.id]||[],
       hr:           vitalMap[a.du_lieu_sinh_ton_id]?.hr??null,
       spo2:         vitalMap[a.du_lieu_sinh_ton_id]?.spo2??null,
       serial:       vitalMap[a.du_lieu_sinh_ton_id]?.serial||'—',
