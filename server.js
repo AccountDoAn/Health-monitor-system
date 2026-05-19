@@ -1672,6 +1672,109 @@ app.post("/auth/reset-password", async (req, res) => {
 });
 
 // ============================================================
+// MODULE CẢNH BÁO — XÁC NHẬN
+// ============================================================
+
+// GET /doctor/:doctorId/active-alerts
+// Lấy tất cả cảnh báo đang active (thiet_bi_het_gio) của bệnh nhân thuộc bác sĩ
+app.get("/doctor/:doctorId/active-alerts", async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+
+    // 1. Lấy danh sách bệnh nhân của bác sĩ
+    const { data: links } = await supabase
+      .from("lien_ket_bac_si")
+      .select("nguoi_dung_tb_id")
+      .eq("nguoi_dung_bs_id", doctorId)
+      .eq("trang_thai_hoat_dong", true);
+
+    const patientIds = (links||[]).map(l=>l.nguoi_dung_tb_id).filter(Boolean);
+    if(!patientIds.length) return res.json([]);
+
+    // 2. Lấy TẤT CẢ cảnh báo của bệnh nhân — không filter trang_thai_xu_ly
+    const { data: alerts, error } = await supabase
+      .from("canh_bao_suc_khoe")
+      .select("id, nguoi_dung_tb_id, du_lieu_sinh_ton_id, loai_canh_bao, muc_do_nghiem_trong, trang_thai_xu_ly, thoi_gian_phat_hien")
+      .in("nguoi_dung_tb_id", patientIds)
+      .order("thoi_gian_phat_hien", { ascending: false })
+      .limit(500);
+
+    if(error) throw error;
+    if(!alerts.length) return res.json([]);
+
+    // 3. Lấy xác nhận — tìm cảnh báo nào có thiet_bi_het_gio (active) và không có thiet_bi_bam_nut (đã tắt)
+    const alertIds = alerts.map(a=>a.id);
+    const { data: confirmations } = await supabase
+      .from("xac_nhan_canh_bao")
+      .select("canh_bao_id, phuong_thuc_xac_nhan, thoi_gian_xac_nhan")
+      .in("canh_bao_id", alertIds)
+      .order("thoi_gian_xac_nhan", { ascending: false });
+
+    // Map: alertId → confirmations[]
+    const confMap = {};
+    (confirmations||[]).forEach(c=>{
+      if(!confMap[c.canh_bao_id]) confMap[c.canh_bao_id]=[];
+      confMap[c.canh_bao_id].push(c.phuong_thuc_xac_nhan);
+    });
+
+    // Chỉ giữ cảnh báo có thiet_bi_het_gio và KHÔNG có thiet_bi_bam_nut
+    const activeAlerts = alerts.filter(a=>{
+      const methods = confMap[a.id]||[];
+      return methods.includes('thiet_bi_het_gio') && !methods.includes('thiet_bi_bam_nut');
+    });
+
+    if(!activeAlerts.length) return res.json([]);
+
+    // 4. Lấy tên bệnh nhân
+    const ptIds = [...new Set(activeAlerts.map(a=>a.nguoi_dung_tb_id))];
+    const ptMap = {};
+    const { data: pts } = await supabase
+      .from("nguoi_dung")
+      .select("id, ho_ten")
+      .in("id", ptIds);
+    (pts||[]).forEach(p=>{ ptMap[p.id]=p.ho_ten; });
+
+    // 5. Lấy vitals tại thời điểm cảnh báo
+    const vitalIds = [...new Set(activeAlerts.map(a=>a.du_lieu_sinh_ton_id).filter(Boolean))];
+    const vitalMap = {};
+    if(vitalIds.length){
+      const { data: vitals } = await supabase
+        .from("du_lieu_sinh_ton")
+        .select("id, nhip_tim, spo2, thiet_bi_id")
+        .in("id", vitalIds);
+      // Lấy serial thiết bị
+      const devIds = [...new Set((vitals||[]).map(v=>v.thiet_bi_id).filter(Boolean))];
+      const devMap = {};
+      if(devIds.length){
+        const { data: devs } = await supabase
+          .from("thiet_bi_iot")
+          .select("id, so_seri")
+          .in("id", devIds);
+        (devs||[]).forEach(d=>{ devMap[d.id]=d.so_seri; });
+      }
+      (vitals||[]).forEach(v=>{
+        vitalMap[v.id]={ hr:v.nhip_tim, spo2:v.spo2, serial:devMap[v.thiet_bi_id]||'—' };
+      });
+    }
+
+    res.json(activeAlerts.map(a=>({
+      alertId:      a.id,
+      patientId:    a.nguoi_dung_tb_id,
+      patientName:  ptMap[a.nguoi_dung_tb_id]||'—',
+      alertType:    a.loai_canh_bao,
+      severity:     a.muc_do_nghiem_trong,
+      detectedAt:   a.thoi_gian_phat_hien,
+      hr:           vitalMap[a.du_lieu_sinh_ton_id]?.hr??null,
+      spo2:         vitalMap[a.du_lieu_sinh_ton_id]?.spo2??null,
+      serial:       vitalMap[a.du_lieu_sinh_ton_id]?.serial||'—',
+    })));
+  } catch(err){
+    console.error("[GET /doctor/:id/active-alerts]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
 // START
 // ============================================================
 
