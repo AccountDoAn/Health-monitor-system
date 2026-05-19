@@ -73,21 +73,19 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .bell-btn.has-alert{border-color:var(--danger);color:var(--danger);animation:bellShake .5s ease infinite;}
 @keyframes bellShake{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
 .bell-badge{position:absolute;top:-5px;right:-5px;background:var(--danger);color:#fff;font-size:.55rem;font-weight:800;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:2px solid var(--card);}
-.alert-popup{display:none;position:absolute;top:calc(100% + 10px);right:0;width:340px;max-height:480px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.14);z-index:200;overflow:hidden;flex-direction:column;}
+.alert-popup{display:none;position:absolute;top:calc(100% + 10px);right:0;width:300px;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.14);z-index:200;overflow:hidden;flex-direction:column;}
 .alert-popup.open{display:flex;}
-.alert-popup-head{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg);}
+.alert-popup-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--bg);flex-shrink:0;}
 .alert-popup-title{font-size:.82rem;font-weight:700;color:var(--navy);flex:1;}
-.alert-popup-body{overflow-y:auto;flex:1;}
-.alert-item{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:background .1s;}
+.alert-popup-body{overflow-y:auto;max-height:380px;}
+.alert-popup-body::-webkit-scrollbar{width:4px;}
+.alert-popup-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+.alert-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;}
 .alert-item:last-child{border-bottom:none;}
 .alert-item:hover{background:rgba(43,95,142,.04);}
-.alert-item-top{display:flex;align-items:center;gap:8px;}
-.alert-item-name{font-size:.82rem;font-weight:700;color:var(--text);flex:1;}
-.alert-item-time{font-size:.62rem;color:var(--muted);font-family:'DM Mono',monospace;}
-.alert-item-serial{font-size:.68rem;font-family:'DM Mono',monospace;color:var(--muted);}
-.alert-item-vitals{display:flex;gap:10px;align-items:center;}
-.alert-item-hr{font-size:.8rem;font-weight:700;color:var(--danger);}
-.alert-item-spo2{font-size:.8rem;font-weight:700;color:var(--navy);}
+.alert-item-info{flex:1;min-width:0;}
+.alert-item-name{font-size:.82rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.alert-item-serial{font-size:.66rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
 .sev-badge{font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:8px;}
 .sev-nguy_hiem{background:#fdeaea;color:#c0392b;}
 .sev-canh_bao{background:#fff4e0;color:#8a5800;}
@@ -571,51 +569,35 @@ function updateBellBadge(){
 function renderAlertPopup(){
   const body = document.getElementById('alert-popup-body');
   if(!alertCache.length){
-    body.innerHTML='<div style="padding:32px;text-align:center;color:var(--green);font-size:.82rem">✅ Không có cảnh báo nào</div>';
+    body.innerHTML='<div style="padding:28px;text-align:center;color:var(--green);font-size:.8rem">✅ Không có cảnh báo nào</div>';
     return;
   }
 
-  // Sắp xếp: nguy_hiem trước → canh_bao → theo thời gian mới nhất
+  // Sắp xếp: nguy_hiem trước → canh_bao → mới nhất trước
   const sevOrder = {nguy_hiem:0, canh_bao:1, binh_thuong:2};
   const sorted = [...alertCache].sort(function(a,b){
-    const sd = (sevOrder[a.severity]??9) - (sevOrder[b.severity]??9);
-    if(sd !== 0) return sd;
-    return new Date(b.detectedAt) - new Date(a.detectedAt);
+    const sd = (sevOrder[a.severity]||2) - (sevOrder[b.severity]||2);
+    return sd !== 0 ? sd : new Date(b.detectedAt) - new Date(a.detectedAt);
   });
 
-  const typeLabel={
-    nhip_tim_cao:'Nhịp tim cao', nhip_tim_thap:'Nhịp tim thấp',
-    spo2_thap:'SpO₂ thấp', nhip_tim_bat_thuong:'Nhịp tim bất thường'
-  };
-
   body.innerHTML = sorted.map(function(a){
-    const isDanger  = a.severity === 'nguy_hiem';
-    const isWarn    = a.severity === 'canh_bao';
-    const iconColor = isDanger ? 'var(--danger)' : isWarn ? 'var(--warn)' : 'var(--muted)';
-    const bgColor   = isDanger ? '#fff5f5' : isWarn ? '#fffbea' : 'var(--bg)';
-    const time = a.detectedAt
-      ? new Date(a.detectedAt).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'})
-      : '—';
+    // Kiểm tra có thiet_bi_het_gio không → hiện tam giác
+    const hasHetGio = (a.methods||[]).includes('thiet_bi_het_gio')
+                   && !(a.methods||[]).includes('thiet_bi_bam_nut');
+    const triColor = a.severity==='nguy_hiem' ? 'var(--danger)' : 'var(--warn)';
 
-    return '<div class="alert-item" onclick="gotoPatient(\''+a.patientId+'\')" style="background:'+bgColor+';border-left:3px solid '+iconColor+'">'
-      // Header: tam giác + tên bệnh nhân + thời gian
-      +'<div class="alert-item-top">'
-      // Icon tam giác cảnh báo
-      +'<svg width="16" height="16" viewBox="0 0 24 24" fill="'+iconColor+'" style="flex-shrink:0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="1.5"/><line x1="12" y1="17" x2="12.01" y2="17" stroke="#fff" stroke-width="2"/></svg>'
-      +'<div class="alert-item-name" style="color:'+iconColor+'">'+esc(a.patientName)+'</div>'
-      +'<div class="alert-item-time">'+time+'</div>'
-      +'</div>'
-      // Loại cảnh báo + serial
-      +'<div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">'
-      +'<div style="font-size:.72rem;font-weight:600;color:'+iconColor+'">'+(typeLabel[a.alertType]||a.alertType||'—')+'</div>'
-      +'<div style="font-family:\'DM Mono\',monospace;font-size:.62rem;color:var(--muted)">'+esc(a.serial)+'</div>'
-      +'</div>'
-      // Vitals
-      +'<div class="alert-item-vitals">'
-      +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
-      +'<span style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:'+(a.hr!=null&&(a.hr>100||a.hr<50)?'var(--danger)':'var(--navy)')+';font-weight:700">'+(a.hr!=null?a.hr+' bpm':'—')+'</span>'
-      +'<span style="color:var(--border);margin:0 4px">|</span>'
-      +'<span style="font-family:\'DM Mono\',monospace;font-size:.72rem;color:'+(a.spo2!=null&&a.spo2<93?'var(--danger)':'var(--navy)')+';font-weight:700">'+(a.spo2!=null?a.spo2+'%':'—')+'</span>'
+    const triangle = hasHetGio
+      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="'+triColor+'" flex-shrink="0"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>'
+        +'<line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="1.8"/>'
+        +'<circle cx="12" cy="17" r="1" fill="#fff"/>'
+        +'</svg>'
+      : '<div style="width:20px"></div>'; // placeholder để alignment nhất quán
+
+    return '<div class="alert-item" onclick="gotoPatient(\''+a.patientId+'\')">'
+      + triangle
+      +'<div class="alert-item-info">'
+      +'<div class="alert-item-name">'+esc(a.patientName)+'</div>'
+      +'<div class="alert-item-serial">'+esc(a.serial||'—')+'</div>'
       +'</div>'
       +'</div>';
   }).join('');
