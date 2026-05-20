@@ -1152,6 +1152,8 @@ function pickDate(d){
   calRender();
   if(selPid) showV(selPid);
   updSum();
+  // Re-render danh sách với data của ngày được chọn
+  renderPts(pts, document.getElementById('srch').value);
 }
 
 // Chọn hôm nay — nếu không có data thì nhảy về ngày gần nhất
@@ -1227,6 +1229,8 @@ async function preloadAllVitals(){
   // Cập nhật lần cuối sau khi preload xong hết
   updSum();
   calRender();
+  // Re-render danh sách với data mới nhất
+  if(selDate) renderPts(pts, document.getElementById('srch')?.value||'');
 }
 
 // LOAD DATA
@@ -1267,7 +1271,22 @@ function renderPts(list,q=''){
   const fl=q?list.filter(p=>(p.name||'').toLowerCase().includes(q.toLowerCase())):list;
   if(!fl.length){el.innerHTML='<div class="loading">Không có dữ liệu</div>';return;}
   el.innerHTML=fl.map(p=>{
-    const hr=p.hr!=null?Number(p.hr):null, spo2=p.spo2!=null?Number(p.spo2):null;
+    // Nếu đang chọn ngày → dùng bản ghi cuối cùng của ngày đó từ vcache
+    let hr, spo2;
+    if(selDate && vcache[p.id] && vcache[p.id].byDate[selDate] && vcache[p.id].byDate[selDate].length){
+      // byDate đã sort desc → phần tử cuối cùng là bản ghi cuối ngày
+      const rows = vcache[p.id].byDate[selDate];
+      const last = rows[rows.length - 1];
+      hr   = last.hr   != null ? Number(last.hr)   : null;
+      spo2 = last.spo2 != null ? Number(last.spo2) : null;
+    } else if(selDate && vcache[p.id] && !vcache[p.id].byDate[selDate]){
+      // Ngày đó không có data → hiện —
+      hr = null; spo2 = null;
+    } else {
+      // Không chọn ngày → dùng live data
+      hr   = p.hr   != null ? Number(p.hr)   : null;
+      spo2 = p.spo2 != null ? Number(p.spo2) : null;
+    }
     const hc=hr!=null?(hr>100||hr<50?'var(--danger)':hr>90?'var(--warn)':'var(--green)'):'var(--muted)';
     const sc=spo2!=null?(spo2<90?'var(--danger)':spo2<94?'var(--warn)':'var(--navy)'):'var(--muted)';
     const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
