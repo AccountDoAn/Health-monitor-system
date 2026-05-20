@@ -63,9 +63,6 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .cal-reset:hover{background:var(--bg);}
 .cal-selects{display:flex;gap:6px;margin-bottom:8px;}
 .cal-sel{flex:1;border:1px solid var(--border);border-radius:7px;padding:4px 6px;font-family:'Sora',sans-serif;font-size:.72rem;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
-.btn-ref{display:flex;align-items:center;gap:6px;background:var(--navy);color:#fff;border:none;border-radius:8px;padding:7px 14px;cursor:pointer;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:700;margin-left:auto;}
-.btn-ref:hover{background:#1e4a72;}
-.btn-ref:disabled{opacity:.5;cursor:not-allowed;}
 /* Bell alert */
 .bell-wrap{position:relative;display:flex;align-items:center;}
 .bell-btn{width:36px;height:36px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s;position:relative;}
@@ -310,9 +307,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span id="date-lbl">Hôm nay</span>
       </div>
-      <button class="btn-ref" id="btn-ref" onclick="loadData()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
-      </button>
+
     </div>
     <div class="sec-card">
       <div class="sec-head">
@@ -1235,7 +1230,6 @@ async function preloadAllVitals(){
 
 // LOAD DATA
 async function loadData(){
-  const btn=document.getElementById('btn-ref'); btn.disabled=true;
   document.getElementById('pt-list').innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
     const r=await fetch(`${API}/doctor/${DID}/patients`);
@@ -1262,7 +1256,6 @@ async function loadData(){
     // Load cảnh báo ngay khi vào
     loadActiveAlerts();
   } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
-  btn.disabled=false;
 }
 
 // RENDER PATIENTS
