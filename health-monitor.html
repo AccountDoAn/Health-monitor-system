@@ -312,7 +312,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">🧑‍⚕️ Danh sách bệnh nhân</div>
-        <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="srch" placeholder="Tìm bệnh nhân..."/></div>
+        <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="srch" placeholder="Tìm kiếm theo tên..."/></div>
       </div>
       <div class="pt-header"><div>Mã BN</div><div>Họ tên</div><div>Ngày sinh</div><div>Thiết bị</div><div>Nhịp tim</div><div>SpO₂</div><div>Trạng thái</div></div>
       <div id="pt-list"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
@@ -368,7 +368,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
           <div class="srch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="lnk-srch" placeholder="Tìm bệnh nhân..." oninput="filterLinks(this.value)"/>
+            <input type="text" id="lnk-srch" placeholder="Tìm kiếm theo tên..." oninput="filterLinks(this.value)"/>
           </div>
           <button onclick="document.querySelectorAll('[id^=lnk-].acc-item').forEach(e=>e.classList.add('open'))" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
           <button onclick="document.querySelectorAll('[id^=lnk-].acc-item').forEach(e=>e.classList.remove('open'))" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
@@ -386,7 +386,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
           <div class="srch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="rec-srch" placeholder="Tìm bệnh nhân..." oninput="filterRecords(this.value)"/>
+            <input type="text" id="rec-srch" placeholder="Tìm kiếm theo tên..." oninput="filterRecords(this.value)"/>
           </div>
           <button onclick="expandAllRecs()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
           <button onclick="collapseAllRecs()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
