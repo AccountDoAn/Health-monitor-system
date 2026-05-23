@@ -118,10 +118,29 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .bat-bar{width:48px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px;}
 .bat-fill{height:100%;border-radius:4px;transition:width .3s;}
 /* Card grid */
-.page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
-.page-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
-.page-card-head{padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
-.page-card-body{padding:14px 16px;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+.page-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .25s,box-shadow .25s;}
+.page-card:hover{box-shadow:0 4px 16px rgba(43,95,142,.1);}
+.page-card-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-bottom:1px solid var(--border);transition:background .25s,border-color .25s;}
+.page-card.expandable .page-card-head{cursor:pointer;user-select:none;}
+.page-card.expandable .page-card-head:hover{background:rgba(43,95,142,.05);}
+.page-card.expandable.open{border-color:var(--navy);}
+.page-card.expandable.open .page-card-head{background:var(--navy);border-bottom-color:var(--navy);}
+.page-card.expandable.open .page-card-head .card-av{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3);}
+.page-card.expandable.open .page-card-head .card-name{color:#fff;}
+.page-card.expandable.open .page-card-head .card-sub{color:rgba(255,255,255,.65);}
+.page-card.expandable.open .page-card-head .card-tag{background:rgba(255,255,255,.18);color:#fff;}
+.page-card.expandable.open .page-card-head .card-chev{transform:rotate(180deg);color:rgba(255,255,255,.8);}
+.page-card.expandable.open .page-card-body{display:block;animation:fadeIn .2s ease;border-top:2px solid var(--navy);}
+.page-card.expandable .page-card-body{display:none;}
+.card-av{width:40px;height:40px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:800;flex-shrink:0;border:2px solid var(--border);transition:background .25s,color .25s,border-color .25s;}
+.card-info{flex:1;min-width:0;}
+.card-name{font-size:.88rem;font-weight:700;color:var(--navy);transition:color .25s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-sub{font-size:.67rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;transition:color .25s;}
+.card-tag{font-size:.6rem;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--mint);color:var(--navy);flex-shrink:0;transition:background .25s,color .25s;}
+.card-chev{color:var(--muted);transition:transform .25s,color .25s;flex-shrink:0;}
+.page-card-body{padding:14px 16px;background:var(--card);}
 /* Device list item */
 .dev-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
 .dev-item:last-child{margin-bottom:0;}
@@ -440,6 +459,13 @@ function switchView(name, btn){
   if(name==='doctors') loadDoctors();
 }
 
+// Toggle expand card (bác sĩ, bệnh nhân)
+function toggleCard(id){
+  const card = document.getElementById(id);
+  if(!card) return;
+  card.classList.toggle('open');
+}
+
 // ── LOAD ADMIN INFO ──
 async function loadInfo(){
   try {
@@ -699,46 +725,37 @@ function renderPatients(){
       const init=(p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
       const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
       const gender=p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':'—';
+      const cid='pt-card-'+p.id;
 
-      // Device badge
       const devBadge=p.deviceId
-        ?'<span class="badge b-ok">📱 Có thiết bị</span>'
-        :'<span class="badge b-off">Chưa có TB</span>';
+        ?'<span class="card-tag">📱 Có thiết bị</span>'
+        :'<span class="card-tag" style="background:#f0f0f0;color:#888">Chưa có TB</span>';
 
-      // Doctor info
       const docHtml=p.doctor
         ?'<div style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">'
           +'<div style="width:26px;height:26px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">'
           +(p.doctor.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
           +'</div>'
-          +'<div style="min-width:0">'
-          +'<div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'
-          +'<div style="font-size:.63rem;color:var(--muted)">Bác sĩ phụ trách</div>'
-          +'</div>'
+          +'<div style="min-width:0"><div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'
+          +'<div style="font-size:.63rem;color:var(--muted)">Bác sĩ phụ trách</div></div>'
           +'</div>'
         :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;padding:6px 0">Chưa có bác sĩ phụ trách</div>';
 
-      return '<div class="page-card">'
-        // Header
-        +'<div class="page-card-head" style="display:flex;align-items:center;gap:11px">'
-        +'<div style="width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:800;flex-shrink:0">'+init+'</div>'
-        +'<div style="flex:1;min-width:0">'
-        +'<div style="font-size:.9rem;font-weight:700;color:var(--navy)">'+esc(p.name)+'</div>'
-        +'<div style="font-size:.67rem;color:var(--muted);margin-top:2px;font-family:\'DM Mono\',monospace">'+dob+' · '+gender+'</div>'
+      return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
+        +'<div class="page-card-head">'
+        +'<div class="card-av">'+init+'</div>'
+        +'<div class="card-info">'
+        +'<div class="card-name">'+esc(p.name||'—')+'</div>'
+        +'<div class="card-sub">'+dob+' · '+gender+'</div>'
         +'</div>'
-        +(p.bloodType?'<span style="font-size:.65rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:3px 8px;border-radius:8px;flex-shrink:0">'+esc(p.bloodType)+'</span>':'')
-        +'</div>'
-        // Body
-        +'<div class="page-card-body" style="display:flex;flex-direction:column;gap:10px">'
-        // Row 1: thiết bị + bệnh mãn
-        +'<div style="display:flex;align-items:center;justify-content:space-between">'
         +devBadge
-        +(p.disease?'<span style="font-size:.68rem;color:var(--muted);max-width:160px;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(p.disease)+'">'+esc(p.disease)+'</span>':'')
+        +(p.bloodType?'<span style="font-size:.62rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:3px 8px;border-radius:8px;flex-shrink:0;margin-left:4px">'+esc(p.bloodType)+'</span>':'')
+        +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
         +'</div>'
-        // Bác sĩ
+        +'<div class="page-card-body">'
+        +(p.disease?'<div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;padding:6px 10px;background:var(--bg);border-radius:7px;border:1px solid var(--border)">🩺 '+esc(p.disease)+'</div>':'')
         +docHtml
-        // Nút phân công
-        +'<button onclick="openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="width:100%;padding:7px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer">'
+        +'<button onclick="event.stopPropagation();openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="width:100%;margin-top:10px;padding:7px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer">'
         +(p.doctor?'🔄 Đổi bác sĩ':'👨‍⚕️ Phân công bác sĩ')
         +'</button>'
         +'</div>'
@@ -882,16 +899,19 @@ async function loadDoctors(){
     body.innerHTML='<div class="page-grid" style="padding:18px">'
       +docCache.map(function(d){
         const init=(d.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
-        return '<div class="page-card">'
-          +'<div class="page-card-head" style="display:flex;align-items:center;gap:12px">'
-          +'<div style="width:42px;height:42px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.76rem;font-weight:800;flex-shrink:0">'+init+'</div>'
-          +'<div style="min-width:0;flex:1">'
-          +'<div style="font-size:.9rem;font-weight:700;color:var(--navy)">'+esc(d.name)+'</div>'
-          +'<div style="font-size:.68rem;color:var(--muted);margin-top:2px">Bác sĩ phụ trách</div>'
+        const cid='doc-card-'+d.id;
+        return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
+          +'<div class="page-card-head">'
+          +'<div class="card-av">'+init+'</div>'
+          +'<div class="card-info">'
+          +'<div class="card-name">'+esc(d.name)+'</div>'
+          +'<div class="card-sub">Bác sĩ phụ trách</div>'
           +'</div>'
-          +'<span class="badge b-ok" style="font-size:.68rem;flex-shrink:0">'+d.patientCount+' bệnh nhân</span>'
+          +'<span class="card-tag">'+d.patientCount+' bệnh nhân</span>'
+          +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
           +'</div>'
-          +'<div class="page-card-body" style="display:flex;flex-direction:column;gap:8px">'
+          +'<div class="page-card-body">'
+          +'<div style="display:flex;flex-direction:column;gap:10px">'
           // SĐT
           +'<div style="display:flex;align-items:center;gap:8px">'
           +'<div style="width:28px;height:28px;border-radius:7px;background:var(--bg);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
@@ -905,6 +925,7 @@ async function loadDoctors(){
           +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>'
           +'</div>'
           +'<span style="font-size:.78rem;color:var(--text);word-break:break-all">'+esc(d.email||'—')+'</span>'
+          +'</div>'
           +'</div>'
           +'</div>'
           +'</div>';
