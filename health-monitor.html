@@ -312,7 +312,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">🧑‍⚕️ Danh sách bệnh nhân</div>
-        <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="srch" placeholder="Tìm kiếm theo tên..."/></div>
+        <div class="srch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" id="srch" placeholder="Tìm bệnh nhân..."/></div>
       </div>
       <div class="pt-header"><div>Mã BN</div><div>Họ tên</div><div>Ngày sinh</div><div>Thiết bị</div><div>Nhịp tim</div><div>SpO₂</div><div>Trạng thái</div></div>
       <div id="pt-list"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
@@ -368,7 +368,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
           <div class="srch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="lnk-srch" placeholder="Tìm kiếm theo tên..." oninput="filterLinks(this.value)"/>
+            <input type="text" id="lnk-srch" placeholder="Tìm bệnh nhân..." oninput="filterLinks(this.value)"/>
           </div>
           <button onclick="document.querySelectorAll('[id^=lnk-].acc-item').forEach(e=>e.classList.add('open'))" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
           <button onclick="document.querySelectorAll('[id^=lnk-].acc-item').forEach(e=>e.classList.remove('open'))" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
@@ -386,7 +386,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
           <div class="srch">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" id="rec-srch" placeholder="Tìm kiếm theo tên..." oninput="filterRecords(this.value)"/>
+            <input type="text" id="rec-srch" placeholder="Tìm bệnh nhân..." oninput="filterRecords(this.value)"/>
           </div>
           <button onclick="expandAllRecs()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
           <button onclick="collapseAllRecs()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
@@ -1042,16 +1042,22 @@ function ptCalMove(dir){
   renderPtCal();
 }
 
-function pickPtDate(d){
+async function pickPtDate(d){
   ptSelDate = d;
   document.getElementById('pt-date-lbl').textContent = d ? d.split('-').reverse().join('/') : 'Hôm nay';
   document.getElementById('pt-date-dd').style.display = 'none';
-  if(selPid && vcache[selPid]){
-    const cache = vcache[selPid];
-    const show = d && cache.byDate[d] ? d : cache.dates[0];
-    renderVT(cache.byDate[show]||[]);
-    updPatientSum(selPid);
+  renderPtCal();
+  if(!selPid) return;
+  if(!d){
+    // Không chọn ngày → dùng ngày mới nhất
+    const dates = vcache[selPid]?.dates || [];
+    d = dates[0];
+    if(!d) return;
   }
+  // Fetch on-demand nếu chưa có cache ngày này
+  const rows = await fetchPatientDay(selPid, d);
+  renderVT(rows);
+  updPatientSum(selPid);
 }
 
 // ── DATE PICKER TỔNG QUAN ──
@@ -1185,47 +1191,46 @@ function pickPtToday(){
   }
 }
 
-// Preload vitals cho tất cả bệnh nhân song song (background, không block UI)
+// Preload: chỉ fetch danh sách NGÀY của từng bệnh nhân (nhẹ)
+// Data thực sự sẽ được fetch theo ngày khi cần
 async function preloadAllVitals(){
   if(!pts.length) return;
-  // Fetch song song tất cả, giới hạn concurrency 3 để không quá tải
   const chunks = [];
   for(let i=0;i<pts.length;i+=3) chunks.push(pts.slice(i,i+3));
+
   for(const chunk of chunks){
     await Promise.all(chunk.map(async function(p){
-      if(vcache[p.id]) return; // đã có rồi thì bỏ qua
+      if(vcache[p.id]) return;
       try {
-        const r = await fetch(API+'/vitals/'+p.id+'?limit=2000');
+        const r = await fetch(API+'/vitals/'+p.id+'/days');
         if(!r.ok) return;
-        const raw = await r.json();
-        const rows = raw.map(function(v){return{
-          hr:   v.heartRate   != null ? v.heartRate   : v.nhip_tim,
-          spo2: v.spo2,
-          dHR:  v.deltaHeartRate != null ? v.deltaHeartRate : v.delta_nhip_tim,
-          dS:   v.deltaSpo2   != null ? v.deltaSpo2   : v.delta_spo2,
-          mode: v.samplingMode || v.che_do_lay_mau,
-          time: v.time        || v.thoi_gian_do
-        };}).filter(function(v){return v.time;})
-          .sort(function(a,b){return new Date(b.time)-new Date(a.time);});
-        const byDate = {};
-        rows.forEach(function(v){
-          const d = new Date(new Date(v.time).getTime()+7*3600000);
-          const k = d.toISOString().slice(0,10);
-          if(!byDate[k]) byDate[k]=[];
-          byDate[k].push(v);
-        });
-        const dates = Object.keys(byDate).sort(function(a,b){return b.localeCompare(a);});
-        vcache[p.id] = {byDate:byDate, dates:dates};
+        const dates = await r.json();
+        vcache[p.id] = { byDate:{}, dates:dates };
       } catch(_){}
     }));
-    // Sau mỗi chunk → cập nhật sum cards ngay nếu đang chọn ngày
     if(selDate) updSum();
   }
-  // Cập nhật lần cuối sau khi preload xong hết
+
   updSum();
   calRender();
-  // Re-render danh sách với data mới nhất
   if(selDate) renderPts(pts, document.getElementById('srch')?.value||'');
+}
+
+// Fetch data của 1 bệnh nhân trong 1 ngày cụ thể (on demand)
+async function fetchPatientDay(pid, date){
+  if(!vcache[pid]) vcache[pid] = {byDate:{}, dates:[]};
+  if(vcache[pid].byDate[date]) return vcache[pid].byDate[date]; // đã có cache
+  try {
+    const r = await fetch(API+'/vitals/'+pid+'/by-date/'+date);
+    if(!r.ok) return [];
+    const rows = await r.json();
+    vcache[pid].byDate[date] = rows;
+    if(!vcache[pid].dates.includes(date)){
+      vcache[pid].dates.push(date);
+      vcache[pid].dates.sort((a,b)=>b.localeCompare(a));
+    }
+    return rows;
+  } catch(_){ return []; }
 }
 
 // LOAD DATA
@@ -1338,41 +1343,48 @@ function updPatientSum(pid){
 
 // SUMMARY — tổng tất cả bệnh nhân (overview)
 function updSum(){
-  let ok=0, w=0, d=0;
-
   if(selDate){
-    // Chọn ngày cụ thể → đếm bản ghi từ vcache
-    pts.forEach(p=>{
-      if(!vcache[p.id] || !vcache[p.id].byDate[selDate]) return;
-      vcache[p.id].byDate[selDate].forEach(r=>{
-        const hr   = r.hr   != null ? Number(r.hr)   : null;
-        const spo2 = r.spo2 != null ? Number(r.spo2) : null;
-        if(hr==null && spo2==null) return;
-        if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
-        else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
-        else ok++;
+    // Chọn ngày → fetch on-demand rồi đếm
+    Promise.all(pts.map(p => fetchPatientDay(p.id, selDate)))
+      .then(function(allRows){
+        let ok=0, w=0, d=0;
+        allRows.forEach(function(rows){
+          rows.forEach(function(r){
+            const hr   = r.hr   != null ? Number(r.hr)   : null;
+            const spo2 = r.spo2 != null ? Number(r.spo2) : null;
+            if(hr==null && spo2==null) return;
+            if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) d++;
+            else if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) w++;
+            else ok++;
+          });
+        });
+        document.getElementById('s-ok').textContent      = ok;
+        document.getElementById('s-warn').textContent    = w;
+        document.getElementById('s-danger').textContent  = d;
+        document.getElementById('s-total').textContent   = pts.length;
+        document.getElementById('sub-ok').textContent    = 'bản ghi';
+        document.getElementById('sub-warn').textContent  = 'bản ghi';
+        document.getElementById('sub-danger').textContent= 'bản ghi';
+        renderPts(pts, document.getElementById('srch')?.value||'');
       });
-    });
-    document.getElementById('sub-ok').textContent    = 'bản ghi';
-    document.getElementById('sub-warn').textContent  = 'bản ghi';
-    document.getElementById('sub-danger').textContent= 'bản ghi';
-  } else {
-    // Không chọn ngày → dùng alertLevel từ DB (chính xác nhất)
-    pts.forEach(p=>{
-      const lv = p.alertLevel || 'binh_thuong';
-      if(lv === 'nguy_hiem')   d++;
-      else if(lv === 'canh_bao') w++;
-      else                       ok++;
-    });
-    document.getElementById('sub-ok').textContent    = 'bệnh nhân';
-    document.getElementById('sub-warn').textContent  = 'bệnh nhân';
-    document.getElementById('sub-danger').textContent= 'bệnh nhân';
+    return; // async
   }
 
-  document.getElementById('s-ok').textContent     = ok;
-  document.getElementById('s-warn').textContent   = w;
-  document.getElementById('s-danger').textContent = d;
-  document.getElementById('s-total').textContent  = pts.length;
+  // Không chọn ngày → dùng alertLevel live
+  let ok=0, w=0, d=0;
+  pts.forEach(p=>{
+    const lv = p.alertLevel || 'binh_thuong';
+    if(lv === 'nguy_hiem')     d++;
+    else if(lv === 'canh_bao') w++;
+    else                        ok++;
+  });
+  document.getElementById('s-ok').textContent      = ok;
+  document.getElementById('s-warn').textContent    = w;
+  document.getElementById('s-danger').textContent  = d;
+  document.getElementById('s-total').textContent   = pts.length;
+  document.getElementById('sub-ok').textContent    = 'bệnh nhân';
+  document.getElementById('sub-warn').textContent  = 'bệnh nhân';
+  document.getElementById('sub-danger').textContent= 'bệnh nhân';
 }
 
 // TOOLTIP
@@ -1492,45 +1504,33 @@ async function showV(pid){
   if(!body) return;
   body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
+    // Nếu chưa có cache dates → fetch danh sách ngày trước
     if(!vcache[pid]){
-      const r = await fetch(API+'/vitals/'+pid+'?limit=2000');
+      const r = await fetch(API+'/vitals/'+pid+'/days');
       if(!r.ok) throw new Error('HTTP '+r.status);
-      const raw = await r.json();
-      const rows = raw.map(function(r){return{
-        hr:   r.heartRate   != null ? r.heartRate   : r.nhip_tim,
-        spo2: r.spo2,
-        dHR:  r.deltaHeartRate != null ? r.deltaHeartRate : r.delta_nhip_tim,
-        dS:   r.deltaSpo2   != null ? r.deltaSpo2   : r.delta_spo2,
-        mode: r.samplingMode || r.che_do_lay_mau,
-        time: r.time        || r.thoi_gian_do
-      };}).filter(function(r){return r.time;})
-        .sort(function(a,b){return new Date(b.time)-new Date(a.time);});
-      const byDate = {};
-      rows.forEach(function(r){
-        var d = new Date(new Date(r.time).getTime()+7*3600000);
-        var k = d.toISOString().slice(0,10);
-        if(!byDate[k]) byDate[k]=[];
-        byDate[k].push(r);
-      });
-      const dates = Object.keys(byDate).sort(function(a,b){return b.localeCompare(a);});
-      vcache[pid] = {byDate:byDate, dates:dates};
-      updSum();
+      const dates = await r.json();
+      vcache[pid] = {byDate:{}, dates:dates};
     }
+
     const cache = vcache[pid];
-    if(!cache || !cache.dates || !cache.dates.length){
+    if(!cache.dates.length){
       body.innerHTML = '<div class="loading">Không có dữ liệu</div>';
       return;
     }
 
     // Nhảy calendar về tháng có data mới nhất
-    const latestDate = cache.dates[0]; // đã sort desc
+    const latestDate = cache.dates[0];
     const [ly, lm] = latestDate.split('-').map(Number);
     ptCalY = ly; ptCalM = lm - 1;
 
-    const show = ptSelDate && cache.byDate[ptSelDate] ? ptSelDate : latestDate;
-    if(!ptSelDate) ptSelDate = latestDate; // tự chọn ngày mới nhất
+    // Chọn ngày hiển thị
+    const showDate = ptSelDate && cache.dates.includes(ptSelDate) ? ptSelDate : latestDate;
+    if(!ptSelDate) ptSelDate = latestDate;
     document.getElementById('pt-date-lbl').textContent = ptSelDate.split('-').reverse().join('/');
-    renderVT(cache.byDate[show] || []);
+
+    // Fetch data của ngày được chọn nếu chưa có
+    const rows = await fetchPatientDay(pid, showDate);
+    renderVT(rows);
     updPatientSum(pid);
     renderPtCal();
   } catch(e){
