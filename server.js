@@ -128,6 +128,64 @@ app.get("/vitals", async (req, res) => {
   }
 });
 
+// GET /vitals/:patientId/days — danh sách ngày có dữ liệu của 1 bệnh nhân
+app.get("/vitals/:patientId/days", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { data, error } = await supabase
+      .from("du_lieu_sinh_ton")
+      .select("thoi_gian_do")
+      .eq("nguoi_dung_tb_id", patientId)
+      .order("thoi_gian_do", { ascending: false });
+
+    if (error) throw error;
+
+    const dateSet = new Set();
+    (data || []).forEach(r => {
+      if (!r.thoi_gian_do) return;
+      const local = new Date(new Date(r.thoi_gian_do).getTime() + 7 * 3600 * 1000);
+      dateSet.add(local.toISOString().slice(0, 10));
+    });
+
+    res.json([...dateSet].sort((a, b) => b.localeCompare(a)));
+  } catch (err) {
+    console.error("[GET /vitals/:patientId/days]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /vitals/:patientId/by-date/:date — dữ liệu 1 bệnh nhân trong 1 ngày cụ thể
+app.get("/vitals/:patientId/by-date/:date", async (req, res) => {
+  try {
+    const { patientId, date } = req.params;
+
+    const startUTC = new Date(`${date}T00:00:00+07:00`).toISOString();
+    const endUTC   = new Date(`${date}T23:59:59+07:00`).toISOString();
+
+    const { data, error } = await supabase
+      .from("du_lieu_sinh_ton")
+      .select("id, nhip_tim, spo2, delta_nhip_tim, delta_spo2, che_do_lay_mau, thoi_gian_do")
+      .eq("nguoi_dung_tb_id", patientId)
+      .gte("thoi_gian_do", startUTC)
+      .lte("thoi_gian_do", endUTC)
+      .order("thoi_gian_do", { ascending: false });
+
+    if (error) throw error;
+
+    res.json((data || []).map(v => ({
+      hr:   v.nhip_tim,
+      spo2: v.spo2,
+      dHR:  v.delta_nhip_tim,
+      dS:   v.delta_spo2,
+      mode: v.che_do_lay_mau,
+      time: v.thoi_gian_do,
+    })));
+  } catch (err) {
+    console.error("[GET /vitals/:patientId/by-date/:date]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /vitals/:patientId — sinh tồn theo bệnh nhân
 // GET /vitals/days — danh sách các ngày có dữ liệu (UTC+7)
 app.get("/vitals/days", async (req, res) => {
