@@ -119,7 +119,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .bat-fill{height:100%;border-radius:4px;transition:width .3s;}
 /* Card grid */
 @keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
-.page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;}
+.page-grid{display:flex;flex-direction:column;gap:12px;}
 .page-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .25s,box-shadow .25s;}
 .page-card:hover{box-shadow:0 4px 16px rgba(43,95,142,.1);}
 .page-card-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-bottom:1px solid var(--border);transition:background .25s,border-color .25s;}
