@@ -1606,6 +1606,9 @@ async function showV(pid){
 
 
 // ── BỘ LỌC VITALS ──
+let vtPage = 1;
+const VT_PER_PAGE = 20;
+let vtCurrentRows = [];
 let vtAllRows = [];
 
 function toggleVtFilter(){
