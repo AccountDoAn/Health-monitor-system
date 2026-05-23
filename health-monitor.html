@@ -1467,13 +1467,24 @@ function clickPt(pid){
   }
 
   // Reset date picker & summary
-  ptSelDate = null;
+  // Nếu bên ngoài đang chọn ngày cụ thể → kế thừa ngày đó
+  ptSelDate = selDate || null;
   vtPage = 1;
   vtCurrentRows = [];
-  const now = new Date();
-  ptCalY = now.getFullYear();
-  ptCalM = now.getMonth();
-  document.getElementById('pt-date-lbl').textContent = 'Hôm nay';
+
+  if(selDate){
+    // Kế thừa ngày từ tổng quan
+    const [y,m] = selDate.split('-').map(Number);
+    ptCalY = y; ptCalM = m - 1;
+    document.getElementById('pt-date-lbl').textContent = selDate.split('-').reverse().join('/');
+  } else {
+    // Không có ngày chọn → dùng hôm nay/ngày gần nhất
+    const now = new Date();
+    ptCalY = now.getFullYear();
+    ptCalM = now.getMonth();
+    document.getElementById('pt-date-lbl').textContent = 'Hôm nay';
+  }
+
   document.getElementById('pt-ok').textContent = '—';
   document.getElementById('pt-warn').textContent = '—';
   document.getElementById('pt-danger').textContent = '—';
@@ -1481,10 +1492,11 @@ function clickPt(pid){
   // Đặt spinner trước
   document.getElementById('vbody').innerHTML = '<div class="loading"><span class="spin"></span>Đang tải dữ liệu...</div>';
 
-  // Load vitals → sau khi xong tự chọn hôm nay hoặc ngày gần nhất
+  // Load vitals
   setTimeout(async ()=>{
     await showV(pid);
-    pickPtToday();
+    // Nếu không có selDate thì mới pickPtToday
+    if(!selDate) pickPtToday();
   }, 0);
 }
 
@@ -1518,15 +1530,18 @@ async function showV(pid){
       return;
     }
 
-    // Nhảy calendar về tháng có data mới nhất
-    const latestDate = cache.dates[0];
-    const [ly, lm] = latestDate.split('-').map(Number);
+    // Nhảy calendar về tháng của ngày được chọn
+    const showDate = ptSelDate && cache.dates.includes(ptSelDate)
+      ? ptSelDate
+      : cache.dates[0]; // fallback ngày gần nhất
+
+    const [ly, lm] = showDate.split('-').map(Number);
     ptCalY = ly; ptCalM = lm - 1;
 
-    // Chọn ngày hiển thị
-    const showDate = ptSelDate && cache.dates.includes(ptSelDate) ? ptSelDate : latestDate;
-    if(!ptSelDate) ptSelDate = latestDate;
-    document.getElementById('pt-date-lbl').textContent = ptSelDate.split('-').reverse().join('/');
+    if(!ptSelDate) {
+      ptSelDate = showDate;
+      document.getElementById('pt-date-lbl').textContent = showDate.split('-').reverse().join('/');
+    }
 
     // Fetch data của ngày được chọn nếu chưa có
     const rows = await fetchPatientDay(pid, showDate);
