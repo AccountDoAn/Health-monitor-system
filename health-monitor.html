@@ -117,6 +117,8 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .vt tr:last-child td{border-bottom:none;}
 .vt tr:hover td{background:rgba(43,95,142,.03);}
 .vcount{padding:6px 18px;font-size:.68rem;color:var(--muted);border-bottom:1px solid var(--border);}
+.vt-chk{display:flex;align-items:center;gap:6px;font-size:.74rem;color:var(--text);cursor:pointer;padding:2px 0;}
+.vt-chk input[type=checkbox]{accent-color:var(--navy);width:13px;height:13px;cursor:pointer;flex-shrink:0;}
 .tip{display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px;box-shadow:0 8px 28px rgba(0,0,0,.14);z-index:500;min-width:230px;pointer-events:none;}
 .tn{font-size:.86rem;font-weight:700;color:var(--navy);margin-bottom:7px;}
 .tr{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--border);font-size:.71rem;}
@@ -347,7 +349,55 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       </div>
     </div>
     <div class="sec-card">
-      <div class="sec-head"><div class="sec-title" id="vtitle">📈 Dữ liệu sinh tồn</div></div>
+      <div class="sec-head">
+        <div class="sec-title" id="vtitle">📈 Dữ liệu sinh tồn</div>
+        <button onclick="toggleVtFilter()" id="vt-filter-btn" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:none;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc
+          <span id="vt-filter-count" style="display:none;background:var(--navy);color:#fff;border-radius:10px;padding:1px 6px;font-size:.6rem">0</span>
+        </button>
+        <button onclick="resetVtFilter()" id="vt-filter-reset" style="display:none;padding:5px 10px;border:1.5px solid var(--danger);border-radius:8px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--danger);cursor:pointer">✕ Xóa lọc</button>
+      </div>
+      <!-- Filter panel -->
+      <div id="vt-filter-panel" style="display:none;padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border)">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+          <!-- Nhịp tim -->
+          <div>
+            <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">Nhịp tim (bpm)</div>
+            <div id="vt-hr-group" style="display:flex;flex-direction:column;gap:4px">
+              <label class="vt-chk"><input type="checkbox" value="61-100" onchange="applyVtFilter()"> 61 – 100</label>
+              <label class="vt-chk"><input type="checkbox" value="101-150" onchange="applyVtFilter()"> 101 – 150</label>
+              <label class="vt-chk"><input type="checkbox" value="151-200" onchange="applyVtFilter()"> 151 – 200</label>
+              <label class="vt-chk"><input type="checkbox" value="201-300" onchange="applyVtFilter()"> 201 – 300</label>
+            </div>
+          </div>
+          <!-- SpO2 -->
+          <div>
+            <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">SpO₂ (%)</div>
+            <div id="vt-spo2-group" style="display:flex;flex-direction:column;gap:4px">
+              <label class="vt-chk"><input type="checkbox" value="10-20" onchange="applyVtFilter()"> 10 – 20%</label>
+              <label class="vt-chk"><input type="checkbox" value="21-30" onchange="applyVtFilter()"> 21 – 30%</label>
+              <label class="vt-chk"><input type="checkbox" value="31-40" onchange="applyVtFilter()"> 31 – 40%</label>
+              <label class="vt-chk"><input type="checkbox" value="41-50" onchange="applyVtFilter()"> 41 – 50%</label>
+              <label class="vt-chk"><input type="checkbox" value="51-60" onchange="applyVtFilter()"> 51 – 60%</label>
+              <label class="vt-chk"><input type="checkbox" value="61-70" onchange="applyVtFilter()"> 61 – 70%</label>
+              <label class="vt-chk"><input type="checkbox" value="71-80" onchange="applyVtFilter()"> 71 – 80%</label>
+              <label class="vt-chk"><input type="checkbox" value="81-90" onchange="applyVtFilter()"> 81 – 90%</label>
+              <label class="vt-chk"><input type="checkbox" value="91-100" onchange="applyVtFilter()"> 91 – 100%</label>
+            </div>
+          </div>
+          <!-- Chế độ -->
+          <div>
+            <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">Chế độ</div>
+            <div id="vt-mode-group" style="display:flex;flex-direction:column;gap:4px">
+              <label class="vt-chk"><input type="checkbox" value="nghi_ngoi" onchange="applyVtFilter()"> Nghỉ ngơi</label>
+              <label class="vt-chk"><input type="checkbox" value="thay_doi" onchange="applyVtFilter()"> Thay đổi</label>
+              <label class="vt-chk"><input type="checkbox" value="canh_bao" onchange="applyVtFilter()"> Cảnh báo</label>
+              <label class="vt-chk"><input type="checkbox" value="sau_canh_bao" onchange="applyVtFilter()"> Sau cảnh báo</label>
+            </div>
+          </div>
+        </div>
+      </div>
       <div id="vbody"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
@@ -1555,13 +1605,62 @@ async function showV(pid){
 }
 
 
-let vtPage = 1;
-const VT_PER_PAGE = 20;
-let vtCurrentRows = [];
+// ── BỘ LỌC VITALS ──
+let vtAllRows = [];
+
+function toggleVtFilter(){
+  const panel = document.getElementById('vt-filter-panel');
+  const btn   = document.getElementById('vt-filter-btn');
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  btn.style.borderColor = isOpen ? 'var(--border)' : 'var(--navy)';
+  btn.style.color       = isOpen ? 'var(--muted)'  : 'var(--navy)';
+}
+
+function inRange(val, rangeStr){
+  if(val == null) return false;
+  const [lo, hi] = rangeStr.split('-').map(Number);
+  return Number(val) >= lo && Number(val) <= hi;
+}
+
+function applyVtFilter(){
+  // Lấy checked values theo từng nhóm dựa vào data-group
+  const hrF   = [...document.querySelectorAll('#vt-hr-group input:checked')].map(x=>x.value);
+  const spo2F = [...document.querySelectorAll('#vt-spo2-group input:checked')].map(x=>x.value);
+  const modeF = [...document.querySelectorAll('#vt-mode-group input:checked')].map(x=>x.value);
+
+  let filtered = vtAllRows;
+  if(hrF.length)   filtered = filtered.filter(r => hrF.some(range   => inRange(r.hr,   range)));
+  if(spo2F.length) filtered = filtered.filter(r => spo2F.some(range => inRange(r.spo2, range)));
+  if(modeF.length) filtered = filtered.filter(r => modeF.includes(r.mode));
+
+  const totalActive = hrF.length + spo2F.length + modeF.length;
+  document.getElementById('vt-filter-count').style.display = totalActive ? 'inline' : 'none';
+  document.getElementById('vt-filter-count').textContent   = totalActive;
+  document.getElementById('vt-filter-reset').style.display = totalActive ? 'inline-block' : 'none';
+
+  vtPage = 1;
+  vtCurrentRows = filtered;
+  renderVTPage();
+}
+
+function resetVtFilter(){
+  document.querySelectorAll('#vt-filter-panel input[type=checkbox]').forEach(x=>x.checked=false);
+  document.getElementById('vt-filter-count').style.display = 'none';
+  document.getElementById('vt-filter-reset').style.display = 'none';
+  vtPage = 1;
+  vtCurrentRows = vtAllRows;
+  renderVTPage();
+}
 
 function renderVT(rows){
+  vtAllRows     = rows; // lưu gốc để filter
   vtCurrentRows = rows;
   vtPage = 1;
+  // Reset filter checkboxes khi đổi ngày
+  document.querySelectorAll('#vt-filter-panel input[type=checkbox]').forEach(x=>x.checked=false);
+  document.getElementById('vt-filter-count').style.display = 'none';
+  document.getElementById('vt-filter-reset').style.display = 'none';
   renderVTPage();
 }
 
