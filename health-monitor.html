@@ -1214,6 +1214,8 @@ async function preloadAllVitals(){
   updSum();
   calRender();
   if(selDate) renderPts(pts, document.getElementById('srch')?.value||'');
+  // Nếu đang xem trang bệnh nhân → re-render calendar để highlight đủ ngày
+  if(selPid && vcache[selPid]) renderPtCal();
 }
 
 // Fetch data của 1 bệnh nhân trong 1 ngày cụ thể (on demand)
@@ -1516,13 +1518,12 @@ async function showV(pid){
   if(!body) return;
   body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
-    // Nếu chưa có cache dates → fetch danh sách ngày trước
-    if(!vcache[pid]){
-      const r = await fetch(API+'/vitals/'+pid+'/days');
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const dates = await r.json();
-      vcache[pid] = {byDate:{}, dates:dates};
-    }
+    // Luôn fetch lại dates để đảm bảo đủ (override cache cũ có thể thiếu)
+    const r = await fetch(API+'/vitals/'+pid+'/days');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const dates = await r.json();
+    if(!vcache[pid]) vcache[pid] = {byDate:{}, dates:[]};
+    vcache[pid].dates = dates; // cập nhật dates đầy đủ
 
     const cache = vcache[pid];
     if(!cache.dates.length){
