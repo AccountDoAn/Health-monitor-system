@@ -393,7 +393,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
               <label class="vt-chk"><input type="checkbox" value="nghi_ngoi" onchange="applyVtFilter()"> Nghỉ ngơi</label>
               <label class="vt-chk"><input type="checkbox" value="thay_doi" onchange="applyVtFilter()"> Thay đổi</label>
               <label class="vt-chk"><input type="checkbox" value="canh_bao" onchange="applyVtFilter()"> Cảnh báo</label>
-              <label class="vt-chk"><input type="checkbox" value="sau_canh_bao" onchange="applyVtFilter()"> Sau cảnh báo</label>
+              <label class="vt-chk"><input type="checkbox" value="hau_canh_bao" onchange="applyVtFilter()"> hau_canh_bao</label>
             </div>
           </div>
         </div>
@@ -1677,8 +1677,8 @@ function renderVTPage(){
   const start = (vtPage-1)*VT_PER_PAGE;
   const slice = rows.slice(start, start+VT_PER_PAGE);
 
-  const mL={nghi_ngoi:'Nghỉ ngơi',thay_doi:'Thay đổi',canh_bao:'Cảnh báo'};
-  const modeColor={nghi_ngoi:'background:#e8f2fc;color:var(--navy)',thay_doi:'background:var(--mint);color:var(--navy)',canh_bao:'background:#fff4e0;color:#8a5800'};
+  const mL={nghi_ngoi:'Nghỉ ngơi',thay_doi:'Thay đổi',canh_bao:'Cảnh báo',hau_canh_bao:'hau_canh_bao'};
+  const modeColor={nghi_ngoi:'background:#e8f2fc;color:var(--navy)',thay_doi:'background:var(--mint);color:var(--navy)',canh_bao:'background:#fff4e0;color:#8a5800',hau_canh_bao:'background:#fdeaea;color:#c0392b'};
 
   let html = `<div class="vcount">Trang ${vtPage}/${totalPages} — Hiển thị ${start+1}–${Math.min(start+VT_PER_PAGE,rows.length)} trong ${rows.length} bản ghi</div>`;
   html += '<div class="vtw"><table class="vt"><thead><tr><th>Thời gian</th><th>Nhịp tim</th><th>Δ HR</th><th>SpO₂</th><th>Δ SpO₂</th><th>Chế độ</th></tr></thead><tbody>';
