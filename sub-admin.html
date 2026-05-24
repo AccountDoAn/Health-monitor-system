@@ -140,6 +140,10 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .card-sub{font-size:.67rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;transition:color .25s;}
 .card-tag{font-size:.6rem;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--mint);color:var(--navy);flex-shrink:0;transition:background .25s,color .25s;}
 .card-chev{color:var(--muted);transition:transform .25s,color .25s;flex-shrink:0;}
+.pt-info-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
+.pt-info-row:last-child{border-bottom:none;}
+.pt-info-lbl{color:var(--muted);font-size:.68rem;min-width:80px;flex-shrink:0;}
+.pt-info-val{color:var(--text);font-weight:600;}
 .page-card-body{padding:14px 16px;background:var(--card);}
 /* Device list item */
 .dev-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
@@ -722,73 +726,100 @@ async function loadPatients(){
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
 
+let ptPage = 1;
+const PT_PER_PAGE = 8;
+
 function renderPatients(){
-  const body=document.getElementById('pt-body');
-  if(!ptCache.length){body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>';return;}
-  body.innerHTML='<div class="page-grid" style="padding:18px">'
-    +ptCache.map(function(p){
-      const init=(p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
-      const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
-      const gender=p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':'—';
-      const cid='pt-card-'+p.id;
+  const body = document.getElementById('pt-body');
+  if(!ptCache.length){ body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>'; return; }
 
-      const devBadge=p.deviceId
-        ?'<span class="card-tag">📱 Có thiết bị</span>'
-        :'<span class="card-tag" style="background:#f0f0f0;color:#888">Chưa có TB</span>';
+  const totalPages = Math.ceil(ptCache.length / PT_PER_PAGE);
+  if(ptPage > totalPages) ptPage = 1;
+  const start = (ptPage-1)*PT_PER_PAGE;
+  const slice = ptCache.slice(start, start+PT_PER_PAGE);
 
-      const docHtml=p.doctor
-        ?'<div style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">'
-          +'<div style="width:26px;height:26px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">'
-          +(p.doctor.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
-          +'</div>'
-          +'<div style="min-width:0"><div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'
-          +'<div style="font-size:.63rem;color:var(--muted)">Bác sĩ phụ trách</div></div>'
-          +'</div>'
-        :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;padding:6px 0">Chưa có bác sĩ phụ trách</div>';
+  let html = '<div class="page-grid" style="padding:18px">';
+  html += slice.map(function(p){
+    const init = (p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+    const dob  = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+    const gender = p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':'—';
+    const cid  = 'pt-card-'+p.id;
 
-      return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
-        +'<div class="page-card-head">'
-        +'<div class="card-av">'+init+'</div>'
-        +'<div class="card-info">'
-        +'<div class="card-name">'+esc(p.name||'—')+'</div>'
-        +'<div class="card-sub">'+dob+' · '+gender+'</div>'
-        +'</div>'
-        +devBadge
-        +(p.bloodType?'<span style="font-size:.62rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:3px 8px;border-radius:8px;flex-shrink:0;margin-left:4px">'+esc(p.bloodType)+'</span>':'')
-        +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
-        +'</div>'
-        +'<div class="page-card-body">'
-        // Bệnh mãn tính
-        +(p.disease?'<div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;padding:6px 10px;background:var(--bg);border-radius:7px;border:1px solid var(--border)">🩺 '+esc(p.disease)+'</div>':'')
-        // Hồ sơ bệnh án
-        +'<div style="margin-bottom:10px">'
-        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
-        +'<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">📋 Hồ sơ bệnh án</div>'
-        +'<button onclick="event.stopPropagation();openEditRecord(\''+p.id+'\')" style="display:flex;align-items:center;gap:4px;padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:\'Sora\',sans-serif;font-size:.68rem;font-weight:600;color:var(--navy);cursor:pointer">'
-        +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cập nhật'
-        +'</button>'
-        +'</div>'
-        +'<div id="record-'+p.id+'" style="background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:10px 12px;font-size:.74rem;color:var(--muted);font-style:italic">Đang tải...</div>'
-        +'</div>'
-        // Bác sĩ phụ trách — thu gọn với nút đổi cạnh tên
-        +'<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">'
-        +(p.doctor
-          ?'<div style="width:26px;height:26px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">'
-            +(p.doctor.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
-            +'</div>'
-            +'<div style="flex:1;min-width:0"><div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'
-            +'<div style="font-size:.63rem;color:var(--muted)">Bác sĩ phụ trách</div></div>'
-          :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;flex:1">Chưa có bác sĩ phụ trách</div>'
-        )
-        +'<button onclick="event.stopPropagation();openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="flex-shrink:0;padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.68rem;font-weight:600;cursor:pointer">'
-        +(p.doctor?'🔄 Đổi':'+ Phân công')
-        +'</button>'
-        +'</div>'
-        +'</div>'
-        +'</div>';
-    }).join('')
-  +'</div>';
+    const devBadge = p.deviceId
+      ?'<span class="card-tag">📱 Có thiết bị</span>'
+      :'<span class="card-tag" style="background:#f0f0f0;color:#888">Chưa có TB</span>';
+
+    const infoRows = [
+      p.phone    ? '<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(p.phone)+'</span></div>'    : '',
+      p.email    ? '<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val">'+esc(p.email)+'</span></div>'   : '',
+      p.bloodType? '<div class="pt-info-row"><span class="pt-info-lbl">🩸 Nhóm máu</span><span class="pt-info-val">'+esc(p.bloodType)+'</span></div>' : '',
+      p.disease  ? '<div class="pt-info-row"><span class="pt-info-lbl">🩺 Bệnh mãn</span><span class="pt-info-val">'+esc(p.disease)+'</span></div>' : '',
+    ].filter(Boolean).join('');
+
+    const docRow = '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);margin-top:10px">'+
+      (p.doctor
+        ?'<div style="width:26px;height:26px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">'+
+          (p.doctor.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()+
+          '</div>'+
+          '<div style="flex:1;min-width:0"><div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'+
+          '<div style="font-size:.63rem;color:var(--muted)">Bác sĩ phụ trách</div></div>'
+        :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;flex:1">Chưa có bác sĩ phụ trách</div>'
+      )+
+      '<button onclick="event.stopPropagation();openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="flex-shrink:0;padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.68rem;font-weight:600;cursor:pointer">'+
+      (p.doctor?'🔄 Đổi':'+ Phân công')+
+      '</button></div>';
+
+    return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'+
+      '<div class="page-card-head">'+
+      '<div class="card-av">'+init+'</div>'+
+      '<div class="card-info">'+
+      '<div class="card-name">'+esc(p.name||'—')+'</div>'+
+      '<div class="card-sub">'+dob+' · '+gender+'</div>'+
+      '</div>'+
+      devBadge+
+      (p.bloodType?'<span style="font-size:.62rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:3px 8px;border-radius:8px;flex-shrink:0;margin-left:4px">'+esc(p.bloodType)+'</span>':'')+
+      '<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'+
+      '</div>'+
+      '<div class="page-card-body">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">'+
+      '<div style="flex:1">'+( infoRows||'<span style="color:var(--muted);font-size:.74rem;font-style:italic">Chưa có thông tin</span>')+'</div>'+
+      '<button onclick="event.stopPropagation();openEditPatient(\''+p.id+'\')" style="flex-shrink:0;display:flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap">'+
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cập nhật'+
+      '</button></div>'+
+      docRow+
+      '</div></div>';
+  }).join('');
+  html += '</div>';
+
+  if(totalPages > 1){
+    html += buildPtPagination(ptPage, totalPages, ptCache.length);
+  }
+
+  body.innerHTML = html;
 }
+
+function ptGoPage(p){
+  const total = Math.ceil(ptCache.length / PT_PER_PAGE);
+  if(p<1||p>total) return;
+  ptPage = p;
+  renderPatients();
+}
+
+function buildPtPagination(cur, total, count){
+  const S = 'font-family:\'DM Mono\',monospace;font-size:.74rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px';
+  let h = '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border)">'
+    +'<span style="font-size:.72rem;color:var(--muted)">Trang '+cur+'/'+total+' — '+count+' bệnh nhân</span>'
+    +'<div style="display:flex;gap:6px">'
+    +'<button onclick="ptGoPage('+(cur-1)+')" '+(cur<=1?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">← Trước</button>';
+  for(var i=1;i<=total;i++){
+    var a=i===cur;
+    h+='<button onclick="ptGoPage('+i+')" style="'+S+';border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
+  }
+  h+='<button onclick="ptGoPage('+(cur+1)+')" '+(cur>=total?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">Tiếp →</button>'
+    +'</div></div>';
+  return h;
+}
+
 
 function openAddPatient(){
   ['pt-name','pt-phone','pt-dob','pt-email','pt-allergy','pt-disease','pt-history','pt-ename','pt-ephone','fam-name','fam-rel','fam-phone'].forEach(id=>{
@@ -1258,6 +1289,64 @@ async function saveEditRecord(){
   btn.disabled=false;
 }
 
+// ── CẬP NHẬT THÔNG TIN BỆNH NHÂN ──
+async function openEditPatient(pid){
+  const p = ptCache.find(x=>x.id===pid);
+  if(!p) return;
+  document.getElementById('ep-id').value      = pid;
+  document.getElementById('ep-name').value    = p.name   || '';
+  document.getElementById('ep-phone').value   = p.phone  || '';
+  document.getElementById('ep-email').value   = p.email  || '';
+  document.getElementById('ep-dob').value     = p.dob ? p.dob.slice(0,10) : '';
+  document.getElementById('ep-gender').value  = p.gender || '';
+  document.getElementById('ep-blood').value   = p.bloodType || '';
+  document.getElementById('ep-allergy').value = p.allergy  || '';
+  document.getElementById('ep-disease').value = p.disease  || '';
+  document.getElementById('ep-history').value = p.history  || '';
+  document.getElementById('ep-msg').textContent = '';
+  document.getElementById('modal-edit-patient').classList.add('open');
+}
+
+async function saveEditPatient(){
+  const pid  = document.getElementById('ep-id').value;
+  const name = document.getElementById('ep-name').value.trim();
+  const msg  = document.getElementById('ep-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  const btn = document.getElementById('ep-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    // Cập nhật thông tin cơ bản (nguoi_dung)
+    const r1 = await fetch(AAPI+'/admin/'+UID+'/patients/'+pid, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name:   name,
+        phone:  document.getElementById('ep-phone').value.trim()||null,
+        email:  document.getElementById('ep-email').value.trim()||null,
+        dob:    document.getElementById('ep-dob').value||null,
+        gender: document.getElementById('ep-gender').value||null,
+      })
+    });
+    // Cập nhật hồ sơ bệnh án (ho_so_benh_nhan)
+    const r2 = await fetch(AAPI+'/admin/'+UID+'/medical-record/'+pid, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        nhom_mau:      document.getElementById('ep-blood').value.trim()||null,
+        di_ung:        document.getElementById('ep-allergy').value.trim()||null,
+        benh_man_tinh: document.getElementById('ep-disease').value.trim()||null,
+        tien_su_y_te:  document.getElementById('ep-history').value.trim()||null,
+      })
+    });
+    if(r1.ok || r2.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật thành công';
+      setTimeout(()=>{ closeModal('modal-edit-patient'); loadPatients(); }, 1200);
+    } else {
+      const d = await r1.json().catch(()=>({}));
+      msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi cập nhật');
+    }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
+
 // ── CHỈNH SỬA BÁC SĨ ──
 function openEditDoctor(id, name, phone, email){
   document.getElementById('edit-doc-id').value    = id;
@@ -1405,6 +1494,39 @@ async function saveDoctor(){
     </div>
   </div>
 </div>
+<!-- MODAL: CẬP NHẬT THÔNG TIN BỆNH NHÂN -->
+<div class="modal-bg" id="modal-edit-patient" onclick="if(event.target===this)closeModal('modal-edit-patient')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-edit-patient')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Cập nhật thông tin bệnh nhân</div>
+    <input type="hidden" id="ep-id"/>
+    <div class="field"><label>Họ tên *</label><input id="ep-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="ep-phone" type="text"/></div>
+      <div class="field"><label>Email</label><input id="ep-email" type="email"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Ngày sinh</label><input id="ep-dob" type="date"/></div>
+      <div class="field"><label>Giới tính</label>
+        <select id="ep-gender"><option value="">— Chọn —</option><option value="nam">Nam</option><option value="nu">Nữ</option><option value="khac">Khác</option></select>
+      </div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Nhóm máu</label>
+        <select id="ep-blood"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+      </div>
+      <div class="field"><label>Dị ứng</label><input id="ep-allergy" type="text" placeholder="Penicillin, ..."/></div>
+    </div>
+    <div class="field"><label>Bệnh mãn tính</label><input id="ep-disease" type="text" placeholder="Tiểu đường, huyết áp..."/></div>
+    <div class="field"><label>Tiền sử y tế</label><textarea id="ep-history" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Sora',sans-serif;font-size:.8rem;background:var(--bg);color:var(--text);outline:none;resize:vertical"></textarea></div>
+    <div class="modal-msg" id="ep-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-patient')">Hủy</button>
+      <button class="btn-save" id="ep-save-btn" onclick="saveEditPatient()">💾 Lưu thông tin</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CẬP NHẬT HỒ SƠ BỆNH ÁN -->
 <div class="modal-bg" id="modal-edit-record" onclick="if(event.target===this)closeModal('modal-edit-record')">
   <div class="modal">
