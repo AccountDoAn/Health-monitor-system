@@ -773,7 +773,7 @@ function renderPatients(){
         :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;flex:1">Chưa có bác sĩ phụ trách</div>'
       )+
       '<button onclick="event.stopPropagation();openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="flex-shrink:0;padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.68rem;font-weight:600;cursor:pointer">'+
-      (p.doctor?'Đổi🗘':'+ Phân công')+
+      (p.doctor?'🔄 Đổi':'+ Phân công')+
       '</button></div>';
 
     return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'+
