@@ -385,23 +385,6 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="field"><label>Bệnh mãn tính</label><input id="pt-disease" type="text" placeholder="Tiểu đường, huyết áp..."/></div>
     <div class="field"><label>Tiền sử y tế</label><textarea id="pt-history" placeholder="Mô tả tiền sử..."></textarea></div>
 
-    <div class="divider">Người liên hệ khẩn cấp</div>
-    <div class="field-row c2">
-      <div class="field"><label>Họ tên</label><input id="pt-ename" type="text" placeholder="Tên người liên hệ"/></div>
-      <div class="field"><label>Số điện thoại</label><input id="pt-ephone" type="text" placeholder="0912..."/></div>
-    </div>
-
-    <div class="divider">Tạo tài khoản người nhà (tuỳ chọn)</div>
-    <div id="fam-fields">
-      <div class="field-row c2">
-        <div class="field"><label>Họ tên người nhà</label><input id="fam-name" type="text" placeholder="Nguyễn Thị B"/></div>
-        <div class="field"><label>Quan hệ</label><input id="fam-rel" type="text" placeholder="Vợ/Chồng/Con..."/></div>
-      </div>
-      <div class="field-row c2">
-        <div class="field"><label>SĐT người nhà</label><input id="fam-phone" type="text" placeholder="0912..."/></div>
-        <div class="field"><label>Mật khẩu app (mặc định: 123456)</label><input id="fam-pw" type="text" placeholder="123456"/></div>
-      </div>
-    </div>
 
     <div class="modal-msg" id="pt-msg"></div>
     <div class="modal-footer">
@@ -829,12 +812,11 @@ function buildPtPagination(cur, total, count){
 
 
 function openAddPatient(){
-  ['pt-name','pt-phone','pt-dob','pt-email','pt-allergy','pt-disease','pt-history','pt-ename','pt-ephone','fam-name','fam-rel','fam-phone'].forEach(id=>{
+  ['pt-name','pt-phone','pt-dob','pt-email','pt-allergy','pt-disease','pt-history'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   document.getElementById('pt-blood').value='';
   document.getElementById('pt-gender').value='';
-  document.getElementById('fam-pw').value='123456';
   document.getElementById('pt-msg').textContent='';
   document.getElementById('modal-patient').classList.add('open');
 }
@@ -847,37 +829,21 @@ async function savePatient(){
   btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang tạo hồ sơ...';
 
   const payload={
-    name, phone:document.getElementById('pt-phone').value.trim()||null,
-    email:document.getElementById('pt-email').value.trim()||null,
-    dob:document.getElementById('pt-dob').value||null,
-    gender:document.getElementById('pt-gender').value||null,
+    name,
+    phone:    document.getElementById('pt-phone').value.trim()||null,
+    email:    document.getElementById('pt-email').value.trim()||null,
+    dob:      document.getElementById('pt-dob').value||null,
+    gender:   document.getElementById('pt-gender').value||null,
     bloodType:document.getElementById('pt-blood').value||null,
-    disease:document.getElementById('pt-disease').value.trim()||null,
-    allergy:document.getElementById('pt-allergy').value.trim()||null,
-    history:document.getElementById('pt-history').value.trim()||null,
-    emergencyName:document.getElementById('pt-ename').value.trim()||null,
-    emergencyPhone:document.getElementById('pt-ephone').value.trim()||null,
+    disease:  document.getElementById('pt-disease').value.trim()||null,
+    allergy:  document.getElementById('pt-allergy').value.trim()||null,
+    history:  document.getElementById('pt-history').value.trim()||null,
   };
 
   try {
     const r=await fetch(AAPI+'/admin/'+UID+'/patients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const d=await r.json();
     if(!r.ok) throw new Error(d.error||'Lỗi tạo bệnh nhân');
-
-    const pid=d.patientId;
-    // Tạo người nhà nếu có
-    const famName=document.getElementById('fam-name').value.trim();
-    if(famName){
-      const famR=await fetch(AAPI+'/admin/'+UID+'/families',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        patientId:pid, name:famName,
-        phone:document.getElementById('fam-phone').value.trim()||null,
-        relation:document.getElementById('fam-rel').value.trim()||null,
-        password:document.getElementById('fam-pw').value.trim()||'123456',
-        isPrimary:true,
-      })});
-      if(!famR.ok){ const fd=await famR.json(); throw new Error('Tạo người nhà: '+(fd.error||'Lỗi')); }
-    }
-
     msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo hồ sơ bệnh nhân!';
     setTimeout(()=>{ closeModal('modal-patient'); loadPatients(); loadOverview(); }, 1200);
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
