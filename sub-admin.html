@@ -464,6 +464,11 @@ function toggleCard(id){
   const card = document.getElementById(id);
   if(!card) return;
   card.classList.toggle('open');
+  // Nếu là card bệnh nhân → load hồ sơ bệnh án
+  if(card.classList.contains('open') && id.startsWith('pt-card-')){
+    const pid = id.replace('pt-card-','');
+    loadRecord(pid);
+  }
 }
 
 // ── LOAD ADMIN INFO ──
@@ -753,11 +758,32 @@ function renderPatients(){
         +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
         +'</div>'
         +'<div class="page-card-body">'
+        // Bệnh mãn tính
         +(p.disease?'<div style="font-size:.72rem;color:var(--muted);margin-bottom:10px;padding:6px 10px;background:var(--bg);border-radius:7px;border:1px solid var(--border)">🩺 '+esc(p.disease)+'</div>':'')
-        +docHtml
-        +'<button onclick="event.stopPropagation();openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="width:100%;margin-top:10px;padding:7px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer">'
-        +(p.doctor?'🔄 Đổi bác sĩ':'👨‍⚕️ Phân công bác sĩ')
+        // Hồ sơ bệnh án
+        +'<div style="margin-bottom:10px">'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'
+        +'<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">📋 Hồ sơ bệnh án</div>'
+        +'<button onclick="event.stopPropagation();openEditRecord(\''+p.id+'\')" style="display:flex;align-items:center;gap:4px;padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:\'Sora\',sans-serif;font-size:.68rem;font-weight:600;color:var(--navy);cursor:pointer">'
+        +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cập nhật'
         +'</button>'
+        +'</div>'
+        +'<div id="record-'+p.id+'" style="background:var(--bg);border-radius:8px;border:1px solid var(--border);padding:10px 12px;font-size:.74rem;color:var(--muted);font-style:italic">Đang tải...</div>'
+        +'</div>'
+        // Bác sĩ phụ trách — thu gọn với nút đổi cạnh tên
+        +'<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">'
+        +(p.doctor
+          ?'<div style="width:26px;height:26px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">'
+            +(p.doctor.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
+            +'</div>'
+            +'<div style="flex:1;min-width:0"><div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'
+            +'<div style="font-size:.63rem;color:var(--muted)">Bác sĩ phụ trách</div></div>'
+          :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;flex:1">Chưa có bác sĩ phụ trách</div>'
+        )
+        +'<button onclick="event.stopPropagation();openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="flex-shrink:0;padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.68rem;font-weight:600;cursor:pointer">'
+        +(p.doctor?'🔄 Đổi':'+ Phân công')
+        +'</button>'
+        +'</div>'
         +'</div>'
         +'</div>';
     }).join('')
@@ -1157,6 +1183,81 @@ async function connectSerial(){
   }
 }
 
+// ── HỒ SƠ BỆNH ÁN ──
+async function loadRecord(pid){
+  const el = document.getElementById('record-'+pid);
+  if(!el || el.dataset.loaded) return;
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/medical-record/'+pid);
+    const d = r.ok ? await r.json() : null;
+    el.dataset.loaded = '1';
+    if(!d){
+      el.innerHTML='<span style="color:var(--muted);font-style:italic">Chưa có hồ sơ bệnh án</span>';
+      return;
+    }
+    el.style.fontStyle='normal';
+    el.innerHTML=[
+      d.nhom_mau       ? '<span>🩸 Nhóm máu: <strong>'+esc(d.nhom_mau)+'</strong></span>' : '',
+      d.chieu_cao_cm   ? '<span>📏 Chiều cao: <strong>'+d.chieu_cao_cm+' cm</strong></span>' : '',
+      d.can_nang_kg    ? '<span>⚖️ Cân nặng: <strong>'+d.can_nang_kg+' kg</strong></span>' : '',
+      d.benh_man_tinh  ? '<span>🩺 Bệnh mãn: <strong>'+esc(d.benh_man_tinh)+'</strong></span>' : '',
+      d.di_ung         ? '<span>⚠️ Dị ứng: <strong>'+esc(d.di_ung)+'</strong></span>' : '',
+      d.tien_su_y_te   ? '<span>📝 Tiền sử: <strong>'+esc(d.tien_su_y_te)+'</strong></span>' : '',
+    ].filter(Boolean).join('<span style="color:var(--border);margin:0 6px">·</span>')
+     || '<span style="color:var(--muted);font-style:italic">Chưa có thông tin</span>';
+  } catch(_){
+    el.innerHTML='<span style="color:var(--danger)">⚠️ Không thể tải</span>';
+  }
+}
+
+let _editRecordPid = null;
+async function openEditRecord(pid){
+  _editRecordPid = pid;
+  document.getElementById('er-msg').textContent='';
+  // Load hiện tại
+  const r = await fetch(AAPI+'/admin/'+UID+'/medical-record/'+pid).catch(()=>null);
+  const d = r&&r.ok ? await r.json() : null;
+  document.getElementById('er-blood').value    = d?.nhom_mau      || '';
+  document.getElementById('er-height').value   = d?.chieu_cao_cm  || '';
+  document.getElementById('er-weight').value   = d?.can_nang_kg   || '';
+  document.getElementById('er-disease').value  = d?.benh_man_tinh || '';
+  document.getElementById('er-allergy').value  = d?.di_ung        || '';
+  document.getElementById('er-history').value  = d?.tien_su_y_te  || '';
+  document.getElementById('modal-edit-record').classList.add('open');
+}
+
+async function saveEditRecord(){
+  if(!_editRecordPid) return;
+  const msg = document.getElementById('er-msg');
+  const btn = document.getElementById('er-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/medical-record/'+_editRecordPid,{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        nhom_mau:       document.getElementById('er-blood').value.trim()||null,
+        chieu_cao_cm:   parseFloat(document.getElementById('er-height').value)||null,
+        can_nang_kg:    parseFloat(document.getElementById('er-weight').value)||null,
+        benh_man_tinh:  document.getElementById('er-disease').value.trim()||null,
+        di_ung:         document.getElementById('er-allergy').value.trim()||null,
+        tien_su_y_te:   document.getElementById('er-history').value.trim()||null,
+      })
+    });
+    if(r.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Đã lưu thành công';
+      // Xóa cache để load lại
+      const el = document.getElementById('record-'+_editRecordPid);
+      if(el) { delete el.dataset.loaded; }
+      loadRecord(_editRecordPid);
+      setTimeout(()=>closeModal('modal-edit-record'),1200);
+    } else {
+      const d=await r.json();
+      msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi');
+    }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
+
 // ── CHỈNH SỬA BÁC SĨ ──
 function openEditDoctor(id, name, phone, email){
   document.getElementById('edit-doc-id').value    = id;
@@ -1304,6 +1405,37 @@ async function saveDoctor(){
     </div>
   </div>
 </div>
+<!-- MODAL: CẬP NHẬT HỒ SƠ BỆNH ÁN -->
+<div class="modal-bg" id="modal-edit-record" onclick="if(event.target===this)closeModal('modal-edit-record')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-edit-record')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">📋 Cập nhật hồ sơ bệnh án</div>
+    <div class="field-row c2">
+      <div class="field"><label>Nhóm máu</label>
+        <select id="er-blood">
+          <option value="">— Chọn —</option>
+          <option value="A+">A+</option><option value="A-">A-</option>
+          <option value="B+">B+</option><option value="B-">B-</option>
+          <option value="AB+">AB+</option><option value="AB-">AB-</option>
+          <option value="O+">O+</option><option value="O-">O-</option>
+        </select>
+      </div>
+      <div class="field"><label>Chiều cao (cm)</label><input id="er-height" type="number" placeholder="170"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Cân nặng (kg)</label><input id="er-weight" type="number" placeholder="65"/></div>
+      <div class="field"><label>Dị ứng</label><input id="er-allergy" type="text" placeholder="Penicillin, ..."/></div>
+    </div>
+    <div class="field"><label>Bệnh mãn tính</label><input id="er-disease" type="text" placeholder="Cao huyết áp, tiểu đường, ..."/></div>
+    <div class="field"><label>Tiền sử y tế</label><textarea id="er-history" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Sora',sans-serif;font-size:.8rem;background:var(--bg);color:var(--text);outline:none;resize:vertical" placeholder="Phẫu thuật, bệnh lý cũ, ..."></textarea></div>
+    <div class="modal-msg" id="er-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-record')">Hủy</button>
+      <button class="btn-save" id="er-save-btn" onclick="saveEditRecord()">💾 Lưu hồ sơ</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CHỈNH SỬA BÁC SĨ -->
 <div class="modal-bg" id="modal-edit-doctor" onclick="if(event.target===this)closeModal('modal-edit-doctor')">
   <div class="modal modal-sm">
