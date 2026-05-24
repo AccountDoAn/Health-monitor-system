@@ -926,6 +926,11 @@ async function loadDoctors(){
           +'</div>'
           +'<span style="font-size:.78rem;color:var(--text);word-break:break-all">'+esc(d.email||'—')+'</span>'
           +'</div>'
+          // Nút chỉnh sửa
+          +'<button onclick="event.stopPropagation();openEditDoctor(\''+d.id+'\',\''+esc(d.name)+'\',\''+esc(d.phone||'')+'\',\''+esc(d.email||'')+'\')" style="width:100%;padding:7px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px">'
+          +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+          +'Chỉnh sửa thông tin'
+          +'</button>'
           +'</div>'
           +'</div>'
           +'</div>';
@@ -1152,6 +1157,49 @@ async function connectSerial(){
   }
 }
 
+// ── CHỈNH SỬA BÁC SĨ ──
+function openEditDoctor(id, name, phone, email){
+  document.getElementById('edit-doc-id').value    = id;
+  document.getElementById('edit-doc-name').value  = name;
+  document.getElementById('edit-doc-phone').value = phone;
+  document.getElementById('edit-doc-email').value = email;
+  document.getElementById('edit-doc-pw').value    = '';
+  document.getElementById('edit-doc-msg').textContent = '';
+  document.getElementById('modal-edit-doctor').classList.add('open');
+}
+
+async function saveEditDoctor(){
+  const id   = document.getElementById('edit-doc-id').value;
+  const name = document.getElementById('edit-doc-name').value.trim();
+  const msg  = document.getElementById('edit-doc-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+
+  const pw = document.getElementById('edit-doc-pw').value.trim();
+  if(pw && pw.length < 6){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu phải ≥ 6 ký tự'; return; }
+
+  const btn = document.getElementById('edit-doc-save-btn');
+  btn.disabled = true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const body = {
+      name,
+      phone: document.getElementById('edit-doc-phone').value.trim() || null,
+      email: document.getElementById('edit-doc-email').value.trim() || null,
+    };
+    if(pw) body.password = pw;
+
+    const r = await fetch(AAPI+'/admin/'+UID+'/doctors/'+id, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if(r.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật thành công';
+      setTimeout(()=>{ closeModal('modal-edit-doctor'); loadDoctors(); }, 1200);
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled = false;
+}
+
 // ── TẠO BÁC SĨ ──
 function openAddDoctor(){
   ['doc-name','doc-phone','doc-email'].forEach(function(id){
@@ -1256,6 +1304,27 @@ async function saveDoctor(){
     </div>
   </div>
 </div>
-
+<!-- MODAL: CHỈNH SỬA BÁC SĨ -->
+<div class="modal-bg" id="modal-edit-doctor" onclick="if(event.target===this)closeModal('modal-edit-doctor')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-doctor')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Chỉnh sửa thông tin bác sĩ</div>
+    <input type="hidden" id="edit-doc-id"/>
+    <div class="field"><label>Họ tên *</label><input id="edit-doc-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="edit-doc-phone" type="text"/></div>
+      <div class="field"><label>Email</label><input id="edit-doc-email" type="email"/></div>
+    </div>
+    <div class="field">
+      <label>Mật khẩu mới <span style="font-weight:400;color:var(--muted)">(để trống nếu không đổi)</span></label>
+      <input id="edit-doc-pw" type="text" placeholder="Tối thiểu 6 ký tự"/>
+    </div>
+    <div class="modal-msg" id="edit-doc-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-doctor')">Hủy</button>
+      <button class="btn-save" id="edit-doc-save-btn" onclick="saveEditDoctor()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
