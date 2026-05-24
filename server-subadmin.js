@@ -598,6 +598,29 @@ app.get("/admin/:userId/doctors", async (req, res) => {
   }
 });
 
+// PATCH /admin/:userId/doctors/:doctorId — cập nhật thông tin bác sĩ
+app.patch("/admin/:userId/doctors/:doctorId", async (req, res) => {
+  try {
+    const { doctorId } = req.params;
+    const { name, phone, email, password } = req.body;
+    const updates = {};
+    if(name?.trim())             updates.ho_ten         = name.trim();
+    if(phone !== undefined)      updates.so_dien_thoai  = phone || null;
+    if(email?.trim())            updates.email          = email.trim().toLowerCase();
+    if(password?.trim() && password.length >= 6) updates.mat_khau = password.trim();
+
+    if(!Object.keys(updates).length)
+      return res.status(400).json({ error: "Không có thông tin nào để cập nhật" });
+
+    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", doctorId);
+    if(error) throw error;
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[PATCH /admin/doctors]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/admin/:userId/doctors", async (req, res) => {
   try {
     const { userId } = req.params;
