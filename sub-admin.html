@@ -140,10 +140,10 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .card-sub{font-size:.67rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;transition:color .25s;}
 .card-tag{font-size:.6rem;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--mint);color:var(--navy);flex-shrink:0;transition:background .25s,color .25s;}
 .card-chev{color:var(--muted);transition:transform .25s,color .25s;flex-shrink:0;}
-.pt-info-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
+.pt-info-row{display:flex;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
 .pt-info-row:last-child{border-bottom:none;}
-.pt-info-lbl{color:var(--muted);font-size:.68rem;min-width:80px;flex-shrink:0;}
-.pt-info-val{color:var(--text);font-weight:600;}
+.pt-info-lbl{color:var(--muted);font-size:.66rem;min-width:70px;flex-shrink:0;white-space:nowrap;}
+.pt-info-val{color:var(--text);font-weight:600;font-size:.76rem;overflow:hidden;text-overflow:ellipsis;}
 .page-card-body{padding:14px 16px;background:var(--card);}
 /* Device list item */
 .dev-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
@@ -749,12 +749,19 @@ function renderPatients(){
       ?'<span class="card-tag">📱 Có thiết bị</span>'
       :'<span class="card-tag" style="background:#f0f0f0;color:#888">Chưa có TB</span>';
 
-    const infoRows = [
-      p.phone    ? '<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(p.phone)+'</span></div>'    : '',
-      p.email    ? '<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val">'+esc(p.email)+'</span></div>'   : '',
-      p.bloodType? '<div class="pt-info-row"><span class="pt-info-lbl">🩸 Nhóm máu</span><span class="pt-info-val">'+esc(p.bloodType)+'</span></div>' : '',
-      p.disease  ? '<div class="pt-info-row"><span class="pt-info-lbl">🩺 Bệnh mãn</span><span class="pt-info-val">'+esc(p.disease)+'</span></div>' : '',
-    ].filter(Boolean).join('');
+    // 2 cột — cột trái: SĐT, Email, Ngày sinh, Giới tính | cột phải: Nhóm máu, Dị ứng, Bệnh mãn, Tiền sử
+    function infoCell(icon, label, val){
+      if(!val) return '<div class="pt-info-row"><span class="pt-info-lbl">'+icon+' '+label+'</span><span class="pt-info-val" style="color:var(--muted);font-style:italic">—</span></div>';
+      return '<div class="pt-info-row"><span class="pt-info-lbl">'+icon+' '+label+'</span><span class="pt-info-val">'+esc(val)+'</span></div>';
+    }
+    const dobFmt = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : null;
+    const genderFmt = p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':p.gender||null;
+    const colLeft  = infoCell('📞','SĐT',p.phone) + infoCell('✉️','Email',p.email) + infoCell('🎂','Ngày sinh',dobFmt) + infoCell('🧬','Giới tính',genderFmt);
+    const colRight = infoCell('🩸','Nhóm máu',p.bloodType) + infoCell('⚠️','Dị ứng',p.allergy) + infoCell('🩺','Bệnh mãn',p.disease) + infoCell('📝','Tiền sử',p.history);
+    const infoRows = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px">'+
+      '<div>'+colLeft+'</div>'+
+      '<div>'+colRight+'</div>'+
+      '</div>';
 
     const docRow = '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);margin-top:10px">'+
       (p.doctor
@@ -782,7 +789,7 @@ function renderPatients(){
       '</div>'+
       '<div class="page-card-body">'+
       '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">'+
-      '<div style="flex:1">'+( infoRows||'<span style="color:var(--muted);font-size:.74rem;font-style:italic">Chưa có thông tin</span>')+'</div>'+
+      '<div style="flex:1">'+infoRows+'</div>'+
       '<button onclick="event.stopPropagation();openEditPatient(\''+p.id+'\')" style="flex-shrink:0;display:flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap">'+
       '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cập nhật'+
       '</button></div>'+
