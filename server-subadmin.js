@@ -489,6 +489,28 @@ app.get("/admin/:userId/patients", async (req, res) => {
   }
 });
 
+// PATCH /admin/:userId/patients/:patientId — cập nhật thông tin bệnh nhân
+app.patch("/admin/:userId/patients/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { name, phone, email, dob, gender } = req.body;
+    const updates = {};
+    if(name?.trim())       updates.ho_ten        = name.trim();
+    if(phone !== undefined) updates.so_dien_thoai = phone || null;
+    if(email !== undefined) updates.email         = email || null;
+    if(dob !== undefined)   updates.ngay_sinh     = dob   || null;
+    if(gender !== undefined)updates.gioi_tinh     = gender|| null;
+    if(!Object.keys(updates).length)
+      return res.status(400).json({ error: "Không có thông tin để cập nhật" });
+    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", patientId);
+    if(error) throw error;
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[PATCH /admin/patients]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/admin/:userId/patients", async (req, res) => {
   try {
     const { userId } = req.params;
@@ -523,6 +545,43 @@ app.post("/admin/:userId/patients", async (req, res) => {
 // ============================================================
 // NGƯỜI NHÀ
 // ============================================================
+
+// GET /admin/:userId/medical-record/:patientId
+app.get("/admin/:userId/medical-record/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { data, error } = await supabase
+      .from("ho_so_benh_nhan").select("*")
+      .eq("nguoi_dung_tb_id", patientId).maybeSingle();
+    if(error) throw error;
+    res.json(data || null);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /admin/:userId/medical-record/:patientId
+app.patch("/admin/:userId/medical-record/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const fields = req.body;
+    const { data: existing } = await supabase.from("ho_so_benh_nhan")
+      .select("nguoi_dung_tb_id").eq("nguoi_dung_tb_id", patientId).maybeSingle();
+    let result;
+    if(existing){
+      const { data, error } = await supabase.from("ho_so_benh_nhan")
+        .update(fields).eq("nguoi_dung_tb_id", patientId).select("*").maybeSingle();
+      if(error) throw error; result = data;
+    } else {
+      const { data, error } = await supabase.from("ho_so_benh_nhan")
+        .insert({...fields, nguoi_dung_tb_id: patientId}).select("*").maybeSingle();
+      if(error) throw error; result = data;
+    }
+    res.json(result);
+  } catch(err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post("/admin/:userId/families", async (req, res) => {
   try {
