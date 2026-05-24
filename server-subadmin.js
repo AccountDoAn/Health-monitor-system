@@ -439,7 +439,7 @@ app.get("/admin/:userId/patients", async (req, res) => {
       .select("id, ho_ten, so_dien_thoai, email, ngay_sinh, gioi_tinh").in("id",ptIds);
 
     const { data: profiles } = await supabase.from("ho_so_benh_nhan")
-      .select("nguoi_dung_tb_id, nhom_mau, benh_man_tinh").in("nguoi_dung_tb_id",ptIds);
+      .select("nguoi_dung_tb_id, nhom_mau, benh_man_tinh, di_ung, tien_su_y_te").in("nguoi_dung_tb_id",ptIds);
     const profMap = {};
     (profiles||[]).forEach(p=>{ profMap[p.nguoi_dung_tb_id]=p; });
 
@@ -476,6 +476,8 @@ app.get("/admin/:userId/patients", async (req, res) => {
         dob:p.ngay_sinh, gender:p.gioi_tinh,
         bloodType: profMap[p.id]?.nhom_mau,
         disease:   profMap[p.id]?.benh_man_tinh,
+        allergy:   profMap[p.id]?.di_ung,
+        history:   profMap[p.id]?.tien_su_y_te,
         deviceId:  dId,
         serial:    dInfo?.serial  || null,
         battery:   dInfo?.battery ?? null,
