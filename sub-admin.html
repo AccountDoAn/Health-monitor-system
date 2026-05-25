@@ -144,6 +144,14 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .pt-info-row:last-child{border-bottom:none;}
 .pt-info-lbl{color:var(--muted);font-size:.66rem;min-width:70px;flex-shrink:0;white-space:nowrap;}
 .pt-info-val{color:var(--text);font-weight:600;font-size:.76rem;overflow:hidden;text-overflow:ellipsis;}
+/* Autocomplete */
+.ac-wrap{position:relative;}
+.ac-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1.5px solid var(--navy);border-radius:9px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:200;max-height:200px;overflow-y:auto;margin-top:3px;}
+.ac-item{padding:8px 12px;font-size:.78rem;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--mint);}
+.ac-name{font-weight:600;color:var(--navy);}
+.ac-sub{font-size:.66rem;color:var(--muted);margin-top:1px;}
 .page-card-body{padding:14px 16px;background:var(--card);}
 /* Device list item */
 .dev-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
@@ -194,6 +202,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </button>
     <button class="sb-btn" onclick="switchView('links',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Liên kết
+    </button>
+    <button class="sb-btn" onclick="switchView('families',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>Người nhà
     </button>
     <button class="sb-btn" onclick="switchView('doctors',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7h-7m0 0V3m0 4L9 3m4 4v10M9 21H5a2 2 0 0 1-2-2v-5"/><circle cx="17" cy="17" r="3"/></svg>Bác sĩ
@@ -311,10 +322,21 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       </div>
       <div id="links-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
+  <!-- VIEW: NGƯỜI NHÀ -->
+  <div class="content" id="view-families" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">👨‍👩‍👧 Người nhà — Người liên quan</div>
+        <div class="srch-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="fam-tab-srch" placeholder="Tìm theo tên..." oninput="filterFamilies(this.value)"
+            style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:150px"/>
+        </div>
+      </div>
+      <div id="families-body" style="padding:12px 16px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
   </div>
 </div>
-
-<!-- MODAL: NHẬP THIẾT BỊ -->
 <div class="modal-bg" id="modal-device" onclick="if(event.target===this)closeModal('modal-device')">
   <div class="modal modal-sm">
     <button class="modal-x" onclick="closeModal('modal-device')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -433,17 +455,18 @@ function doLogout(){ if(!confirm('Đăng xuất?'))return; localStorage.removeIt
 function switchView(name, btn){
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  ['overview','devices','patients','links','doctors'].forEach(v=>{
+  ['overview','devices','patients','links','doctors','families'].forEach(v=>{
     document.getElementById('view-'+v).style.display='none';
   });
   document.getElementById('view-'+name).style.display='flex';
-  const titles={overview:'Dashboard',devices:'Thiết bị theo dõi',patients:'Bệnh nhân',links:'Liên kết bác sĩ — Bệnh nhân',doctors:'Bác sĩ'};
+  const titles={overview:'Dashboard',devices:'Thiết bị theo dõi',patients:'Bệnh nhân',links:'Liên kết bác sĩ — Bệnh nhân',doctors:'Bác sĩ',families:'Người nhà'};
   document.getElementById('page-title').textContent = titles[name]||name;
-  if(name==='overview') loadOverview();
-  if(name==='devices') loadDevices();
-  if(name==='patients') loadPatients();
-  if(name==='links') loadLinks();
-  if(name==='doctors') loadDoctors();
+  if(name==='overview')  loadOverview();
+  if(name==='devices')   loadDevices();
+  if(name==='patients')  loadPatients();
+  if(name==='links')     loadLinks();
+  if(name==='doctors')   loadDoctors();
+  if(name==='families')  loadFamilies();
 }
 
 // Toggle expand card (bác sĩ, bệnh nhân)
@@ -777,6 +800,9 @@ function renderPatients(){
       '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cập nhật'+
       '</button></div>'+
       docRow+
+      '<button onclick="event.stopPropagation();openAddFamily(\''+p.id+'\',\''+esc(p.name)+'\')" style="width:100%;margin-top:8px;padding:7px;border:1.5px dashed var(--sky);border-radius:8px;background:none;color:var(--sky);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">'+
+      '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>Thêm người nhà'+
+      '</button>'+
       '</div></div>';
   }).join('');
   html += '</div>';
@@ -1262,6 +1288,238 @@ async function saveEditRecord(){
   btn.disabled=false;
 }
 
+// ── NGƯỜI NHÀ ──
+let familiesCache = [];
+let familiesFiltered = [];
+let _afSelectedUserId = null; // null = tạo mới, có id = gán tài khoản có sẵn
+
+// Load danh sách người nhà
+async function loadFamilies(){
+  const body = document.getElementById('families-body');
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/families');
+    familiesCache = r.ok ? await r.json() : [];
+    familiesFiltered = familiesCache;
+    renderFamilies(familiesFiltered);
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+
+function filterFamilies(q){
+  if(!q.trim()){ familiesFiltered = familiesCache; }
+  else {
+    const lq = q.toLowerCase();
+    familiesFiltered = familiesCache.filter(f=>
+      (f.userName||'').toLowerCase().includes(lq)||
+      (f.patientName||'').toLowerCase().includes(lq)
+    );
+  }
+  renderFamilies(familiesFiltered);
+}
+
+const REL_LABEL = {vo_chong:'Vợ/Chồng',con:'Con',cha_me:'Cha/Mẹ',anh_chi_em:'Anh/Chị/Em',than_nhan:'Thân nhân',nguoi_giam_ho:'Người giám hộ'};
+
+function renderFamilies(list){
+  const body = document.getElementById('families-body');
+  if(!list.length){
+    body.innerHTML='<div class="loading">Chưa có người nhà nào</div>'; return;
+  }
+  body.innerHTML = '<div class="page-grid">'
+    +list.map(function(f){
+      const init = (f.userName||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+      const rel   = REL_LABEL[f.relation]||f.relation||'—';
+      const cid   = 'fam-card-'+f.linkId;
+      return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
+        +'<div class="page-card-head">'
+        +'<div class="card-av">'+init+'</div>'
+        +'<div class="card-info">'
+        +'<div class="card-name">'+esc(f.userName)+'</div>'
+        +'<div class="card-sub">'+rel+' · '+esc(f.patientName)+'</div>'
+        +'</div>'
+        +(f.isPrimary?'<span class="card-tag">Giám sát chính</span>':'')
+        +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+        +'</div>'
+        +'<div class="page-card-body">'
+        +'<div style="display:flex;flex-direction:column;gap:8px">'
+        // Thông tin
+        +'<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(f.phone||'—')+'</span></div>'
+        +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val">'+esc(f.email||'—')+'</span></div>'
+        +'<div class="pt-info-row"><span class="pt-info-lbl">🏥 Bệnh nhân</span><span class="pt-info-val">'+esc(f.patientName)+'</span></div>'
+        +'<div class="pt-info-row"><span class="pt-info-lbl">🔗 Quan hệ</span><span class="pt-info-val">'+rel+'</span></div>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px;margin-top:10px">'
+        +'<button onclick="event.stopPropagation();openEditFamily(\''+f.linkId+'\',\''+f.userId+'\',\''+esc(f.userName)+'\',\''+esc(f.phone||'')+'\',\''+esc(f.email||'')+'\',\''+esc(f.relation||'')+'\')" style="flex:1;padding:6px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer">✏️ Sửa</button>'
+        +'<button onclick="event.stopPropagation();confirmDeleteFamily(\''+f.linkId+'\',\''+esc(f.userName)+'\')" style="flex:1;padding:6px;border:1.5px solid var(--danger);border-radius:8px;background:none;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer">🗑️ Xóa</button>'
+        +'</div>'
+        +'</div>'
+        +'</div>';
+    }).join('')
+  +'</div>';
+}
+
+// Mở modal thêm người nhà từ tab bệnh nhân
+function openAddFamily(pid, pname){
+  _afSelectedUserId = null;
+  document.getElementById('af-patient-id').value   = pid;
+  document.getElementById('af-patient-name').textContent = pname;
+  document.getElementById('af-name').value  = '';
+  document.getElementById('af-phone').value = '';
+  document.getElementById('af-email').value = '';
+  document.getElementById('af-pw').value    = '123456';
+  document.getElementById('af-rel').value   = '';
+  document.getElementById('af-primary').checked = false;
+  document.getElementById('af-msg').textContent = '';
+  document.getElementById('af-ac-drop').style.display = 'none';
+  document.getElementById('af-new-fields').style.display = 'block';
+  document.getElementById('modal-add-family').classList.add('open');
+}
+
+// Autocomplete tìm người dùng theo tên
+let _acTimer = null;
+async function acSearchFamily(q){
+  const drop = document.getElementById('af-ac-drop');
+  clearTimeout(_acTimer);
+  if(!q || q.length < 2){ drop.style.display='none'; return; }
+  _acTimer = setTimeout(async function(){
+    try {
+      const r = await fetch(AAPI+'/admin/'+UID+'/search-users?q='+encodeURIComponent(q));
+      if(!r.ok) return;
+      const users = await r.json();
+      if(!users.length){ drop.style.display='none'; return; }
+      drop.innerHTML = users.map(function(u){
+        return '<div class="ac-item" '
+          +'onmouseenter="acFill(\''+esc(u.name)+'\',\''+esc(u.phone||'')+'\',\''+esc(u.email||'')+'\',\''+u.id+'\')" '
+          +'onmouseleave="acClear()" '
+          +'onmousedown="acSelect(\''+esc(u.name)+'\',\''+esc(u.phone||'')+'\',\''+esc(u.email||'')+'\',\''+u.id+'\')">'
+          +'<div class="ac-name">'+esc(u.name)+'</div>'
+          +'<div class="ac-sub">'+(u.phone||'')+(u.phone&&u.email?' · ':'')+esc(u.email||'')+'</div>'
+          +'</div>';
+      }).join('');
+      drop.style.display = 'block';
+    } catch(_){}
+  }, 300);
+}
+
+// Khi hover vào gợi ý → điền tạm thời
+function acFill(name, phone, email, uid){
+  document.getElementById('af-phone').value = phone;
+  document.getElementById('af-email').value = email;
+  document.getElementById('af-new-fields').style.display = 'none'; // ẩn mật khẩu
+  _afSelectedUserId = uid;
+}
+
+// Khi rời gợi ý mà chưa click → reset
+function acClear(){
+  if(!_afSelectedUserId){
+    document.getElementById('af-phone').value = '';
+    document.getElementById('af-email').value = '';
+  }
+  document.getElementById('af-new-fields').style.display = 'block';
+}
+
+// Khi click chọn gợi ý
+function acSelect(name, phone, email, uid){
+  _afSelectedUserId = uid;
+  document.getElementById('af-name').value  = name;
+  document.getElementById('af-phone').value = phone;
+  document.getElementById('af-email').value = email;
+  document.getElementById('af-new-fields').style.display = 'none';
+  document.getElementById('af-ac-drop').style.display = 'none';
+}
+
+// Ẩn dropdown khi click ra ngoài
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.ac-wrap'))
+    document.querySelectorAll('.ac-dropdown').forEach(d=>d.style.display='none');
+});
+
+async function saveAddFamily(){
+  const pid  = document.getElementById('af-patient-id').value;
+  const name = document.getElementById('af-name').value.trim();
+  const rel  = document.getElementById('af-rel').value;
+  const msg  = document.getElementById('af-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  if(!rel){  msg.style.color='var(--danger)'; msg.textContent='Vui lòng chọn quan hệ'; return; }
+
+  const btn = document.getElementById('af-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang xử lý...';
+  try {
+    const payload = {
+      patientId:  pid,
+      relation:   rel,
+      isPrimary:  document.getElementById('af-primary').checked,
+    };
+
+    if(_afSelectedUserId){
+      // TH2: gán tài khoản có sẵn
+      payload.existingUserId = _afSelectedUserId;
+    } else {
+      // TH1: tạo tài khoản mới
+      payload.name     = name;
+      payload.phone    = document.getElementById('af-phone').value.trim()||null;
+      payload.email    = document.getElementById('af-email').value.trim()||null;
+      payload.password = document.getElementById('af-pw').value.trim()||'123456';
+    }
+
+    const r = await fetch(AAPI+'/admin/'+UID+'/families', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã thêm người nhà thành công';
+    setTimeout(()=>{ closeModal('modal-add-family'); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+function openEditFamily(linkId, userId, name, phone, email, rel){
+  document.getElementById('ef-link-id').value = linkId;
+  document.getElementById('ef-user-id').value = userId;
+  document.getElementById('ef-name').value    = name;
+  document.getElementById('ef-phone').value   = phone;
+  document.getElementById('ef-email').value   = email;
+  document.getElementById('ef-rel').value     = rel;
+  document.getElementById('ef-pw').value      = '';
+  document.getElementById('ef-msg').textContent = '';
+  document.getElementById('modal-edit-family').classList.add('open');
+}
+
+async function saveEditFamily(){
+  const linkId = document.getElementById('ef-link-id').value;
+  const userId = document.getElementById('ef-user-id').value;
+  const msg    = document.getElementById('ef-msg');
+  const btn    = document.getElementById('ef-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const pw = document.getElementById('ef-pw').value.trim();
+    const r = await fetch(AAPI+'/admin/'+UID+'/families/'+linkId, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        relation:  document.getElementById('ef-rel').value,
+        name:      document.getElementById('ef-name').value.trim()||null,
+        phone:     document.getElementById('ef-phone').value.trim()||null,
+        email:     document.getElementById('ef-email').value.trim()||null,
+        password:  pw&&pw.length>=6?pw:undefined,
+      })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật';
+    setTimeout(()=>{ closeModal('modal-edit-family'); loadFamilies(); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+async function confirmDeleteFamily(linkId, name){
+  if(!confirm('Xóa liên kết của '+name+'?\nTài khoản vẫn được giữ lại, chỉ xóa liên kết với bệnh nhân.')) return;
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/families/'+linkId, {method:'DELETE'});
+    if(!r.ok) throw new Error((await r.json()).error||'Lỗi');
+    loadFamilies();
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
 // ── CẬP NHẬT THÔNG TIN BỆNH NHÂN ──
 async function openEditPatient(pid){
   const p = ptCache.find(x=>x.id===pid);
@@ -1467,6 +1725,99 @@ async function saveDoctor(){
     </div>
   </div>
 </div>
+<!-- MODAL: THÊM NGƯỜI NHÀ -->
+<div class="modal-bg" id="modal-add-family" onclick="if(event.target===this)closeModal('modal-add-family')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-add-family')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👨‍👩‍👧 Thêm người nhà / người liên quan</div>
+    <input type="hidden" id="af-patient-id"/>
+    <div style="background:var(--bg);border-radius:9px;padding:10px 12px;font-size:.76rem;color:var(--muted);margin-bottom:14px;border:1px solid var(--border)">
+      Bệnh nhân: <strong id="af-patient-name" style="color:var(--navy)">—</strong>
+    </div>
+
+    <!-- Quan hệ -->
+    <div class="field"><label>Quan hệ với bệnh nhân *</label>
+      <select id="af-rel">
+        <option value="">— Chọn quan hệ —</option>
+        <option value="vo_chong">Vợ/Chồng</option>
+        <option value="con">Con</option>
+        <option value="cha_me">Cha/Mẹ</option>
+        <option value="anh_chi_em">Anh/Chị/Em</option>
+        <option value="than_nhan">Thân nhân khác</option>
+        <option value="nguoi_giam_ho">Người giám hộ</option>
+      </select>
+    </div>
+
+    <!-- Tìm / nhập tên — có autocomplete -->
+    <div class="divider">Thông tin người nhà</div>
+    <div class="field">
+      <label>Họ tên *
+        <span style="font-weight:400;color:var(--muted);font-size:.62rem"> — Nhập để tìm tài khoản có sẵn hoặc tạo mới</span>
+      </label>
+      <div class="ac-wrap">
+        <input id="af-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
+          oninput="acSearchFamily(this.value)" onfocus="acSearchFamily(this.value)"/>
+        <div class="ac-dropdown" id="af-ac-drop"></div>
+      </div>
+    </div>
+
+    <!-- Phần tạo mới — hiện khi chưa chọn tài khoản có sẵn -->
+    <div id="af-new-fields">
+      <div class="field-row c2">
+        <div class="field"><label>Số điện thoại</label><input id="af-phone" type="text" placeholder="0912..."/></div>
+        <div class="field"><label>Email (đăng nhập app)</label><input id="af-email" type="email" placeholder="email@gmail.com"/></div>
+      </div>
+      <div class="field"><label>Mật khẩu app (mặc định: 123456)</label><input id="af-pw" type="text" value="123456"/></div>
+      <div style="background:#fffbea;border:1px solid #f0d060;border-radius:8px;padding:9px 12px;font-size:.7rem;color:#7a5800;margin-bottom:4px">
+        💡 Nếu đã có tài khoản → chọn từ gợi ý bên trên, không cần điền lại.
+      </div>
+    </div>
+
+    <div class="field-row" style="margin-top:8px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="af-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
+        Là người giám sát chính
+      </label>
+    </div>
+
+    <div class="modal-msg" id="af-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-add-family')">Hủy</button>
+      <button class="btn-save" id="af-save-btn" onclick="saveAddFamily()">✅ Thêm người nhà</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SỬA NGƯỜI NHÀ -->
+<div class="modal-bg" id="modal-edit-family" onclick="if(event.target===this)closeModal('modal-edit-family')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-family')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Sửa thông tin người nhà</div>
+    <input type="hidden" id="ef-link-id"/>
+    <input type="hidden" id="ef-user-id"/>
+    <div class="field"><label>Họ tên</label><input id="ef-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="ef-phone" type="text"/></div>
+      <div class="field"><label>Email</label><input id="ef-email" type="email"/></div>
+    </div>
+    <div class="field"><label>Quan hệ</label>
+      <select id="ef-rel">
+        <option value="vo_chong">Vợ/Chồng</option><option value="con">Con</option>
+        <option value="cha_me">Cha/Mẹ</option><option value="anh_chi_em">Anh/Chị/Em</option>
+        <option value="than_nhan">Thân nhân khác</option><option value="nguoi_giam_ho">Người giám hộ</option>
+      </select>
+    </div>
+    <div class="field"><label>Đặt lại mật khẩu <span style="font-weight:400;color:var(--muted)">(để trống = không đổi)</span></label>
+      <input id="ef-pw" type="text" placeholder="Tối thiểu 6 ký tự"/>
+    </div>
+    <div class="modal-msg" id="ef-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-family')">Hủy</button>
+      <button class="btn-save" id="ef-save-btn" onclick="saveEditFamily()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CẬP NHẬT THÔNG TIN BỆNH NHÂN -->
 <div class="modal-bg" id="modal-edit-patient" onclick="if(event.target===this)closeModal('modal-edit-patient')">
   <div class="modal">
