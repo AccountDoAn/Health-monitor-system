@@ -585,40 +585,160 @@ app.patch("/admin/:userId/medical-record/:patientId", async (req, res) => {
   }
 });
 
+// GET /admin/:userId/families — danh sách người nhà theo CSYT
+app.get("/admin/:userId/families", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const hsId = await getAdminHospital(userId);
+    if (!hsId) return res.status(403).json({ error: "Không có quyền" });
+
+    // Lấy tất cả bệnh nhân thuộc CSYT
+    const { data: pts } = await supabase.from("nguoi_dung_thiet_bi")
+      .select("id, nguoi_dung_id").eq("co_so_y_te_id", hsId);
+    const ptMap = {};
+    (pts||[]).forEach(p => ptMap[p.id] = p.nguoi_dung_id);
+    const ptIds = Object.keys(ptMap);
+    if(!ptIds.length) return res.json([]);
+
+    // Lấy liên kết người nhà
+    const { data: links } = await supabase.from("lien_ket_nguoi_nha")
+      .select("id, nguoi_dung_tb_id, nguoi_dung_lq_id, moi_quan_he, la_nguoi_giam_sat_chinh")
+      .in("nguoi_dung_tb_id", ptIds).eq("trang_thai_hoat_dong", true);
+    if(!links?.length) return res.json([]);
+
+    // Lấy tên bệnh nhân
+    const ptUserIds = [...new Set(Object.values(ptMap))];
+    const { data: ptUsers } = await supabase.from("nguoi_dung").select("id,ho_ten").in("id", ptUserIds);
+    const ptUserMap = {}; (ptUsers||[]).forEach(u => ptUserMap[u.id] = u.ho_ten);
+
+    // Lấy thông tin người nhà
+    const lqIds = [...new Set(links.map(l=>l.nguoi_dung_lq_id))];
+    const { data: lqUsers } = await supabase.from("nguoi_dung")
+      .select("id,ho_ten,so_dien_thoai,email").in("id", lqIds);
+    const lqMap = {}; (lqUsers||[]).forEach(u => lqMap[u.id] = u);
+
+    res.json(links.map(l => ({
+      linkId:      l.id,
+      userId:      l.nguoi_dung_lq_id,
+      userName:    lqMap[l.nguoi_dung_lq_id]?.ho_ten || '—',
+      phone:       lqMap[l.nguoi_dung_lq_id]?.so_dien_thoai || null,
+      email:       lqMap[l.nguoi_dung_lq_id]?.email || null,
+      patientId:   l.nguoi_dung_tb_id,
+      patientName: ptUserMap[ptMap[l.nguoi_dung_tb_id]] || '—',
+      relation:    l.moi_quan_he,
+      isPrimary:   l.la_nguoi_giam_sat_chinh,
+    })));
+  } catch(err) {
+    console.error("[GET /admin/families]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /admin/:userId/families — thêm người nhà (tạo mới hoặc gán có sẵn)
 app.post("/admin/:userId/families", async (req, res) => {
   try {
     const { userId } = req.params;
-    const { patientId, name, phone, email, relation, isPrimary, password } = req.body;
-    if (!patientId || !name?.trim()) return res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+    const { patientId, name, phone, email, relation, isPrimary, password, existingUserId } = req.body;
+    if (!patientId) return res.status(400).json({ error: "Thiếu patientId" });
 
     const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
+    if (!hsId) return res.status(403).json({ error: "Không có quyền" });
 
-    const { data: newUser, error: userErr } = await supabase.from("nguoi_dung").insert({
-      ho_ten:name.trim(), so_dien_thoai:phone||null, email:email||null,
-      mat_khau:password||"123456", trang_thai_hoat_dong:true,
-    }).select("id").single();
-    if (userErr) throw userErr;
+    let lqId;
 
-    const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
-    if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:newUser.id, vai_tro_id:role.id });
+    if (existingUserId) {
+      // TH2: gán tài khoản có sẵn
+      lqId = existingUserId;
+    } else {
+      // TH1: tạo tài khoản mới
+      if (!name?.trim()) return res.status(400).json({ error: "Thiếu họ tên" });
+      const { data: newUser, error: userErr } = await supabase.from("nguoi_dung").insert({
+        ho_ten: name.trim(), so_dien_thoai: phone||null, email: email||null,
+        mat_khau: password||"123456", trang_thai_hoat_dong: true,
+      }).select("id").single();
+      if (userErr) throw userErr;
+      lqId = newUser.id;
+
+      const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
+      if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:lqId, vai_tro_id:role.id });
+    }
 
     if (isPrimary) {
       await supabase.from("lien_ket_nguoi_nha")
         .update({ la_nguoi_giam_sat_chinh:false })
-        .eq("nguoi_dung_tb_id",patientId).eq("trang_thai_hoat_dong",true);
+        .eq("nguoi_dung_tb_id", patientId).eq("trang_thai_hoat_dong", true);
     }
 
     const { error: linkErr } = await supabase.from("lien_ket_nguoi_nha").insert({
-      nguoi_dung_tb_id:patientId, nguoi_dung_lq_id:newUser.id,
-      moi_quan_he:relation||null, la_nguoi_giam_sat_chinh:isPrimary||false,
-      trang_thai_hoat_dong:true, ngay_lien_ket:new Date().toISOString(),
+      nguoi_dung_tb_id: patientId, nguoi_dung_lq_id: lqId,
+      moi_quan_he: relation||null, la_nguoi_giam_sat_chinh: isPrimary||false,
+      trang_thai_hoat_dong: true, ngay_lien_ket: new Date().toISOString(),
     });
     if (linkErr) throw linkErr;
-
-    res.json({ familyId:newUser.id, name:name.trim() });
+    res.json({ ok: true, userId: lqId });
   } catch (err) {
     console.error("[POST /admin/families]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /admin/:userId/families/:linkId — cập nhật thông tin người nhà
+app.patch("/admin/:userId/families/:linkId", async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    const { relation, name, phone, email, password } = req.body;
+
+    // Cập nhật quan hệ trong lien_ket_nguoi_nha
+    if (relation !== undefined) {
+      await supabase.from("lien_ket_nguoi_nha").update({ moi_quan_he: relation }).eq("id", linkId);
+    }
+
+    // Lấy userId từ link
+    const { data: link } = await supabase.from("lien_ket_nguoi_nha")
+      .select("nguoi_dung_lq_id").eq("id", linkId).single();
+    if (link) {
+      const updates = {};
+      if (name?.trim())  updates.ho_ten        = name.trim();
+      if (phone !== undefined) updates.so_dien_thoai = phone||null;
+      if (email !== undefined) updates.email         = email||null;
+      if (password?.trim() && password.length>=6) updates.mat_khau = password.trim();
+      if (Object.keys(updates).length)
+        await supabase.from("nguoi_dung").update(updates).eq("id", link.nguoi_dung_lq_id);
+    }
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[PATCH /admin/families]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /admin/:userId/families/:linkId — xóa liên kết
+app.delete("/admin/:userId/families/:linkId", async (req, res) => {
+  try {
+    const { linkId } = req.params;
+    const { error } = await supabase.from("lien_ket_nguoi_nha")
+      .update({ trang_thai_hoat_dong: false }).eq("id", linkId);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[DELETE /admin/families]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /admin/:userId/search-users?q= — tìm user theo tên (autocomplete)
+app.get("/admin/:userId/search-users", async (req, res) => {
+  try {
+    const q = (req.query.q||'').trim();
+    if (!q || q.length < 2) return res.json([]);
+    const { data } = await supabase.from("nguoi_dung")
+      .select("id, ho_ten, so_dien_thoai, email")
+      .ilike("ho_ten", `%${q}%`)
+      .eq("trang_thai_hoat_dong", true)
+      .limit(10);
+    res.json((data||[]).map(u=>({ id:u.id, name:u.ho_ten, phone:u.so_dien_thoai, email:u.email })));
+  } catch(err) {
+    console.error("[GET /admin/search-users]", err.message);
     res.status(500).json({ error: err.message });
   }
 });
