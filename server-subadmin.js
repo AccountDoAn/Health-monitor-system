@@ -592,13 +592,21 @@ app.get("/admin/:userId/families", async (req, res) => {
     const hsId = await getAdminHospital(userId);
     if (!hsId) return res.status(403).json({ error: "Không có quyền" });
 
-    // Lấy tất cả bệnh nhân thuộc CSYT (lấy nguoi_dung_id của bệnh nhân)
-    const { data: pts } = await supabase.from("nguoi_dung_thiet_bi")
-      .select("nguoi_dung_id").eq("co_so_y_te_id", hsId);
-    const ptUserIds = [...new Set((pts||[]).map(p => p.nguoi_dung_id).filter(Boolean))];
+    // Lấy thiết bị thuộc CSYT
+    const { data: devices } = await supabase.from("thiet_bi_iot")
+      .select("id").eq("co_so_y_te_id", hsId);
+    const deviceIds = (devices||[]).map(d => d.id);
+    if(!deviceIds.length) return res.json([]);
+
+    // Lấy bệnh nhân đang gắn thiết bị thuộc CSYT
+    const { data: assignments } = await supabase.from("lich_su_gan_thiet_bi")
+      .select("nguoi_dung_tb_id")
+      .in("thiet_bi_id", deviceIds)
+      .eq("trang_thai_hoat_dong", true);
+    const ptUserIds = [...new Set((assignments||[]).map(a => a.nguoi_dung_tb_id).filter(Boolean))];
     if(!ptUserIds.length) return res.json([]);
 
-    // Lấy liên kết người nhà — nguoi_dung_tb_id là user ID của bệnh nhân
+    // Lấy liên kết người nhà
     const { data: links, error: linkErr } = await supabase.from("lien_ket_nguoi_nha")
       .select("id, nguoi_dung_tb_id, nguoi_dung_lq_id, moi_quan_he, la_nguoi_giam_sat_chinh")
       .in("nguoi_dung_tb_id", ptUserIds)
