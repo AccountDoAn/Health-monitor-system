@@ -585,6 +585,36 @@ app.patch("/admin/:userId/medical-record/:patientId", async (req, res) => {
   }
 });
 
+// GET /admin/:userId/patients/:patientId/families — người nhà của 1 bệnh nhân
+app.get("/admin/:userId/patients/:patientId/families", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const { data: links } = await supabase.from("lien_ket_nguoi_nha")
+      .select("id, nguoi_dung_lq_id, moi_quan_he, la_nguoi_giam_sat_chinh")
+      .eq("nguoi_dung_tb_id", patientId)
+      .eq("trang_thai_hoat_dong", true);
+    if(!links?.length) return res.json([]);
+
+    const lqIds = links.map(l => l.nguoi_dung_lq_id);
+    const { data: users } = await supabase.from("nguoi_dung")
+      .select("id, ho_ten, so_dien_thoai, email").in("id", lqIds);
+    const uMap = {}; (users||[]).forEach(u => uMap[u.id] = u);
+
+    res.json(links.map(l => ({
+      linkId:    l.id,
+      userId:    l.nguoi_dung_lq_id,
+      name:      uMap[l.nguoi_dung_lq_id]?.ho_ten || '—',
+      phone:     uMap[l.nguoi_dung_lq_id]?.so_dien_thoai || null,
+      email:     uMap[l.nguoi_dung_lq_id]?.email || null,
+      relation:  l.moi_quan_he,
+      isPrimary: l.la_nguoi_giam_sat_chinh,
+    })));
+  } catch(err) {
+    console.error("[GET /patients/families]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /admin/:userId/families — danh sách người nhà theo CSYT
 app.get("/admin/:userId/families", async (req, res) => {
   try {
@@ -669,12 +699,6 @@ app.post("/admin/:userId/families", async (req, res) => {
 
       const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
       if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:lqId, vai_tro_id:role.id });
-    }
-
-    if (isPrimary) {
-      await supabase.from("lien_ket_nguoi_nha")
-        .update({ la_nguoi_giam_sat_chinh:false })
-        .eq("nguoi_dung_tb_id", patientId).eq("trang_thai_hoat_dong", true);
     }
 
     const { error: linkErr } = await supabase.from("lien_ket_nguoi_nha").insert({
