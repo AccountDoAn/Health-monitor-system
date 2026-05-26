@@ -322,6 +322,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       </div>
       <div id="links-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
+  </div>
   <!-- VIEW: NGƯỜI NHÀ -->
   <div class="content" id="view-families" style="display:none">
     <div class="sec-card">
@@ -446,8 +447,9 @@ const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const UID = SESS.userId;
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-let devCache=[], ptCache=[], docCache=[];
+let devCache=[], ptCache=[], docCache=[], familiesCache=[], familiesFiltered=[];
 let assignDevId=null, assignDocPtId=null;
+let _afSelectedUserId = null;
 
 function doLogout(){ if(!confirm('Đăng xuất?'))return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
 
@@ -1289,20 +1291,24 @@ async function saveEditRecord(){
 }
 
 // ── NGƯỜI NHÀ ──
-let familiesCache = [];
-let familiesFiltered = [];
-let _afSelectedUserId = null; // null = tạo mới, có id = gán tài khoản có sẵn
 
 // Load danh sách người nhà
 async function loadFamilies(){
   const body = document.getElementById('families-body');
+  if(!body){ console.error('families-body not found!'); return; }
   body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
+    console.log('[families] fetching', AAPI+'/admin/'+UID+'/families');
     const r = await fetch(AAPI+'/admin/'+UID+'/families');
-    familiesCache = r.ok ? await r.json() : [];
-    familiesFiltered = familiesCache;
+    const data = r.ok ? await r.json() : [];
+    console.log('[families] got', data.length, 'records');
+    familiesCache = data;
+    familiesFiltered = data;
     renderFamilies(familiesFiltered);
-  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+  } catch(e){
+    console.error('[families] error:', e);
+    body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>';
+  }
 }
 
 function filterFamilies(q){
