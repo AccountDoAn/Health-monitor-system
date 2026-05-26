@@ -1743,6 +1743,63 @@ async function saveEditPatient(){
   btn.disabled=false;
 }
 
+// ── SỬA / XÓA NGƯỜI NHÀ TRONG CARD BỆNH NHÂN ──
+function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimary){
+  document.getElementById('ef-link-id').value   = linkId;
+  document.getElementById('ef-user-id').value   = userId;
+  document.getElementById('ef-name').value      = name;
+  document.getElementById('ef-phone').value     = phone;
+  document.getElementById('ef-email').value     = email;
+  document.getElementById('ef-rel').value       = relation;
+  document.getElementById('ef-primary').checked = (isPrimary === true || isPrimary === 'true');
+  document.getElementById('ef-pw').value        = '';
+  document.getElementById('ef-msg').textContent = '';
+  document.getElementById('modal-edit-family').classList.add('open');
+}
+
+async function confirmDeletePtFamily(linkId, name, pid){
+  if(!confirm('Xóa liên kết của ' + name + '?\nTài khoản vẫn được giữ lại, chỉ xóa liên kết.')) return;
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/families/'+linkId, {method:'DELETE'});
+    if(!r.ok) throw new Error((await r.json()).error||'Lỗi');
+    const el = document.getElementById('pt-fam-list-'+pid);
+    if(el){ delete el.dataset.loaded; loadPatientFamilies(pid); }
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ── TẠO NGƯỜI NHÀ MỚI (độc lập) ──
+function openCreateFamily(){
+  ['cf-name','cf-phone','cf-email'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('cf-pw').value = '123456';
+  document.getElementById('cf-msg').textContent = '';
+  document.getElementById('modal-create-family').classList.add('open');
+}
+
+async function saveCreateFamily(){
+  const name = document.getElementById('cf-name').value.trim();
+  const msg  = document.getElementById('cf-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  const btn = document.getElementById('cf-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang tạo...';
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/families/create-user', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name,
+        phone:    document.getElementById('cf-phone').value.trim()||null,
+        email:    document.getElementById('cf-email').value.trim()||null,
+        password: document.getElementById('cf-pw').value.trim()||'123456',
+      })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo tài khoản thành công';
+    setTimeout(()=>{ closeModal('modal-create-family'); loadFamilies(); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+// ── CHỈNH SỬA BÁC SĨ ──
 // ── CHỈNH SỬA BÁC SĨ ──
 function openEditDoctor(id, name, phone, email){
   document.getElementById('edit-doc-id').value    = id;
