@@ -585,6 +585,25 @@ app.patch("/admin/:userId/medical-record/:patientId", async (req, res) => {
   }
 });
 
+// POST /admin/:userId/families/create-user — tạo tài khoản người nhà độc lập
+app.post("/admin/:userId/families/create-user", async (req, res) => {
+  try {
+    const { name, phone, email, password } = req.body;
+    if(!name?.trim()) return res.status(400).json({ error: "Thiếu họ tên" });
+    const { data: newUser, error } = await supabase.from("nguoi_dung").insert({
+      ho_ten: name.trim(), so_dien_thoai: phone||null, email: email||null,
+      mat_khau: password||"123456", trang_thai_hoat_dong: true,
+    }).select("id").single();
+    if(error) throw error;
+    const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
+    if(role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:newUser.id, vai_tro_id:role.id });
+    res.json({ ok: true, userId: newUser.id });
+  } catch(err) {
+    console.error("[POST /families/create-user]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /admin/:userId/patients/:patientId/families — người nhà của 1 bệnh nhân
 app.get("/admin/:userId/patients/:patientId/families", async (req, res) => {
   try {
@@ -718,12 +737,14 @@ app.post("/admin/:userId/families", async (req, res) => {
 app.patch("/admin/:userId/families/:linkId", async (req, res) => {
   try {
     const { linkId } = req.params;
-    const { relation, name, phone, email, password } = req.body;
+    const { relation, name, phone, email, password, isPrimary } = req.body;
 
-    // Cập nhật quan hệ trong lien_ket_nguoi_nha
-    if (relation !== undefined) {
-      await supabase.from("lien_ket_nguoi_nha").update({ moi_quan_he: relation }).eq("id", linkId);
-    }
+    // Cập nhật link (quan hệ + giám sát chính)
+    const linkUpd = {};
+    if(relation !== undefined)  linkUpd.moi_quan_he = relation;
+    if(isPrimary !== undefined) linkUpd.la_nguoi_giam_sat_chinh = isPrimary;
+    if(Object.keys(linkUpd).length)
+      await supabase.from("lien_ket_nguoi_nha").update(linkUpd).eq("id", linkId);
 
     // Lấy userId từ link
     const { data: link } = await supabase.from("lien_ket_nguoi_nha")
