@@ -803,9 +803,14 @@ app.patch("/admin/:userId/families/:linkId", async (req, res) => {
 app.delete("/admin/:userId/families/:linkId", async (req, res) => {
   try {
     const { linkId } = req.params;
-    const { error } = await supabase.from("lien_ket_nguoi_nha")
-      .update({ trang_thai_hoat_dong: false }).eq("id", linkId);
+    console.log("[DELETE /admin/families] linkId:", linkId);
+    const { data, error } = await supabase.from("lien_ket_nguoi_nha")
+      .update({ trang_thai_hoat_dong: false })
+      .eq("id", linkId)
+      .select("id");
+    console.log("[DELETE /admin/families] result:", data, error);
     if (error) throw error;
+    if (!data?.length) return res.status(404).json({ error: "Không tìm thấy liên kết" });
     res.json({ ok: true });
   } catch(err) {
     console.error("[DELETE /admin/families]", err.message);
