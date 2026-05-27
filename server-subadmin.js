@@ -491,6 +491,25 @@ app.get("/admin/:userId/patients", async (req, res) => {
   }
 });
 
+// DELETE /admin/:userId/patients/:patientId — xóa bệnh nhân
+app.delete("/admin/:userId/patients/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    // Xóa hồ sơ bệnh án
+    await supabase.from("ho_so_benh_nhan").delete().eq("nguoi_dung_tb_id", patientId);
+    // Xóa liên kết người nhà
+    await supabase.from("lien_ket_nguoi_nha").delete().eq("nguoi_dung_tb_id", patientId);
+    // Xóa liên kết bác sĩ
+    await supabase.from("lien_ket_bac_si").delete().eq("nguoi_dung_tb_id", patientId);
+    // Vô hiệu hóa tài khoản (không xóa hẳn để giữ lịch sử)
+    await supabase.from("nguoi_dung").update({trang_thai_hoat_dong: false}).eq("id", patientId);
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[DELETE /admin/patients]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PATCH /admin/:userId/patients/:patientId — cập nhật thông tin bệnh nhân
 app.patch("/admin/:userId/patients/:patientId", async (req, res) => {
   try {
@@ -825,6 +844,7 @@ app.get("/admin/:userId/doctors", async (req, res) => {
     res.json((doctors||[]).map(d=>({
       id:d.id, name:d.ho_ten, phone:d.so_dien_thoai,
       email:d.email, patientCount:countMap[d.id]||0,
+      speciality: d.chuyen_khoa||null, title: d.chuc_danh||null,
     })));
   } catch (err) {
     console.error("[GET /admin/doctors]", err.message);
