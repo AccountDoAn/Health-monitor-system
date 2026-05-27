@@ -544,6 +544,7 @@ app.post("/admin/:userId/patients", async (req, res) => {
     const { data: newUser, error: userErr } = await supabase.from("nguoi_dung").insert({
       ho_ten:name.trim(), so_dien_thoai:phone||null, email:email||null,
       ngay_sinh:dob||null, gioi_tinh:gender||null, trang_thai_hoat_dong:true,
+      mat_khau: "123456",
     }).select("id").single();
     if (userErr) throw userErr;
 
