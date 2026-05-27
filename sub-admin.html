@@ -1810,9 +1810,13 @@ function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimar
 
 async function confirmDeletePtFamily(linkId, name, pid){
   if(!confirm('Xóa liên kết của ' + name + '?\nTài khoản vẫn được giữ lại, chỉ xóa liên kết.')) return;
+  const url = AAPI+'/admin/'+UID+'/families/'+linkId;
+  console.log('[DELETE family] URL:', url, 'linkId:', linkId);
   try {
-    const r = await fetch(AAPI+'/admin/'+UID+'/families/'+linkId, {method:'DELETE'});
-    if(!r.ok) throw new Error((await r.json()).error||'Lỗi');
+    const r = await fetch(url, {method:'DELETE'});
+    const d = await r.json();
+    console.log('[DELETE family] response:', d);
+    if(!r.ok) throw new Error(d.error||'Lỗi');
     const el = document.getElementById('pt-fam-list-'+pid);
     if(el){ delete el.dataset.loaded; loadPatientFamilies(pid); }
   } catch(e){ alert('⚠️ '+e.message); }
