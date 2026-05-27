@@ -558,8 +558,8 @@ async function loadPatientFamilies(pid){
         +'<div style="font-size:.63rem;color:var(--muted)">'+rel+(f.phone?' · '+f.phone:'')+'</div>'
         +'</div>'
         +(f.isPrimary?'<span style="font-size:.58rem;font-weight:700;background:var(--mint);color:var(--navy);padding:2px 7px;border-radius:8px;flex-shrink:0">Chính</span>':'')
-        +'<button onclick="event.stopPropagation();openEditPtFamily(\''+f.linkId+'\',\''+f.userId+'\',\''+esc(f.name)+'\',\''+esc(f.phone||'')+'\',\''+esc(f.email||'')+'\',\''+esc(f.relation||'')+'\','+f.isPrimary+')" style="padding:3px 8px;border:1px solid var(--border);border-radius:6px;background:none;color:var(--navy);font-size:.65rem;font-weight:600;cursor:pointer;flex-shrink:0">✏️</button>'
-        +'<button onclick="event.stopPropagation();confirmDeletePtFamily(\''+f.linkId+'\',\''+esc(f.name)+'\',\''+pid+'\')" style="padding:3px 8px;border:1px solid var(--danger);border-radius:6px;background:none;color:var(--danger);font-size:.65rem;font-weight:600;cursor:pointer;flex-shrink:0">🗑️</button>'
+        +'<button onclick="event.stopPropagation();openEditPtFamily(\''+f.linkId+'\',\''+f.userId+'\',\''+esc(f.name)+'\',\''+esc(f.phone||'')+'\',\''+esc(f.email||'')+'\',\''+esc(f.relation||'')+'\','+f.isPrimary+')" style="padding:3px 10px;border:1.5px solid var(--navy);border-radius:6px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.65rem;font-weight:600;cursor:pointer;flex-shrink:0">✎ Sửa</button>'
+        +'<button onclick="event.stopPropagation();confirmDeletePtFamily(\''+f.linkId+'\',\''+esc(f.name)+'\',\''+pid+'\')" style="padding:3px 10px;border:1.5px solid var(--danger);border-radius:6px;background:none;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.65rem;font-weight:600;cursor:pointer;flex-shrink:0">✕ Xóa</button>'
         +'</div>';
     }).join('');
   } catch(_){
@@ -1543,8 +1543,8 @@ function renderFamilies(list){
         +'<div class="pt-info-row"><span class="pt-info-lbl">🔗 Quan hệ</span><span class="pt-info-val">'+rel+'</span></div>'
         +'</div>'
         +'<div style="display:flex;gap:8px;margin-top:10px">'
-        +'<button onclick="event.stopPropagation();openEditFamily(\''+f.linkId+'\',\''+f.userId+'\',\''+esc(f.userName)+'\',\''+esc(f.phone||'')+'\',\''+esc(f.email||'')+'\',\''+esc(f.relation||'')+'\')" style="padding:5px 14px;border:1.5px solid var(--border);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✏️ Sửa</button>'
-        +'<button onclick="event.stopPropagation();confirmDeleteFamily(\''+f.linkId+'\',\''+esc(f.userName)+'\')" style="padding:5px 14px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">🗑️ Xóa</button>'
+        +'<button onclick="event.stopPropagation();openEditFamily(\''+f.linkId+'\',\''+f.userId+'\',\''+esc(f.userName)+'\',\''+esc(f.phone||'')+'\',\''+esc(f.email||'')+'\',\''+esc(f.relation||'')+'\','+f.isPrimary+')" style="padding:5px 14px;border:1.5px solid var(--navy);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✎ Sửa</button>'+
+        +'<button onclick="event.stopPropagation();confirmDeleteFamily(\''+f.linkId+'\',\''+esc(f.userName)+'\')" style="padding:5px 14px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa</button>'+
         +'</div>'
         +'</div>'
         +'</div>';
