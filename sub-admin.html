@@ -1126,22 +1126,16 @@ function renderDoctorsFromList(list){
       +'<div class="card-av">'+init+'</div>'
       +'<div class="card-info">'
       +'<div class="card-name">'+esc(d.name)+'</div>'
-      +'<div class="card-sub">'+(d.title?esc(d.title)+' · ':'')+(d.speciality?esc(d.speciality):'Bác sĩ phụ trách')+'</div>'
+      +'<div class="card-sub">Bác sĩ phụ trách</div>'
       +'</div>'
       +'<span class="card-tag">'+d.patientCount+' bệnh nhân</span>'
       +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
       +'</div>'
       +'<div class="page-card-body">'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin-bottom:10px">'
-      +'<div>'
+      +'<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">'
       +'<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(d.phone||'—')+'</span></div>'
       +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val" style="word-break:break-all">'+esc(d.email||'—')+'</span></div>'
-      +'</div>'
-      +'<div>'
-      +(d.title?'<div class="pt-info-row"><span class="pt-info-lbl">🎓 Chức danh</span><span class="pt-info-val">'+esc(d.title)+'</span></div>':'')
-      +(d.speciality?'<div class="pt-info-row"><span class="pt-info-lbl">🏥 Chuyên khoa</span><span class="pt-info-val">'+esc(d.speciality)+'</span></div>':'')
       +'<div class="pt-info-row"><span class="pt-info-lbl">👥 Bệnh nhân</span><span class="pt-info-val">'+d.patientCount+' người</span></div>'
-      +'</div>'
       +'</div>'
       +'<button onclick="event.stopPropagation();openEditDoctor(\''+d.id+'\',\''+esc(d.name)+'\',\''+esc(d.phone||'')+'\',\''+esc(d.email||'')+'\')" style="width:100%;padding:7px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">'
       +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Chỉnh sửa thông tin'
@@ -1858,7 +1852,6 @@ function openEditDoctor(id, name, phone, email){
   document.getElementById('edit-doc-name').value  = name;
   document.getElementById('edit-doc-phone').value = phone;
   document.getElementById('edit-doc-email').value = email;
-  document.getElementById('edit-doc-pw').value    = '';
   document.getElementById('edit-doc-msg').textContent = '';
   document.getElementById('modal-edit-doctor').classList.add('open');
 }
@@ -1869,9 +1862,6 @@ async function saveEditDoctor(){
   const msg  = document.getElementById('edit-doc-msg');
   if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
 
-  const pw = document.getElementById('edit-doc-pw').value.trim();
-  if(pw && pw.length < 6){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu phải ≥ 6 ký tự'; return; }
-
   const btn = document.getElementById('edit-doc-save-btn');
   btn.disabled = true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
   try {
@@ -1880,7 +1870,6 @@ async function saveEditDoctor(){
       phone: document.getElementById('edit-doc-phone').value.trim() || null,
       email: document.getElementById('edit-doc-email').value.trim() || null,
     };
-    if(pw) body.password = pw;
 
     const r = await fetch(AAPI+'/admin/'+UID+'/doctors/'+id, {
       method:'PATCH', headers:{'Content-Type':'application/json'},
@@ -2239,10 +2228,6 @@ async function saveDoctor(){
     <div class="field-row c2">
       <div class="field"><label>Số điện thoại</label><input id="edit-doc-phone" type="text"/></div>
       <div class="field"><label>Email</label><input id="edit-doc-email" type="email"/></div>
-    </div>
-    <div class="field">
-      <label>Mật khẩu mới <span style="font-weight:400;color:var(--muted)">(để trống nếu không đổi)</span></label>
-      <input id="edit-doc-pw" type="text" placeholder="Tối thiểu 6 ký tự"/>
     </div>
     <div class="modal-msg" id="edit-doc-msg"></div>
     <div class="modal-footer">
