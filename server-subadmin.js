@@ -424,40 +424,52 @@ app.get("/admin/:userId/patients", async (req, res) => {
     const hsId = await getAdminHospital(userId);
     if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
 
-    const { data: devices } = await supabase.from("thiet_bi_iot").select("id").eq("co_so_y_te_id",hsId);
-    const devIds = (devices||[]).map(d=>d.id);
-    if (!devIds.length) return res.json([]);
+    // Lấy role bệnh nhân
+    const { data: tbRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle();
+    if (!tbRole) return res.json([]);
 
-    const { data: assigns } = await supabase.from("lich_su_gan_thiet_bi")
-      .select("nguoi_dung_tb_id, thiet_bi_id")
-      .in("thiet_bi_id", devIds).eq("trang_thai_hoat_dong", true);
+    // Lấy tất cả bệnh nhân thuộc CSYT
+    const { data: pq } = await supabase.from("phan_quyen_nguoi_dung")
+      .select("nguoi_dung_id").eq("vai_tro_id", tbRole.id);
+    const allPtIds = (pq||[]).map(p=>p.nguoi_dung_id);
+    if (!allPtIds.length) return res.json([]);
 
-    const ptIds = [...new Set((assigns||[]).map(a=>a.nguoi_dung_tb_id).filter(Boolean))];
-    if (!ptIds.length) return res.json([]);
-
+    // Filter theo CSYT
     const { data: pts } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten, so_dien_thoai, email, ngay_sinh, gioi_tinh").in("id",ptIds);
+      .select("id, ho_ten, so_dien_thoai, email, ngay_sinh, gioi_tinh")
+      .in("id", allPtIds)
+      .eq("co_so_y_te_id", hsId)
+      .eq("trang_thai_hoat_dong", true);
+    if (!pts?.length) return res.json([]);
 
+    const ptIds = pts.map(p=>p.id);
+
+    // Hồ sơ bệnh án
     const { data: profiles } = await supabase.from("ho_so_benh_nhan")
       .select("nguoi_dung_tb_id, nhom_mau, benh_man_tinh, di_ung, tien_su_y_te").in("nguoi_dung_tb_id",ptIds);
     const profMap = {};
     (profiles||[]).forEach(p=>{ profMap[p.nguoi_dung_tb_id]=p; });
 
+    // Bác sĩ phụ trách
     const { data: docLinks } = await supabase.from("lien_ket_bac_si")
       .select("nguoi_dung_tb_id, nguoi_dung_bs_id, nguoi_dung!nguoi_dung_bs_id(ho_ten)")
       .in("nguoi_dung_tb_id",ptIds).eq("trang_thai_hoat_dong",true);
     const docMap = {};
     (docLinks||[]).forEach(l=>{ docMap[l.nguoi_dung_tb_id]={ id:l.nguoi_dung_bs_id, name:l.nguoi_dung?.ho_ten }; });
 
+    // Thiết bị đang gắn
+    const { data: devices } = await supabase.from("thiet_bi_iot").select("id").eq("co_so_y_te_id",hsId);
+    const devIds = (devices||[]).map(d=>d.id);
     const devMap = {};
-    (assigns||[]).forEach(a=>{ devMap[a.nguoi_dung_tb_id]=a.thiet_bi_id; });
-
-    // Lấy thêm serial, pin, trạng thái online của thiết bị
     const devDetailMap = {};
     if (devIds.length) {
+      const { data: assigns } = await supabase.from("lich_su_gan_thiet_bi")
+        .select("nguoi_dung_tb_id, thiet_bi_id")
+        .in("thiet_bi_id", devIds).eq("trang_thai_hoat_dong", true);
+      (assigns||[]).forEach(a=>{ devMap[a.nguoi_dung_tb_id]=a.thiet_bi_id; });
+
       const { data: devDetails } = await supabase.from("thiet_bi_iot")
-        .select("id, so_seri, phan_tram_pin, lan_online_cuoi")
-        .in("id", devIds);
+        .select("id, so_seri, phan_tram_pin, lan_online_cuoi").in("id", devIds);
       const now = Date.now();
       (devDetails||[]).forEach(d=>{
         devDetailMap[d.id] = {
@@ -468,8 +480,8 @@ app.get("/admin/:userId/patients", async (req, res) => {
       });
     }
 
-    res.json((pts||[]).map(p=>{
-      const dId = devMap[p.id]||null;
+    res.json(pts.map(p=>{
+      const dId  = devMap[p.id]||null;
       const dInfo = dId ? devDetailMap[dId] : null;
       return {
         id:p.id, name:p.ho_ten, phone:p.so_dien_thoai, email:p.email,
@@ -544,7 +556,7 @@ app.post("/admin/:userId/patients", async (req, res) => {
     const { data: newUser, error: userErr } = await supabase.from("nguoi_dung").insert({
       ho_ten:name.trim(), so_dien_thoai:phone||null, email:email||null,
       ngay_sinh:dob||null, gioi_tinh:gender||null, trang_thai_hoat_dong:true,
-      mat_khau: "123456",
+      co_so_y_te_id:hsId, mat_khau: "123456",
     }).select("id").single();
     if (userErr) throw userErr;
 
