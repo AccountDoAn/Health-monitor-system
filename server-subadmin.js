@@ -833,7 +833,7 @@ app.get("/admin/:userId/doctors", async (req, res) => {
     if (!bsIds.length) return res.json([]);
 
     const { data: doctors } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten, so_dien_thoai, email")
+      .select("id, ho_ten, so_dien_thoai, email, ngay_sinh, gioi_tinh")
       .in("id",bsIds).eq("co_so_y_te_id",hsId).eq("trang_thai_hoat_dong",true);
 
     const { data: links } = await supabase.from("lien_ket_bac_si")
@@ -844,7 +844,7 @@ app.get("/admin/:userId/doctors", async (req, res) => {
     res.json((doctors||[]).map(d=>({
       id:d.id, name:d.ho_ten, phone:d.so_dien_thoai,
       email:d.email, patientCount:countMap[d.id]||0,
-      speciality: d.chuyen_khoa||null, title: d.chuc_danh||null,
+      dob:d.ngay_sinh||null, gender:d.gioi_tinh||null,
     })));
   } catch (err) {
     console.error("[GET /admin/doctors]", err.message);
