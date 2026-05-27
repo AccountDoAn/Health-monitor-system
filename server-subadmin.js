@@ -754,12 +754,33 @@ app.post("/admin/:userId/families", async (req, res) => {
       if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:lqId, vai_tro_id:role.id });
     }
 
-    const { error: linkErr } = await supabase.from("lien_ket_nguoi_nha").insert({
-      nguoi_dung_tb_id: patientId, nguoi_dung_lq_id: lqId,
-      moi_quan_he: relation||null, la_nguoi_giam_sat_chinh: isPrimary||false,
-      trang_thai_hoat_dong: true, ngay_lien_ket: new Date().toISOString(),
-    });
-    if (linkErr) throw linkErr;
+    // Kiểm tra xem đã có liên kết cũ chưa (kể cả đã bị soft-delete)
+    const { data: existing } = await supabase.from("lien_ket_nguoi_nha")
+      .select("id")
+      .eq("nguoi_dung_tb_id", patientId)
+      .eq("nguoi_dung_lq_id", lqId)
+      .maybeSingle();
+
+    if (existing) {
+      // Có rồi → update lại (kích hoạt lại)
+      const { error: updErr } = await supabase.from("lien_ket_nguoi_nha")
+        .update({
+          moi_quan_he: relation||null,
+          la_nguoi_giam_sat_chinh: isPrimary||false,
+          trang_thai_hoat_dong: true,
+          ngay_lien_ket: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+      if (updErr) throw updErr;
+    } else {
+      // Chưa có → insert mới
+      const { error: linkErr } = await supabase.from("lien_ket_nguoi_nha").insert({
+        nguoi_dung_tb_id: patientId, nguoi_dung_lq_id: lqId,
+        moi_quan_he: relation||null, la_nguoi_giam_sat_chinh: isPrimary||false,
+        trang_thai_hoat_dong: true, ngay_lien_ket: new Date().toISOString(),
+      });
+      if (linkErr) throw linkErr;
+    }
     res.json({ ok: true, userId: lqId });
   } catch (err) {
     console.error("[POST /admin/families]", err.message);
