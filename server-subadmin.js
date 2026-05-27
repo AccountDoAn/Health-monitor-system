@@ -857,11 +857,13 @@ app.get("/admin/:userId/doctors", async (req, res) => {
 app.patch("/admin/:userId/doctors/:doctorId", async (req, res) => {
   try {
     const { doctorId } = req.params;
-    const { name, phone, email, password } = req.body;
+    const { name, phone, email, password, dob, gender } = req.body;
     const updates = {};
-    if(name?.trim())             updates.ho_ten         = name.trim();
-    if(phone !== undefined)      updates.so_dien_thoai  = phone || null;
-    if(email?.trim())            updates.email          = email.trim().toLowerCase();
+    if(name?.trim())        updates.ho_ten         = name.trim();
+    if(phone !== undefined) updates.so_dien_thoai  = phone || null;
+    if(email?.trim())       updates.email          = email.trim().toLowerCase();
+    if(dob !== undefined)   updates.ngay_sinh      = dob || null;
+    if(gender !== undefined)updates.gioi_tinh      = gender || null;
     if(password?.trim() && password.length >= 6) updates.mat_khau = password.trim();
 
     if(!Object.keys(updates).length)
@@ -879,7 +881,7 @@ app.patch("/admin/:userId/doctors/:doctorId", async (req, res) => {
 app.post("/admin/:userId/doctors", async (req, res) => {
   try {
     const { userId } = req.params;
-    const { name, phone, email, password } = req.body;
+    const { name, phone, email, password, dob, gender } = req.body;
     if (!name?.trim()) return res.status(400).json({ error: "Vui lòng nhập họ tên" });
 
     const hsId = await getAdminHospital(userId);
@@ -895,6 +897,7 @@ app.post("/admin/:userId/doctors", async (req, res) => {
       ho_ten:name.trim(), so_dien_thoai:phone||null,
       email:email?email.trim().toLowerCase():null,
       mat_khau:password||"123456",
+      ngay_sinh:dob||null, gioi_tinh:gender||null,
       co_so_y_te_id:hsId, trang_thai_hoat_dong:true,
     }).select("id").single();
     if (userErr) throw userErr;
