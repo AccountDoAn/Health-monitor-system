@@ -673,38 +673,40 @@ app.get("/admin/:userId/families", async (req, res) => {
     const hsId = await getAdminHospital(userId);
     if (!hsId) return res.status(403).json({ error: "Không có quyền" });
 
-    // Lấy thiết bị thuộc CSYT
-    const { data: devices } = await supabase.from("thiet_bi_iot")
-      .select("id").eq("co_so_y_te_id", hsId);
-    const deviceIds = (devices||[]).map(d => d.id);
-    if(!deviceIds.length) return res.json([]);
+    // Lấy bệnh nhân thuộc CSYT trực tiếp qua co_so_y_te_id
+    const { data: tbRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle();
+    if (!tbRole) return res.json([]);
 
-    // Lấy bệnh nhân đang gắn thiết bị thuộc CSYT
-    const { data: assignments } = await supabase.from("lich_su_gan_thiet_bi")
-      .select("nguoi_dung_tb_id")
-      .in("thiet_bi_id", deviceIds)
+    const { data: pq } = await supabase.from("phan_quyen_nguoi_dung")
+      .select("nguoi_dung_id").eq("vai_tro_id", tbRole.id);
+    const allPtIds = (pq||[]).map(p=>p.nguoi_dung_id);
+    if (!allPtIds.length) return res.json([]);
+
+    const { data: ptUsers } = await supabase.from("nguoi_dung")
+      .select("id, ho_ten")
+      .in("id", allPtIds)
+      .eq("co_so_y_te_id", hsId)
       .eq("trang_thai_hoat_dong", true);
-    const ptUserIds = [...new Set((assignments||[]).map(a => a.nguoi_dung_tb_id).filter(Boolean))];
-    if(!ptUserIds.length) return res.json([]);
+    if (!ptUsers?.length) return res.json([]);
+
+    const ptUserIds = ptUsers.map(p => p.id);
+    const ptUserMap = {};
+    ptUsers.forEach(u => ptUserMap[u.id] = u.ho_ten);
 
     // Lấy liên kết người nhà
     const { data: links, error: linkErr } = await supabase.from("lien_ket_nguoi_nha")
       .select("id, nguoi_dung_tb_id, nguoi_dung_lq_id, moi_quan_he, la_nguoi_giam_sat_chinh")
       .in("nguoi_dung_tb_id", ptUserIds)
       .eq("trang_thai_hoat_dong", true);
-    if(linkErr) throw linkErr;
-    if(!links?.length) return res.json([]);
-
-    // Lấy tên bệnh nhân
-    const { data: ptUsers } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten").in("id", ptUserIds);
-    const ptUserMap = {}; (ptUsers||[]).forEach(u => ptUserMap[u.id] = u.ho_ten);
+    if (linkErr) throw linkErr;
+    if (!links?.length) return res.json([]);
 
     // Lấy thông tin người nhà
     const lqIds = [...new Set(links.map(l => l.nguoi_dung_lq_id))];
     const { data: lqUsers } = await supabase.from("nguoi_dung")
       .select("id, ho_ten, so_dien_thoai, email").in("id", lqIds);
-    const lqMap = {}; (lqUsers||[]).forEach(u => lqMap[u.id] = u);
+    const lqMap = {};
+    (lqUsers||[]).forEach(u => lqMap[u.id] = u);
 
     res.json(links.map(l => ({
       linkId:      l.id,
