@@ -716,10 +716,10 @@ function renderDevices(){
       var pn=esc((dev.assigned&&dev.assigned.patientName)||'');
       var btns='<div style="display:flex;gap:8px;padding-top:2px">';
       if(dev.assigned){
-        btns+='<button onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;'+pn+'&quot;)" style="flex:1;padding:8px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">⚙️ Cấu hình USB</button>';
-        btns+='<button onclick="unassignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" title="Thu hồi thiết bị" style="padding:8px 12px;border:1.5px solid #fdeaea;border-radius:8px;background:#fdeaea;cursor:pointer;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;flex-shrink:0">Thu hồi</button>';
+        btns+='<button onclick="openAssignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" style="flex:1;padding:8px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">🔄 Đổi bệnh nhân</button>';
+        btns+='<button onclick="unassignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" style="padding:8px 12px;border:1.5px solid #fdeaea;border-radius:8px;background:#fdeaea;cursor:pointer;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;flex-shrink:0">Thu hồi</button>';
       } else {
-        btns+='<button onclick="openProvision(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;,&quot;&quot;)" style="flex:1;padding:8px;background:var(--mint);color:var(--navy);border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">🔗 Gán bệnh nhân</button>';
+        btns+='<button onclick="openAssignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" style="flex:1;padding:8px;background:var(--mint);color:var(--navy);border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">🔗 Gán bệnh nhân</button>';
       }
       btns+='</div>';
 
@@ -1214,6 +1214,53 @@ fetch(AAPI+'/admin/'+UID+'/doctors').then(r=>r.ok?r.json():[]).then(d=>{docCache
 
 // ── PROVISION (Web Serial API — ESP32) ──
 let provDevId=null, provDevSerial='', provPatientId=null, provConfig=null;
+
+// Gán bệnh nhân vào thiết bị — không cần USB
+function openAssignDevice(devId, serial){
+  const sel = document.createElement('div');
+  // Dùng lại modal provision nhưng chỉ hiện bước 1
+  provDevId = devId; provDevSerial = serial;
+  document.getElementById('prov-serial').textContent = serial;
+  document.getElementById('prov-msg1').textContent = '';
+  document.getElementById('prov-step1').style.display = 'block';
+  document.getElementById('prov-step2').style.display = 'none';
+  document.getElementById('prov-config-box').style.display = 'none';
+
+  // Thay nút "Tiếp theo" thành "Gán ngay"
+  const btn = document.getElementById('prov-next-btn');
+  if(btn){
+    btn.textContent = '✅ Gán bệnh nhân';
+    btn.onclick = assignDeviceDirect;
+  }
+
+  const ptSel = document.getElementById('prov-pt-select');
+  ptSel.innerHTML = '<option value="">— Chọn bệnh nhân —</option>'
+    + ptCache.map(function(p){
+      const taken = p.deviceId && p.deviceId !== devId;
+      return '<option value="'+p.id+'"'+(taken?' disabled':'')+'>'
+        +esc(p.name)+(taken?' (đã có thiết bị)':'')+'</option>';
+    }).join('');
+  const dev = devCache.find(function(d){return d.id===devId;});
+  if(dev && dev.assigned && dev.assigned.patientId) ptSel.value = dev.assigned.patientId;
+  document.getElementById('modal-provision').classList.add('open');
+}
+
+async function assignDeviceDirect(){
+  const ptId = document.getElementById('prov-pt-select').value;
+  const msg  = document.getElementById('prov-msg1');
+  if(!ptId){msg.style.color='var(--danger)';msg.textContent='Vui lòng chọn bệnh nhân';return;}
+  msg.style.color='var(--muted)'; msg.textContent='Đang gán...';
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/devices/'+provDevId+'/assign',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({patientId:ptId})
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã gán thành công';
+    setTimeout(function(){ closeModal('modal-provision'); loadDevices(); loadPatients(); loadOverview(); }, 1000);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+}
 
 function openProvision(devId, serial, currentPtName){
   provDevId=devId; provDevSerial=serial;
