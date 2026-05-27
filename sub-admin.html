@@ -1130,13 +1130,17 @@ function renderDoctorsFromList(list){
       +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
       +'</div>'
       +'<div class="page-card-body">'
-      +'<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin-bottom:10px">'
+      +'<div>'
       +'<div class="pt-info-row"><span class="pt-info-lbl">🪪 ID</span><span class="pt-info-val" style="font-family:\'DM Mono\',monospace;font-size:.68rem">'+d.id.slice(0,8).toUpperCase()+'</span></div>'
       +'<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(d.phone||'—')+'</span></div>'
-      +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val" style="word-break:break-all">'+esc(d.email||'—')+'</span></div>'
-      +(d.dob?'<div class="pt-info-row"><span class="pt-info-lbl">🎂 Ngày sinh</span><span class="pt-info-val">'+new Date(d.dob).toLocaleDateString('vi-VN')+'</span></div>':'')
-      +(d.gender?'<div class="pt-info-row"><span class="pt-info-lbl">🧬 Giới tính</span><span class="pt-info-val">'+(d.gender==='nam'?'Nam':d.gender==='nu'?'Nữ':esc(d.gender))+'</span></div>':'')
+      +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val" style="word-break:break-all;font-size:.7rem">'+esc(d.email||'—')+'</span></div>'
+      +'</div>'
+      +'<div>'
+      +(d.dob?'<div class="pt-info-row"><span class="pt-info-lbl">🎂 Ngày sinh</span><span class="pt-info-val">'+new Date(d.dob).toLocaleDateString('vi-VN')+'</span></div>':'<div class="pt-info-row"><span class="pt-info-lbl">🎂 Ngày sinh</span><span class="pt-info-val" style="color:var(--muted)">—</span></div>')
+      +(d.gender?'<div class="pt-info-row"><span class="pt-info-lbl">🧬 Giới tính</span><span class="pt-info-val">'+(d.gender==='nam'?'Nam':d.gender==='nu'?'Nữ':esc(d.gender))+'</span></div>':'<div class="pt-info-row"><span class="pt-info-lbl">🧬 Giới tính</span><span class="pt-info-val" style="color:var(--muted)">—</span></div>')
       +'<div class="pt-info-row"><span class="pt-info-lbl">👥 Bệnh nhân</span><span class="pt-info-val">'+d.patientCount+' người</span></div>'
+      +'</div>'
       +'</div>'
       +'<button onclick="event.stopPropagation();openEditDoctor(\''+d.id+'\',\''+esc(d.name)+'\',\''+esc(d.phone||'')+'\',\''+esc(d.email||'')+'\',\''+esc(d.dob||'')+'\',\''+esc(d.gender||'')+'\')" style="width:100%;padding:7px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">'
       +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Chỉnh sửa thông tin'
