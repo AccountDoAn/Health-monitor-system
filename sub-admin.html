@@ -987,29 +987,27 @@ async function savePatient(){
 
     const pid = d.patientId;
 
-    // Tạo liên kết người nhà nếu có nhập tên
+    // Tạo liên kết người nhà nếu có nhập — lỗi không ảnh hưởng tạo bệnh nhân
     const famName    = document.getElementById('pt-fam-name').value.trim();
     const famRel     = document.getElementById('pt-fam-rel').value;
     const famExistId = document.getElementById('pt-fam-existing-id').value;
 
     if(famName || famExistId){
-      const famPayload = {
-        patientId: pid,
-        relation:  famRel||null,
-        isPrimary: true,
-      };
-      if(famExistId){
-        famPayload.existingUserId = famExistId;
-      } else {
-        famPayload.name     = famName;
-        famPayload.phone    = document.getElementById('pt-fam-phone').value.trim()||null;
-        famPayload.email    = document.getElementById('pt-fam-email').value.trim()||null;
-        famPayload.password = document.getElementById('pt-fam-pw').value.trim()||'123456';
-      }
-      await fetch(AAPI+'/admin/'+UID+'/families',{
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(famPayload)
-      });
+      try {
+        const famPayload = { patientId: pid, relation: famRel||null, isPrimary: true };
+        if(famExistId){
+          famPayload.existingUserId = famExistId;
+        } else {
+          famPayload.name     = famName;
+          famPayload.phone    = document.getElementById('pt-fam-phone').value.trim()||null;
+          famPayload.email    = document.getElementById('pt-fam-email').value.trim()||null;
+          famPayload.password = document.getElementById('pt-fam-pw').value.trim()||'123456';
+        }
+        await fetch(AAPI+'/admin/'+UID+'/families',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(famPayload)
+        });
+      } catch(_){} // bỏ qua lỗi người nhà — bệnh nhân vẫn được tạo
     }
 
     msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo hồ sơ bệnh nhân!';
@@ -1133,8 +1131,11 @@ function renderDoctorsFromList(list){
       +'</div>'
       +'<div class="page-card-body">'
       +'<div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">🪪 ID</span><span class="pt-info-val" style="font-family:\'DM Mono\',monospace;font-size:.68rem">'+d.id.slice(0,8).toUpperCase()+'</span></div>'
       +'<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(d.phone||'—')+'</span></div>'
       +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val" style="word-break:break-all">'+esc(d.email||'—')+'</span></div>'
+      +(d.dob?'<div class="pt-info-row"><span class="pt-info-lbl">🎂 Ngày sinh</span><span class="pt-info-val">'+new Date(d.dob).toLocaleDateString('vi-VN')+'</span></div>':'')
+      +(d.gender?'<div class="pt-info-row"><span class="pt-info-lbl">🧬 Giới tính</span><span class="pt-info-val">'+(d.gender==='nam'?'Nam':d.gender==='nu'?'Nữ':esc(d.gender))+'</span></div>':'')
       +'<div class="pt-info-row"><span class="pt-info-lbl">👥 Bệnh nhân</span><span class="pt-info-val">'+d.patientCount+' người</span></div>'
       +'</div>'
       +'<button onclick="event.stopPropagation();openEditDoctor(\''+d.id+'\',\''+esc(d.name)+'\',\''+esc(d.phone||'')+'\',\''+esc(d.email||'')+'\')" style="width:100%;padding:7px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">'
@@ -1898,8 +1899,6 @@ async function acSearchPtFamily(q){
       if(!users.length){ drop.style.display='none'; return; }
       drop.innerHTML = users.map(function(u){
         return '<div class="ac-item"'
-          +' onmouseenter="acFillPtFam(\''+esc(u.name)+'\',\''+esc(u.phone||'')+'\',\''+esc(u.email||'')+'\',\''+u.id+'\')"'
-          +' onmouseleave="acClearPtFam()"'
           +' onmousedown="acSelectPtFam(\''+esc(u.name)+'\',\''+esc(u.phone||'')+'\',\''+esc(u.email||'')+'\',\''+u.id+'\')">'
           +'<div class="ac-name">'+esc(u.name)+'</div>'
           +'<div class="ac-sub">'+(u.phone||'')+(u.phone&&u.email?' · ':'')+esc(u.email||'')+'</div>'
@@ -1909,19 +1908,9 @@ async function acSearchPtFamily(q){
     } catch(_){}
   }, 300);
 }
-function acFillPtFam(name,phone,email,uid){
-  document.getElementById('pt-fam-phone').value = phone;
-  document.getElementById('pt-fam-email').value = email;
-  document.getElementById('pt-fam-existing-id').value = uid;
-  document.getElementById('pt-fam-new-fields').style.display='none';
-}
-function acClearPtFam(){
-  if(!document.getElementById('pt-fam-existing-id').value){
-    document.getElementById('pt-fam-phone').value='';
-    document.getElementById('pt-fam-email').value='';
-  }
-  document.getElementById('pt-fam-new-fields').style.display='block';
-}
+// Không dùng hover fill/clear — tránh layout flicker
+function acFillPtFam(){}
+function acClearPtFam(){}
 function acSelectPtFam(name,phone,email,uid){
   document.getElementById('pt-fam-name').value  = name;
   document.getElementById('pt-fam-phone').value = phone;
