@@ -592,8 +592,10 @@ const API = 'https://health-monitor-system-doctor.onrender.com';
 })();
 
 // Tạm lưu userId khi cần đổi mật khẩu
-let pendingUserId   = null;
-let pendingUserRole = null;
+let pendingUserId     = null;
+let pendingUserRole   = null;
+let pendingUserName   = null;
+let pendingHospitalId = null;
 
 // ── LOAD HOSPITALS ──
 async function loadHospitals(){
@@ -742,8 +744,10 @@ async function doLogin(){
 
     // Đăng nhập lần đầu → đổi mật khẩu
     if(data.isFirstLogin){
-      pendingUserId   = data.userId;
-      pendingUserRole = primaryRole;
+      pendingUserId     = data.userId;
+      pendingUserRole   = primaryRole;
+      pendingUserName   = data.name;
+      pendingHospitalId = data.hospitalId;
       document.getElementById('change-pass-sub').textContent =
         `Xin chào ${data.name}! Vui lòng đặt mật khẩu cá nhân để tiếp tục.`;
       btn.disabled = false;
@@ -753,7 +757,10 @@ async function doLogin(){
     }
 
     // Redirect theo vai trò
-    redirectByRole(primaryRole, data.userId, data.name, { hospitalId: data.hospitalId });
+    redirectByRole(primaryRole, data.userId, data.name, {
+      hospitalId:   data.hospitalId,
+      isFirstLogin: data.isFirstLogin || false,
+    });
 
   } catch(e) {
     showBanner('login-error', 'Không thể kết nối tới máy chủ. Vui lòng thử lại.');
@@ -776,8 +783,15 @@ async function doChangePass(){
   btn.disabled = true;
   btn.innerHTML = `<div class="btn-spinner"></div> Đang lưu...`;
 
+  // Chọn đúng API theo role
+  const ADMIN_API    = 'https://health-monitor-admin.onrender.com';
+  const SUBADMIN_API = 'https://health-monitor-subadmin.onrender.com';
+  const changeAPI = pendingUserRole === 'admin'     ? ADMIN_API
+                  : pendingUserRole === 'sub_admin' ? SUBADMIN_API
+                  : API;
+
   try {
-    const res = await fetch(`${API}/auth/change-password`, {
+    const res = await fetch(`${changeAPI}/auth/change-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: pendingUserId, newPassword: np }),
@@ -792,8 +806,11 @@ async function doChangePass(){
       return;
     }
 
-    // Đổi thành công → redirect
-    redirectByRole(pendingUserRole, pendingUserId);
+    // Đổi thành công → redirect với đầy đủ thông tin
+    redirectByRole(pendingUserRole, pendingUserId, pendingUserName, {
+      hospitalId:   pendingHospitalId,
+      isFirstLogin: false,
+    });
 
   } catch(e) {
     showBanner('cp-error', 'Không thể kết nối tới máy chủ');
@@ -806,7 +823,8 @@ async function doChangePass(){
 function saveSession(userId, role, name, extra){
   localStorage.setItem('hm_session', JSON.stringify({
     userId, role, roles: [role], name,
-    hospitalId: extra?.hospitalId || null,
+    hospitalId:   extra?.hospitalId   || null,
+    isFirstLogin: extra?.isFirstLogin || false,
     loginAt: Date.now()
   }));
 }
