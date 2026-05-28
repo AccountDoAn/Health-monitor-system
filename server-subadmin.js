@@ -142,6 +142,15 @@ app.post("/auth/login", async (req, res) => {
     const { data: hospital } = await supabase
       .from("co_so_y_te").select("id, ten_co_so").eq("id", hospitalId).maybeSingle();
 
+    // Kiểm tra lần đầu đăng nhập
+    const { data: sessions } = await supabase.from("phien_dang_nhap")
+      .select("id").eq("nguoi_dung_id", user.id).limit(1);
+    const isFirstLogin = !sessions || sessions.length === 0;
+
+    // Cập nhật lan_dang_nhap_cuoi
+    await supabase.from("nguoi_dung")
+      .update({ lan_dang_nhap_cuoi: new Date().toISOString() }).eq("id", user.id);
+
     res.json({
       userId:       user.id,
       name:         user.ho_ten,
@@ -150,6 +159,7 @@ app.post("/auth/login", async (req, res) => {
       roles:        ["sub_admin"],
       hospitalId:   user.co_so_y_te_id,
       hospitalName: hospital?.ten_co_so || "—",
+      isFirstLogin,
     });
   } catch (err) {
     console.error("[POST /admin/auth/login]", err.message);
@@ -157,7 +167,7 @@ app.post("/auth/login", async (req, res) => {
   }
 });
 
-// POST /admin/auth/change-password
+// POST /auth/change-password
 app.post("/auth/change-password", async (req, res) => {
   try {
     const { userId, newPassword } = req.body;
@@ -165,9 +175,22 @@ app.post("/auth/change-password", async (req, res) => {
     if (newPassword.length < 6) return res.status(400).json({ error: "Mật khẩu phải >= 6 ký tự" });
     const { error } = await supabase.from("nguoi_dung").update({ mat_khau: newPassword }).eq("id", userId);
     if (error) throw error;
+
+    // Đánh dấu đã đăng nhập (không còn first login)
+    const { data: existing } = await supabase.from("phien_dang_nhap")
+      .select("id").eq("nguoi_dung_id", userId).limit(1);
+    if (!existing?.length) {
+      await supabase.from("phien_dang_nhap").insert({
+        nguoi_dung_id: userId, fcm_token: "web_first_login",
+        ten_thiet_bi: "Web Browser", lan_hoat_dong_cuoi: new Date().toISOString(),
+      });
+    } else {
+      await supabase.from("phien_dang_nhap")
+        .update({ lan_hoat_dong_cuoi: new Date().toISOString() }).eq("nguoi_dung_id", userId);
+    }
     res.json({ ok: true });
   } catch (err) {
-    console.error("[POST /admin/auth/change-password]", err.message);
+    console.error("[POST /auth/change-password]", err.message);
     res.status(500).json({ error: err.message });
   }
 });
