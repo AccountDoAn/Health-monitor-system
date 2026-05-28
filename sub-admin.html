@@ -215,6 +215,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div class="sb-av" id="sb-av">SA</div>
       <div><div class="sb-uname" id="sb-name">Sub Admin</div><div class="sb-urole" id="sb-role">Quản trị đơn vị</div></div>
     </div>
+    <button class="sb-btn" onclick="openSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>Cài đặt
+    </button>
     <button class="sb-btn red" onclick="doLogout()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Đăng xuất
     </button>
@@ -359,6 +362,44 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
+<!-- MODAL: CÀI ĐẶT -->
+<div class="modal-bg" id="modal-settings" onclick="if(event.target===this)closeModal('modal-settings')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-settings')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">⚙️ Cài đặt</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.82rem;font-weight:600">🌙 Chế độ tối</span>
+      <button id="dark-tgl" onclick="toggleDark()" style="width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;background:var(--border);position:relative;transition:background .2s">
+        <span id="dark-knob" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
+      </button>
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Đổi mật khẩu</div>
+      <div class="field"><input id="set-pw-old" type="password" placeholder="Mật khẩu hiện tại"/></div>
+      <div class="field"><input id="set-pw-new" type="password" placeholder="Mật khẩu mới (≥ 6 ký tự)"/></div>
+      <div class="field"><input id="set-pw-cf" type="password" placeholder="Xác nhận mật khẩu mới"/></div>
+      <div class="modal-msg" id="set-pw-msg"></div>
+      <button class="btn-save" style="width:100%;margin-top:4px" onclick="changePasswordSettings()">Đổi mật khẩu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ĐỔI MẬT KHẨU LẦN ĐẦU -->
+<div class="modal-bg" id="modal-first-login" style="display:none;z-index:300">
+  <div class="modal modal-sm">
+    <div class="modal-ttl">🔐 Đổi mật khẩu lần đầu</div>
+    <div style="background:#e8f2fc;border-radius:9px;padding:10px 14px;font-size:.76rem;color:var(--navy);margin-bottom:14px;border:1px solid #b8d4f0">
+      Đây là lần đầu bạn đăng nhập. Vui lòng đặt mật khẩu mới để bảo mật tài khoản.
+    </div>
+    <div class="field"><label>Mật khẩu mới *</label><input id="fl-pw-new" type="password" placeholder="Tối thiểu 6 ký tự"/></div>
+    <div class="field"><label>Xác nhận mật khẩu *</label><input id="fl-pw-cf" type="password" placeholder="Nhập lại mật khẩu mới"/></div>
+    <div class="modal-msg" id="fl-pw-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-save" style="width:100%" id="fl-pw-btn" onclick="saveFirstLoginPassword()">✅ Xác nhận & Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-device" onclick="if(event.target===this)closeModal('modal-device')">
   <div class="modal modal-sm">
     <button class="modal-x" onclick="closeModal('modal-device')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -575,6 +616,111 @@ async function loadPatientFamilies(pid){
   }
 }
 
+// ── CÀI ĐẶT ──
+function openSettings(){
+  document.getElementById('set-pw-old').value='';
+  document.getElementById('set-pw-new').value='';
+  document.getElementById('set-pw-cf').value='';
+  document.getElementById('set-pw-msg').textContent='';
+  // Sync dark mode toggle state
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  const tgl = document.getElementById('dark-tgl');
+  const knob = document.getElementById('dark-knob');
+  if(tgl){ tgl.style.background = isDark?'var(--navy)':'var(--border)'; }
+  if(knob){ knob.style.left = isDark?'21px':'3px'; }
+  document.getElementById('modal-settings').classList.add('open');
+}
+
+function toggleDark(){
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme', isDark?'light':'dark');
+  localStorage.setItem('sa_theme', isDark?'light':'dark');
+  const tgl = document.getElementById('dark-tgl');
+  const knob = document.getElementById('dark-knob');
+  tgl.style.background = isDark?'var(--border)':'var(--navy)';
+  knob.style.left = isDark?'3px':'21px';
+}
+
+// Khởi tạo theme
+(function(){
+  const t = localStorage.getItem('sa_theme');
+  if(t) document.documentElement.setAttribute('data-theme', t);
+  // Sync knob sau khi DOM load
+  window.addEventListener('DOMContentLoaded', function(){
+    const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+    const knob = document.getElementById('dark-knob');
+    const tgl = document.getElementById('dark-tgl');
+    if(knob) knob.style.left = isDark?'21px':'3px';
+    if(tgl) tgl.style.background = isDark?'var(--navy)':'var(--border)';
+  });
+})();
+
+async function changePasswordSettings(){
+  const oldPw = document.getElementById('set-pw-old').value;
+  const newPw = document.getElementById('set-pw-new').value;
+  const cfPw  = document.getElementById('set-pw-cf').value;
+  const msg   = document.getElementById('set-pw-msg');
+
+  if(!oldPw){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập mật khẩu hiện tại'; return; }
+  if(newPw.length < 6){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu mới phải ≥ 6 ký tự'; return; }
+  if(newPw !== cfPw){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu xác nhận không khớp'; return; }
+
+  msg.style.color='var(--muted)'; msg.textContent='Đang xử lý...';
+  try {
+    // Verify mật khẩu cũ
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    const r = await fetch(AAPI+'/auth/change-password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ userId: UID, currentPassword: oldPw, newPassword: newPw })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đổi mật khẩu thành công!';
+    setTimeout(()=>{ closeModal('modal-settings'); }, 1500);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+}
+
+// ── ĐỔI MẬT KHẨU LẦN ĐẦU ──
+function checkFirstLogin(){
+  const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  if(sess.isFirstLogin){
+    const modal = document.getElementById('modal-first-login');
+    modal.style.display='flex';
+    modal.classList.add('open');
+  }
+}
+
+async function saveFirstLoginPassword(){
+  const newPw = document.getElementById('fl-pw-new').value;
+  const cfPw  = document.getElementById('fl-pw-cf').value;
+  const msg   = document.getElementById('fl-pw-msg');
+  const btn   = document.getElementById('fl-pw-btn');
+
+  if(newPw.length < 6){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu phải ≥ 6 ký tự'; return; }
+  if(newPw !== cfPw){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu xác nhận không khớp'; return; }
+
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(AAPI+'/auth/change-password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ userId: UID, newPassword: newPw })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    // Xóa flag first login
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    sess.isFirstLogin = false;
+    localStorage.setItem('hm_session', JSON.stringify(sess));
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã đặt mật khẩu thành công!';
+    setTimeout(()=>{
+      document.getElementById('modal-first-login').style.display='none';
+      document.getElementById('modal-first-login').classList.remove('open');
+    }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
 // ── LOAD ADMIN INFO ──
 async function loadInfo(){
   try {
@@ -588,6 +734,8 @@ async function loadInfo(){
       document.getElementById('hs-name').textContent=d.hospital?.name||d.hospital?.ten_co_so||'—';
     }
   } catch(_){}
+  // Kiểm tra first login sau khi load xong
+  checkFirstLogin();
 }
 
 // ── OVERVIEW ──
