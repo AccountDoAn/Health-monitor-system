@@ -271,7 +271,12 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">📱 Danh sách thiết bị</div>
-
+        <div class="srch-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Tìm theo serial..."
+            oninput="filterDevices(this.value)"
+            style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:160px"/>
+        </div>
       </div>
       <div id="dev-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
@@ -677,73 +682,118 @@ async function loadDevices(){
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
 
+let devPage = 1;
+const DEV_PER_PAGE = 8;
+let devFiltered = [];
+
+function filterDevices(q){
+  devPage = 1;
+  devFiltered = q.trim()
+    ? devCache.filter(d=>(d.serial||'').toLowerCase().includes(q.toLowerCase()))
+    : devCache;
+  renderDevicesFromList(devFiltered);
+}
+
 function renderDevices(){
+  devFiltered = devCache;
+  renderDevicesFromList(devFiltered);
+}
+
+function renderDevicesFromList(list){
   const body=document.getElementById('dev-body');
-  if(!devCache.length){body.innerHTML='<div class="loading">Chưa có thiết bị nào trong đơn vị</div>';return;}
+  if(!list.length){body.innerHTML='<div class="loading">Chưa có thiết bị nào trong đơn vị</div>';return;}
 
-  body.innerHTML='<div style="padding:16px;display:flex;flex-direction:column;gap:12px">'
-    +devCache.map(function(dev){
-      const bat=dev.battery!=null?dev.battery:null;
-      const batColor=bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
-      const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}):'—';
+  const totalPages=Math.ceil(list.length/DEV_PER_PAGE);
+  if(devPage>totalPages) devPage=1;
+  const slice=list.slice((devPage-1)*DEV_PER_PAGE, devPage*DEV_PER_PAGE);
 
-      const statusBadge=dev.online
-        ?'<span style="font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:10px;background:#e6f7e6;color:#2d7a2d;flex-shrink:0">● Online</span>'
-        :'<span style="font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:10px;background:#f0f0f0;color:#888;flex-shrink:0">○ Offline</span>';
+  let html='<div class="page-grid" style="padding:18px">';
+  html+=slice.map(function(dev){
+    const bat=dev.battery!=null?dev.battery:null;
+    const batColor=bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
+    const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}):'—';
+    const cid='dev-card-'+dev.id;
 
-      const batHtml=bat!=null
-        ?'<div style="display:flex;align-items:center;gap:8px">'
-          +'<div class="bat-bar" style="width:80px"><div class="bat-fill" style="width:'+bat+'%;background:'+batColor+'"></div></div>'
-          +'<span style="font-size:.74rem;font-weight:700;color:'+batColor+'">'+bat+'%</span>'
-          +'</div>'
-        :'<span style="font-size:.72rem;color:var(--muted)">Pin: —</span>';
+    // Status tag
+    const statusTag=dev.online
+      ?'<span class="card-tag" style="background:#e6f7e6;color:#2d7a2d">● Online</span>'
+      :'<span class="card-tag" style="background:#f0f0f0;color:#888">○ Offline</span>';
 
-      // Patient section
-      const ptSection=dev.assigned
-        ?'<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:9px;border:1px solid var(--border)">'
-          +'<div style="width:32px;height:32px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.66rem;font-weight:800;flex-shrink:0">'
-          +(dev.assigned.patientName||'BN').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
-          +'</div>'
-          +'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:.82rem;font-weight:600;color:var(--text)">'+esc(dev.assigned.patientName||'Bệnh nhân')+'</div>'
-          +'<div style="font-size:.66rem;color:var(--muted)">Gán từ: '+(dev.assigned.assignedAt?new Date(dev.assigned.assignedAt).toLocaleDateString('vi-VN'):'—')+'</div>'
-          +'</div>'
-          +'<span style="font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:8px;background:#e8f2fc;color:var(--navy);flex-shrink:0">Đang theo dõi</span>'
-          +'</div>'
-        :'<div style="font-size:.76rem;color:var(--muted);font-style:italic;padding:8px 12px;background:var(--bg);border-radius:9px;border:1px dashed var(--border)">Chưa gán bệnh nhân</div>';
+    // Battery tag
+    const batTag=bat!=null
+      ?'<span class="card-tag" style="background:var(--bg);color:'+batColor+';border:1px solid '+batColor+'">🔋 '+bat+'%</span>'
+      :'';
 
-      // Buttons
-      var pn=esc((dev.assigned&&dev.assigned.patientName)||'');
-      var btns='<div style="display:flex;gap:8px;padding-top:2px">';
-      if(dev.assigned){
-        btns+='<button onclick="openAssignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" style="flex:1;padding:8px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">🔄 Đổi bệnh nhân</button>';
-        btns+='<button onclick="unassignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" style="padding:8px 12px;border:1.5px solid #fdeaea;border-radius:8px;background:#fdeaea;cursor:pointer;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;flex-shrink:0">Thu hồi</button>';
-      } else {
-        btns+='<button onclick="openAssignDevice(&quot;'+dev.id+'&quot;,&quot;'+esc(dev.serial)+'&quot;)" style="flex:1;padding:8px;background:var(--mint);color:var(--navy);border:none;border-radius:8px;font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer">🔗 Gán bệnh nhân</button>';
-      }
-      btns+='</div>';
-
-      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden">'
-        // Header
-        +'<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--border)">'
-        +'<div style="width:38px;height:38px;border-radius:10px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-        +'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>'
+    // Patient section
+    const ptSection=dev.assigned
+      ?'<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg);border-radius:9px;border:1px solid var(--border);margin-bottom:10px">'
+        +'<div style="width:30px;height:30px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;flex-shrink:0">'
+        +(dev.assigned.patientName||'BN').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
         +'</div>'
         +'<div style="flex:1;min-width:0">'
-        +'<div style="font-family:\'DM Mono\',monospace;font-weight:700;font-size:.9rem;color:var(--navy)">'+esc(dev.serial)+'</div>'
-        +'<div style="font-size:.66rem;color:var(--muted);margin-top:2px">Online cuối: '+esc(lastOn)+'</div>'
+        +'<div style="font-size:.8rem;font-weight:600;color:var(--text)">'+esc(dev.assigned.patientName||'Bệnh nhân')+'</div>'
+        +'<div style="font-size:.63rem;color:var(--muted)">Gán từ: '+(dev.assigned.assignedAt?new Date(dev.assigned.assignedAt).toLocaleDateString('vi-VN'):'—')+'</div>'
         +'</div>'
-        +statusBadge
+        +'<span style="font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:8px;background:#e8f2fc;color:var(--navy);flex-shrink:0">Đang theo dõi</span>'
         +'</div>'
-        // Body
-        +'<div style="padding:14px 16px;display:flex;flex-direction:column;gap:12px">'
-        +batHtml
-        +ptSection
-        +btns
-        +'</div>'
-        +'</div>';
-    }).join('')
-  +'</div>';
+      :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;padding:8px 12px;background:var(--bg);border-radius:9px;border:1px dashed var(--border);margin-bottom:10px">Chưa gán bệnh nhân</div>';
+
+    // Buttons — filled label style
+    let btns='<div style="display:flex;gap:8px">';
+    const BS='font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;border:none;border-radius:8px;padding:7px 14px;display:flex;align-items:center;gap:5px';
+    if(dev.assigned){
+      btns+='<button onclick="event.stopPropagation();openAssignDevice(\''+dev.id+'\',\''+esc(dev.serial)+'\')" style="'+BS+';background:var(--navy);color:#fff;flex:1">'
+        +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Đổi bệnh nhân</button>';
+      btns+='<button onclick="event.stopPropagation();unassignDevice(\''+dev.id+'\',\''+esc(dev.serial)+'\')" style="'+BS+';background:#fdeaea;color:var(--danger)">'
+        +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Thu hồi</button>';
+    } else {
+      btns+='<button onclick="event.stopPropagation();openAssignDevice(\''+dev.id+'\',\''+esc(dev.serial)+'\')" style="'+BS+';background:var(--navy);color:#fff;flex:1">'
+        +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Gán bệnh nhân</button>';
+    }
+    btns+='</div>';
+
+    return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
+      +'<div class="page-card-head">'
+      +'<div class="card-av" style="border-radius:10px">'
+      +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>'
+      +'</div>'
+      +'<div class="card-info">'
+      +'<div class="card-name" style="font-family:\'DM Mono\',monospace">'+esc(dev.serial)+'</div>'
+      +'<div class="card-sub">Online cuối: '+esc(lastOn)+'</div>'
+      +'</div>'
+      +statusTag+batTag
+      +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+      +'</div>'
+      +'<div class="page-card-body">'
+      +ptSection
+      +btns
+      +'</div>'
+      +'</div>';
+  }).join('');
+  html+='</div>';
+
+  if(totalPages>1){
+    const S="font-family:'DM Mono',monospace;font-size:.74rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px";
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)">'
+      +'<span style="font-size:.72rem;color:var(--muted)">Trang '+devPage+'/'+totalPages+' — '+list.length+' thiết bị</span>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button onclick="devGoPage('+(devPage-1)+')" '+(devPage<=1?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">← Trước</button>';
+    for(var i=1;i<=totalPages;i++){
+      var a=i===devPage;
+      html+='<button onclick="devGoPage('+i+')" style="'+S+';border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
+    }
+    html+='<button onclick="devGoPage('+(devPage+1)+')" '+(devPage>=totalPages?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">Tiếp →</button>'
+      +'</div></div>';
+  }
+
+  body.innerHTML=html;
+}
+
+function devGoPage(p){
+  const total=Math.ceil(devFiltered.length/DEV_PER_PAGE);
+  if(p<1||p>total) return;
+  devPage=p;
+  renderDevicesFromList(devFiltered);
 }
 
 function openRegisterDevice(){
@@ -2060,47 +2110,28 @@ async function saveDoctor(){
 
 <!-- MODAL: PROVISION (Web Serial) -->
 <div class="modal-bg" id="modal-provision" onclick="if(event.target===this)closeModal('modal-provision')">
-  <div class="modal">
+  <div class="modal modal-sm">
     <button class="modal-x" onclick="closeModal('modal-provision')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
-    <div class="modal-ttl">🔌 Cấu hình & gán thiết bị</div>
-
+    <div class="modal-ttl">🔗 Gán bệnh nhân cho thiết bị</div>
     <div id="prov-step1">
-      <div style="background:var(--bg);border-radius:10px;padding:13px;margin-bottom:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
-        <div style="font-size:1.4rem">📱</div>
+      <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
+        <div style="font-size:1.2rem">📱</div>
         <div>
-          <div style="font-size:.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Thiết bị</div>
-          <div id="prov-serial" style="font-family:'DM Mono',monospace;font-size:.95rem;font-weight:700;color:var(--navy)">—</div>
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Thiết bị</div>
+          <div id="prov-serial" style="font-family:'DM Mono',monospace;font-size:.9rem;font-weight:700;color:var(--navy)">—</div>
         </div>
       </div>
       <div class="field"><label>Gán cho bệnh nhân *</label>
         <select id="prov-pt-select"><option value="">— Chọn bệnh nhân —</option></select>
       </div>
-      <div style="background:#fffbea;border:1px solid #f0d060;border-radius:8px;padding:10px 12px;font-size:.7rem;color:#7a5800;margin-bottom:4px">
-        💡 Sau bước này, bạn sẽ cắm cáp USB để truyền cấu hình trực tiếp vào thiết bị ESP32.
-      </div>
       <div class="modal-msg" id="prov-msg1"></div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('modal-provision')">Hủy</button>
-        <button class="btn-save" onclick="provisionStep2()">Lưu & tiếp theo →</button>
+        <button id="prov-next-btn" class="btn-save" onclick="assignDeviceDirect()">✅ Gán bệnh nhân</button>
       </div>
     </div>
-
-    <div id="prov-step2" style="display:none">
-      <div style="text-align:center;padding:8px 0 18px">
-        <div id="usb-status-icon" style="font-size:2.8rem;margin-bottom:10px">🔌</div>
-        <div id="usb-status-title" style="font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:5px">—</div>
-        <div id="usb-status-sub" style="font-size:.72rem;color:var(--muted);line-height:1.5">—</div>
-      </div>
-      <div id="prov-config-box" style="display:none;background:var(--bg);border-radius:9px;padding:12px;margin-bottom:12px;border:1px solid var(--border)">
-        <div style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">Cấu hình truyền vào thiết bị</div>
-        <div id="prov-config-content" style="font-family:'DM Mono',monospace;font-size:.71rem;color:var(--text);line-height:1.9"></div>
-      </div>
-      <div class="modal-msg" id="prov-msg2"></div>
-      <div class="modal-footer">
-        <button class="btn-cancel" onclick="provBackStep1()">← Quay lại</button>
-        <button class="btn-save" id="prov-usb-btn">🔌 Kết nối Serial</button>
-      </div>
-    </div>
+    <div id="prov-step2" style="display:none"></div>
+    <div id="prov-config-box" style="display:none"></div>
   </div>
 </div>
 
