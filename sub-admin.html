@@ -894,6 +894,21 @@ async function saveFirstLoginPassword(){
   btn.disabled=false;
 }
 
+// ── ALPHABET SORT (tên tiếng Việt — đọc từ chữ cuối) ──
+function getLastWord(name){
+  if(!name) return '';
+  const parts = name.trim().split(/\s+/);
+  return parts[parts.length - 1].toLowerCase();
+}
+
+function alphabetSort(arr, nameKey){
+  return arr.slice().sort(function(a, b){
+    const na = getLastWord(a[nameKey]||'');
+    const nb = getLastWord(b[nameKey]||'');
+    return na.localeCompare(nb, 'vi', {sensitivity:'base'});
+  });
+}
+
 // ── LOAD ADMIN INFO ──
 async function loadInfo(){
   try {
@@ -925,7 +940,7 @@ async function loadOverview(){
       fetch(AAPI+'/admin/'+UID+'/patients'),
     ]);
     const ov = rOv.ok ? await rOv.json() : {};
-    ovPatients = rPt.ok ? await rPt.json() : [];
+    ovPatients = rPt.ok ? alphabetSort(await rPt.json(), 'name') : [];
 
     document.getElementById('ov-pt-total').textContent  = ov.patients?.total ?? ovPatients.length ?? '—';
     document.getElementById('ov-dev-online').textContent = ov.devices?.online ?? '—';
@@ -1019,7 +1034,7 @@ async function loadDevices(){
   body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
     const r=await fetch(AAPI+'/admin/'+UID+'/devices');
-    devCache=r.ok?await r.json():[];
+    devCache = r.ok ? (await r.json()).sort(function(a,b){ return (a.serial||'').localeCompare(b.serial||''); }) : [];
     renderDevices();
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
@@ -1208,7 +1223,7 @@ async function loadPatients(){
   body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
     const r=await fetch(AAPI+'/admin/'+UID+'/patients');
-    ptCache=r.ok?await r.json():[];
+    ptCache = r.ok ? alphabetSort(await r.json(), 'name') : [];
     renderPatients();
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
@@ -1494,7 +1509,7 @@ async function loadDoctors(){
   body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
     const r=await fetch(AAPI+'/admin/'+UID+'/doctors');
-    docCache=r.ok?await r.json():[];
+    docCache = r.ok ? alphabetSort(await r.json(), 'name') : [];
     docFiltered=docCache;
     renderDoctorsFromList(docFiltered);
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
@@ -1930,8 +1945,8 @@ async function loadFamilies(){
     const r = await fetch(AAPI+'/admin/'+UID+'/families');
     const data = r.ok ? await r.json() : [];
     console.log('[families] got', data.length, 'records');
-    familiesCache = data;
-    familiesFiltered = data;
+    familiesCache = alphabetSort(data, 'userName');
+    familiesFiltered = familiesCache;
     renderFamilies(familiesFiltered);
   } catch(e){
     console.error('[families] error:', e);
