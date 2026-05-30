@@ -592,7 +592,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="divider">Thông tin cá nhân</div>
     <div class="field-row c2">
       <div class="field"><label>Họ tên *</label><input id="pt-name" type="text" placeholder="Nguyễn Văn A"/></div>
-      <div class="field"><label>Số điện thoại</label><input id="pt-phone" type="text" placeholder="0912..."/></div>
+      <div class="field"><label>Số điện thoại</label><input id="pt-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
     </div>
     <div class="field-row c2">
       <div class="field"><label>Ngày sinh</label><input id="pt-dob" type="date"/></div>
@@ -2688,7 +2688,7 @@ async function saveDoctor(){
     <div class="modal-ttl">👨‍⚕️ Tạo tài khoản bác sĩ</div>
     <div class="field"><label>Họ tên *</label><input id="doc-name" type="text" placeholder="BS. Nguyễn Văn A"/></div>
     <div class="field-row c2">
-      <div class="field"><label>Số điện thoại</label><input id="doc-phone" type="text" placeholder="0912..."/></div>
+      <div class="field"><label>Số điện thoại</label><input id="doc-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
       <div class="field"><label>Email (để đăng nhập)</label><input id="doc-email" type="email" placeholder="bs@hospital.vn"/></div>
     </div>
     <div class="field-row c2">
@@ -2916,7 +2916,7 @@ async function saveDoctor(){
     <input type="hidden" id="edit-doc-id"/>
     <div class="field"><label>Họ tên *</label><input id="edit-doc-name" type="text"/></div>
     <div class="field-row c2">
-      <div class="field"><label>Số điện thoại</label><input id="edit-doc-phone" type="text"/></div>
+      <div class="field"><label>Số điện thoại</label><input id="edit-doc-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
       <div class="field"><label>Email</label><input id="edit-doc-email" type="email"/></div>
     </div>
     <div class="field-row c2">
