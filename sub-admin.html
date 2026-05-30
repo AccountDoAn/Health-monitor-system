@@ -484,9 +484,22 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <span>👨‍👩‍👧 Người nhà (tuỳ chọn)</span>
       <div style="flex:1;height:1px;background:var(--border)"></div>
     </div>
+    <!-- Radio chọn trạng thái -->
+    <div style="display:flex;gap:16px;margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="pt-fam-mode" value="new" checked onchange="toggleFamMode('pt','new')"
+          style="accent-color:var(--navy);width:15px;height:15px"/>
+        Tạo tài khoản mới
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="pt-fam-mode" value="existing" onchange="toggleFamMode('pt','existing')"
+          style="accent-color:var(--navy);width:15px;height:15px"/>
+        Đã có tài khoản
+      </label>
+    </div>
     <div class="field">
       <label>Họ tên người nhà
-        <span style="font-weight:400;color:var(--muted);font-size:.62rem"> — nhập để tìm hoặc tạo mới</span>
+        <span id="pt-fam-name-hint" style="font-weight:400;color:var(--muted);font-size:.62rem"> — nhập để tìm hoặc tạo mới</span>
       </label>
       <div class="ac-wrap">
         <input id="pt-fam-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
@@ -1203,6 +1216,9 @@ function openAddPatient(){
   document.getElementById('pt-blood').value='';
   document.getElementById('pt-gender').value='';
   document.getElementById('pt-fam-rel').value='';
+  // Reset radio về tạo mới
+  const ptRadios = document.querySelectorAll('input[name="pt-fam-mode"]');
+  if(ptRadios.length){ ptRadios[0].checked=true; toggleFamMode('pt','new'); }
   document.getElementById('pt-fam-new-fields').style.display='block';
   document.getElementById('pt-fam-ac-drop').style.display='none';
   document.getElementById('pt-fam-pw').value='123456';
@@ -1883,6 +1899,9 @@ function filterFamilies(q){
 // Mở modal thêm người nhà từ tab bệnh nhân
 function openAddFamily(pid, pname){
   _afSelectedUserId = null;
+  // Reset radio về tạo mới
+  const radios = document.querySelectorAll('input[name="af-fam-mode"]');
+  if(radios.length){ radios[0].checked=true; toggleFamMode('af','new'); }
   document.getElementById('af-patient-id').value   = pid;
   document.getElementById('af-patient-name').textContent = pname;
   document.getElementById('af-name').value  = '';
@@ -1931,8 +1950,15 @@ function acSelect(name, phone, email, uid){
   document.getElementById('af-name').value  = name;
   document.getElementById('af-phone').value = phone;
   document.getElementById('af-email').value = email;
-  document.getElementById('af-new-fields').style.display = 'none';
   document.getElementById('af-ac-drop').style.display = 'none';
+  // Nếu đang ở mode existing → giữ disable
+  const mode = document.querySelector('input[name="af-fam-mode"]:checked')?.value;
+  if(mode === 'existing'){
+    ['af-phone','af-email','af-pw'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el){ el.disabled=true; el.style.opacity='0.5'; }
+    });
+  }
 }
 
 // Ẩn dropdown khi click ra ngoài
@@ -2232,6 +2258,35 @@ async function saveEditDoctor(){
 }
 
 // Autocomplete người nhà trong form tiếp nhận bệnh nhân
+// ── TOGGLE FAM MODE (radio button) ──
+function toggleFamMode(prefix, mode){
+  const isExisting = mode === 'existing';
+  // Disable/enable các field ngoài tên
+  [prefix+'-fam-phone', prefix+'-fam-email', prefix+'-fam-pw',
+   prefix+'-phone',     prefix+'-email',     prefix+'-pw'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.disabled = isExisting;
+    el.style.opacity = isExisting ? '0.5' : '1';
+    el.style.cursor  = isExisting ? 'not-allowed' : '';
+    el.style.background = isExisting ? 'var(--bg)' : '';
+  });
+  // Hint text
+  const hint = document.getElementById(prefix+'-fam-name-hint') || document.getElementById(prefix+'-name-hint');
+  if(hint) hint.textContent = isExisting
+    ? ' — nhập tên để tìm tài khoản có sẵn'
+    : ' — nhập để tìm hoặc tạo mới';
+  // Reset existing id nếu chuyển sang tạo mới
+  if(!isExisting){
+    const exEl = document.getElementById(prefix+'-fam-existing-id') || document.getElementById(prefix+'-existing-id');
+    if(exEl){ exEl.value = ''; }
+    // Xóa các field khi chuyển sang tạo mới
+    [prefix+'-fam-phone',prefix+'-fam-email',prefix+'-phone',prefix+'-email'].forEach(function(id){
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+  }
+}
+
 let _acPtFamTimer = null;
 async function acSearchPtFamily(q){
   const drop = document.getElementById('pt-fam-ac-drop');
@@ -2262,8 +2317,15 @@ function acSelectPtFam(name,phone,email,uid){
   document.getElementById('pt-fam-phone').value = phone;
   document.getElementById('pt-fam-email').value = email;
   document.getElementById('pt-fam-existing-id').value = uid;
-  document.getElementById('pt-fam-new-fields').style.display='none';
   document.getElementById('pt-fam-ac-drop').style.display='none';
+  // Nếu đang ở mode existing → giữ disable, chỉ hiện thông tin
+  const mode = document.querySelector('input[name="pt-fam-mode"]:checked')?.value;
+  if(mode === 'existing'){
+    ['pt-fam-phone','pt-fam-email','pt-fam-pw'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el){ el.disabled=true; el.style.opacity='0.5'; }
+    });
+  }
 }
 function openAddDoctor(){
   ['doc-name','doc-phone','doc-email','doc-dob'].forEach(function(id){
@@ -2410,9 +2472,22 @@ async function saveDoctor(){
 
     <!-- Tìm / nhập tên — có autocomplete -->
     <div class="divider">Thông tin người nhà</div>
+    <!-- Radio chọn trạng thái -->
+    <div style="display:flex;gap:16px;margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="af-fam-mode" value="new" checked onchange="toggleFamMode('af','new')"
+          style="accent-color:var(--navy);width:15px;height:15px"/>
+        Tạo tài khoản mới
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="af-fam-mode" value="existing" onchange="toggleFamMode('af','existing')"
+          style="accent-color:var(--navy);width:15px;height:15px"/>
+        Đã có tài khoản
+      </label>
+    </div>
     <div class="field">
       <label>Họ tên *
-        <span style="font-weight:400;color:var(--muted);font-size:.62rem"> — Nhập để tìm tài khoản có sẵn hoặc tạo mới</span>
+        <span id="af-name-hint" style="font-weight:400;color:var(--muted);font-size:.62rem"> — Nhập để tìm tài khoản có sẵn hoặc tạo mới</span>
       </label>
       <div class="ac-wrap">
         <input id="af-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
@@ -2428,9 +2503,6 @@ async function saveDoctor(){
         <div class="field"><label>Email (đăng nhập app)</label><input id="af-email" type="email" placeholder="email@gmail.com"/></div>
       </div>
       <div class="field"><label>Mật khẩu app (mặc định: 123456)</label><input id="af-pw" type="text" value="123456"/></div>
-      <div style="background:#fffbea;border:1px solid #f0d060;border-radius:8px;padding:9px 12px;font-size:.7rem;color:#7a5800;margin-bottom:4px">
-        💡 Nếu đã có tài khoản → chọn từ gợi ý bên trên, không cần điền lại.
-      </div>
     </div>
 
     <div class="field-row" style="margin-top:8px">
