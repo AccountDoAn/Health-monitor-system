@@ -203,9 +203,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <button class="sb-btn" onclick="switchView('patients',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Bệnh nhân
     </button>
-    <button class="sb-btn" onclick="switchView('links',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Liên kết
-    </button>
+
     <button class="sb-btn" onclick="switchView('families',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>Người nhà
     </button>
@@ -566,16 +564,15 @@ function doLogout(){ if(!confirm('Đăng xuất?'))return; localStorage.removeIt
 function switchView(name, btn){
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  ['overview','devices','patients','links','doctors','families'].forEach(v=>{
+  ['overview','devices','patients','doctors','families'].forEach(v=>{
     document.getElementById('view-'+v).style.display='none';
   });
   document.getElementById('view-'+name).style.display='flex';
-  const titles={overview:'Dashboard',devices:'Thiết bị theo dõi',patients:'Bệnh nhân',links:'Liên kết bác sĩ — Bệnh nhân',doctors:'Bác sĩ',families:'Người nhà'};
+  const titles={overview:'Dashboard',devices:'Thiết bị theo dõi',patients:'Bệnh nhân',doctors:'Bác sĩ',families:'Người nhà'};
   document.getElementById('page-title').textContent = titles[name]||name;
   if(name==='overview')  loadOverview();
   if(name==='devices')   loadDevices();
   if(name==='patients')  loadPatients();
-  if(name==='links')     loadLinks();
   if(name==='doctors')   loadDoctors();
   if(name==='families')  loadFamilies();
 }
