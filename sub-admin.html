@@ -642,7 +642,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
     <div id="pt-fam-new-fields">
       <div class="field-row c2">
-        <div class="field"><label>SĐT người nhà</label><input id="pt-fam-phone" type="text" placeholder="0912..."/></div>
+        <div class="field"><label>SĐT người nhà</label><input id="pt-fam-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
         <div class="field"><label>Email người nhà</label><input id="pt-fam-email" type="email" placeholder="email@..."/></div>
       </div>
       <div class="field-row c2">
@@ -2526,6 +2526,26 @@ async function saveEditDoctor(){
 }
 
 // Autocomplete người nhà trong form tiếp nhận bệnh nhân
+// ── VALIDATE SỐ ĐIỆN THOẠI ──
+function validatePhone(el){
+  // Chỉ giữ số
+  let v = el.value.replace(/[^0-9]/g,'');
+  // Giới hạn 10 ký tự
+  if(v.length > 10) v = v.slice(0, 10);
+  el.value = v;
+  // Kiểm tra bắt đầu bằng 0
+  if(v.length > 0 && v[0] !== '0'){
+    el.style.borderColor = 'var(--danger)';
+    el.title = 'Số điện thoại phải bắt đầu bằng 0';
+  } else if(v.length > 0 && v.length < 10){
+    el.style.borderColor = 'var(--warn)';
+    el.title = 'Số điện thoại phải đủ 10 chữ số';
+  } else {
+    el.style.borderColor = '';
+    el.title = '';
+  }
+}
+
 // ── TOGGLE FAM MODE (radio button) ──
 function toggleFamMode(prefix, mode){
   const isExisting = mode === 'existing';
@@ -2700,7 +2720,7 @@ async function saveDoctor(){
     <div class="modal-ttl">👨‍👩‍👧 Tạo tài khoản người nhà mới</div>
     <div class="field"><label>Họ tên *</label><input id="cf-name" type="text" placeholder="Nguyễn Thị B"/></div>
     <div class="field-row c2">
-      <div class="field"><label>Số điện thoại</label><input id="cf-phone" type="text" placeholder="0912..."/></div>
+      <div class="field"><label>Số điện thoại</label><input id="cf-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
       <div class="field"><label>Email (đăng nhập app)</label><input id="cf-email" type="email" placeholder="email@gmail.com"/></div>
     </div>
     <div class="field"><label>Mật khẩu app</label><input id="cf-pw" type="text" value="123456"/></div>
@@ -2767,7 +2787,7 @@ async function saveDoctor(){
     <!-- Phần tạo mới — hiện khi chưa chọn tài khoản có sẵn -->
     <div id="af-new-fields">
       <div class="field-row c2">
-        <div class="field"><label>Số điện thoại</label><input id="af-phone" type="text" placeholder="0912..."/></div>
+        <div class="field"><label>Số điện thoại</label><input id="af-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
         <div class="field"><label>Email (đăng nhập app)</label><input id="af-email" type="email" placeholder="email@gmail.com"/></div>
       </div>
       <div class="field"><label>Mật khẩu app (mặc định: 123456)</label><input id="af-pw" type="text" value="123456"/></div>
@@ -2797,7 +2817,7 @@ async function saveDoctor(){
     <input type="hidden" id="ef-user-id"/>
     <div class="field"><label>Họ tên</label><input id="ef-name" type="text"/></div>
     <div class="field-row c2">
-      <div class="field"><label>Số điện thoại</label><input id="ef-phone" type="text"/></div>
+      <div class="field"><label>Số điện thoại</label><input id="ef-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
       <div class="field"><label>Email</label><input id="ef-email" type="email"/></div>
     </div>
     <div class="field"><label>Quan hệ</label>
