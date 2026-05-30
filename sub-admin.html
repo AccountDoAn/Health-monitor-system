@@ -143,6 +143,20 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .sa-fb{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
 .sa-fb.on{background:var(--navy);border-color:var(--navy);color:#fff;}
 .sa-fb:hover:not(.on){background:var(--bg);}
+/* Filter panel */
+.filter-panel{display:none;padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);}
+.filter-panel.open{display:block;}
+.filter-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;}
+.filter-group{display:flex;flex-direction:column;gap:6px;}
+.filter-group-label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+.filter-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.filter-chip{padding:3px 10px;border:1.5px solid var(--border);border-radius:20px;background:none;font-family:'Sora',sans-serif;font-size:.68rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.filter-chip.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.filter-chip:hover:not(.on){background:var(--mint);border-color:var(--navy);color:var(--navy);}
+.filter-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:none;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.filter-btn.active{border-color:var(--navy);color:var(--navy);}
+.filter-badge{background:var(--navy);color:#fff;border-radius:10px;padding:1px 6px;font-size:.6rem;display:none;}
+.filter-badge.show{display:inline;}
 .pt-info-row{display:flex;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
 .pt-info-row:last-child{border-bottom:none;}
 .pt-info-lbl{color:var(--muted);font-size:.66rem;min-width:70px;flex-shrink:0;white-space:nowrap;}
@@ -281,6 +295,40 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
             oninput="filterDevices(this.value)"
             style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:160px"/>
         </div>
+        <button class="filter-btn" id="dev-filter-btn" onclick="toggleFilter('dev')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="dev-filter-badge">0</span>
+        </button>
+      </div>
+      <div class="filter-panel" id="dev-filter-panel">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-group-label">Trạng thái</div>
+            <div class="filter-chips" id="dev-filter-status">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="online">Online</button>
+              <button class="filter-chip" data-val="offline">Offline</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Bệnh nhân</div>
+            <div class="filter-chips" id="dev-filter-patient">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Đã gán</button>
+              <button class="filter-chip" data-val="no">Chưa gán</button>
+            </div>
+          </div>
+          <div class="filter-group" style="min-width:200px">
+            <div class="filter-group-label">Pin tối đa (≤) — <span id="dev-bat-label">100%</span></div>
+            <input type="range" id="dev-filter-bat" min="0" max="100" step="20" value="100"
+              oninput="document.getElementById('dev-bat-label').textContent=this.value+'%';applyFilter('dev')"
+              style="width:180px;accent-color:var(--navy)"/>
+            <div style="display:flex;justify-content:space-between;width:180px;font-size:.6rem;color:var(--muted);margin-top:2px">
+              <span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetFilter('dev')" style="margin-top:10px;padding:4px 12px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa bộ lọc</button>
       </div>
       <div id="dev-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
@@ -297,10 +345,61 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
             oninput="filterPatients(this.value)"
             style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:180px"/>
         </div>
+        <button class="filter-btn" id="pt-filter-btn" onclick="toggleFilter('pt')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="pt-filter-badge">0</span>
+        </button>
         <button class="btn-primary" onclick="openAddPatient()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Tiếp nhận bệnh nhân
         </button>
+      </div>
+      <div class="filter-panel" id="pt-filter-panel">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-group-label">Nhóm máu</div>
+            <div class="filter-chips" id="pt-filter-blood">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="A+">A+</button><button class="filter-chip" data-val="A-">A-</button>
+              <button class="filter-chip" data-val="B+">B+</button><button class="filter-chip" data-val="B-">B-</button>
+              <button class="filter-chip" data-val="O+">O+</button><button class="filter-chip" data-val="O-">O-</button>
+              <button class="filter-chip" data-val="AB+">AB+</button><button class="filter-chip" data-val="AB-">AB-</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Giới tính</div>
+            <div class="filter-chips" id="pt-filter-gender">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="nam">Nam</button>
+              <button class="filter-chip" data-val="nu">Nữ</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Thiết bị</div>
+            <div class="filter-chips" id="pt-filter-device">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Đã gán</button>
+              <button class="filter-chip" data-val="no">Chưa gán</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Người nhà</div>
+            <div class="filter-chips" id="pt-filter-family">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Có</button>
+              <button class="filter-chip" data-val="no">Chưa có</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Bác sĩ</div>
+            <div class="filter-chips" id="pt-filter-doctor">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Có</button>
+              <button class="filter-chip" data-val="no">Chưa có</button>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetFilter('pt')" style="margin-top:10px;padding:4px 12px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa bộ lọc</button>
       </div>
       <div id="pt-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
@@ -317,10 +416,27 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
             oninput="filterDoctors(this.value)"
             style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:180px"/>
         </div>
+        <button class="filter-btn" id="doc-filter-btn" onclick="toggleFilter('doc')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="doc-filter-badge">0</span>
+        </button>
         <button class="btn-primary" onclick="openAddDoctor()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Tạo tài khoản bác sĩ
         </button>
+      </div>
+      <div class="filter-panel" id="doc-filter-panel">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-group-label">Bệnh nhân được gán</div>
+            <div class="filter-chips" id="doc-filter-patient">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Đã có bệnh nhân</button>
+              <button class="filter-chip" data-val="no">Chưa có bệnh nhân</button>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetFilter('doc')" style="margin-top:10px;padding:4px 12px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa bộ lọc</button>
       </div>
       <div id="doc-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
@@ -354,10 +470,27 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           <input type="text" id="fam-tab-srch" placeholder="Tìm theo tên người nhà..." oninput="filterFamilies(this.value)"
             style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:180px"/>
         </div>
+        <button class="filter-btn" id="fam-filter-btn" onclick="toggleFilter('fam')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="fam-filter-badge">0</span>
+        </button>
         <button class="btn-primary" onclick="openCreateFamily()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Thêm người nhà
         </button>
+      </div>
+      <div class="filter-panel" id="fam-filter-panel">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-group-label">Vai trò giám sát</div>
+            <div class="filter-chips" id="fam-filter-primary">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Giám sát chính</button>
+              <button class="filter-chip" data-val="no">Không phải chính</button>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetFilter('fam')" style="margin-top:10px;padding:4px 12px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa bộ lọc</button>
       </div>
       <div id="families-body" style="padding:12px 16px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
@@ -1093,10 +1226,7 @@ function renderPatients(){
 
 function filterPatients(q){
   ptPage = 1;
-  ptFiltered2 = q.trim()
-    ? ptCache.filter(p=>(p.name||'').toLowerCase().includes(q.toLowerCase()))
-    : ptCache;
-  renderPatientsFromList(ptFiltered2);
+  applyPatientFilter();
 }
 
 function renderPatientsFromList(list){
@@ -1356,10 +1486,7 @@ const DOC_PER_PAGE = 8;
 
 function filterDoctors(q){
   docPage = 1;
-  docFiltered = q.trim()
-    ? docCache.filter(d=>(d.name||'').toLowerCase().includes(q.toLowerCase()))
-    : docCache;
-  renderDoctorsFromList(docFiltered);
+  applyDoctorFilter();
 }
 
 async function loadDoctors(){
@@ -1885,15 +2012,7 @@ function famGoPage(p){
 
 function filterFamilies(q){
   famPage = 1;
-  if(!q.trim()){ familiesFiltered = familiesCache; }
-  else {
-    const lq = q.toLowerCase();
-    familiesFiltered = familiesCache.filter(f=>
-      (f.userName||'').toLowerCase().includes(lq)||
-      (f.patientName||'').toLowerCase().includes(lq)
-    );
-  }
-  renderFamilies(familiesFiltered);
+  applyFamilyFilter();
 }
 
 // Mở modal thêm người nhà từ tab bệnh nhân
@@ -2214,8 +2333,149 @@ async function saveCreateFamily(){
   btn.disabled=false;
 }
 
-// ── CHỈNH SỬA BÁC SĨ ──
-// ── CHỈNH SỬA BÁC SĨ ──
+// ── BỘ LỌC CHUNG ──
+const filterState = {
+  pt:  { blood:'', gender:'', device:'', family:'', doctor:'' },
+  dev: { status:'', patient:'', bat: 100 },
+  doc: { patient:'' },
+  fam: { primary:'' },
+};
+
+function toggleFilter(prefix){
+  const panel = document.getElementById(prefix+'-filter-panel');
+  const btn   = document.getElementById(prefix+'-filter-btn');
+  const open  = panel.classList.toggle('open');
+  btn.classList.toggle('active', open);
+  if(!panel.querySelector('.filter-chip.on'))
+    panel.querySelectorAll('.filter-chips').forEach(function(group){
+      if(!group.querySelector('.filter-chip.on'))
+        group.querySelector('.filter-chip').classList.add('on');
+    });
+}
+
+function selectChip(el, prefix, key){
+  el.closest('.filter-chips').querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  filterState[prefix][key] = el.dataset.val;
+  applyFilter(prefix);
+}
+
+function resetFilter(prefix){
+  if(prefix==='pt')  filterState.pt  = {blood:'',gender:'',device:'',family:'',doctor:''};
+  if(prefix==='dev') filterState.dev = {status:'',patient:'',bat:100};
+  if(prefix==='doc') filterState.doc = {patient:''};
+  if(prefix==='fam') filterState.fam = {primary:''};
+  const panel = document.getElementById(prefix+'-filter-panel');
+  panel.querySelectorAll('.filter-chips').forEach(function(group){
+    group.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+    group.querySelector('.filter-chip').classList.add('on');
+  });
+  const bat = document.getElementById('dev-filter-bat');
+  if(bat){ bat.value=100; document.getElementById('dev-bat-label').textContent='100%'; }
+  updateBadge(prefix, 0);
+  applyFilter(prefix);
+}
+
+function countActiveFilters(prefix){
+  const s = filterState[prefix];
+  if(prefix==='pt')  return [s.blood,s.gender,s.device,s.family,s.doctor].filter(Boolean).length;
+  if(prefix==='dev') return [s.status,s.patient].filter(Boolean).length+(s.bat<100?1:0);
+  if(prefix==='doc') return [s.patient].filter(Boolean).length;
+  if(prefix==='fam') return [s.primary].filter(Boolean).length;
+  return 0;
+}
+
+function updateBadge(prefix, count){
+  const badge = document.getElementById(prefix+'-filter-badge');
+  if(!badge) return;
+  badge.textContent = count;
+  badge.classList.toggle('show', count>0);
+  document.getElementById(prefix+'-filter-btn')?.classList.toggle('active', count>0);
+}
+
+function applyFilter(prefix){
+  updateBadge(prefix, countActiveFilters(prefix));
+  if(prefix==='pt')  applyPatientFilter();
+  if(prefix==='dev') applyDeviceFilter();
+  if(prefix==='doc') applyDoctorFilter();
+  if(prefix==='fam') applyFamilyFilter();
+}
+
+function applyPatientFilter(){
+  const s = filterState.pt;
+  const q = document.getElementById('pt-tab-srch')?.value.toLowerCase()||'';
+  let list = ptCache.filter(function(p){
+    if(q && !(p.name||'').toLowerCase().includes(q)) return false;
+    if(s.blood  && (p.bloodType||'')!==s.blood) return false;
+    if(s.gender && (p.gender||'')!==s.gender) return false;
+    if(s.device==='yes' && !p.deviceId) return false;
+    if(s.device==='no'  &&  p.deviceId) return false;
+    if(s.doctor==='yes' && !p.doctor)   return false;
+    if(s.doctor==='no'  &&  p.doctor)   return false;
+    return true;
+  });
+  if(s.family){
+    const hasFam = new Set(familiesCache.map(function(f){ return f.patientId; }));
+    list = list.filter(function(p){
+      return s.family==='yes' ? hasFam.has(p.id) : !hasFam.has(p.id);
+    });
+  }
+  ptFiltered2 = list; ptPage=1; renderPatientsFromList(ptFiltered2);
+}
+
+function applyDeviceFilter(){
+  const s = filterState.dev;
+  devFiltered = devCache.filter(function(d){
+    if(s.status==='online'  && !d.online)  return false;
+    if(s.status==='offline' &&  d.online)  return false;
+    if(s.patient==='yes' && !d.assigned) return false;
+    if(s.patient==='no'  &&  d.assigned) return false;
+    if(s.bat<100 && d.battery!=null && d.battery > s.bat) return false;
+    return true;
+  });
+  devPage=1; renderDevicesFromList(devFiltered);
+}
+
+function applyDoctorFilter(){
+  const s = filterState.doc;
+  const q = document.getElementById('doc-tab-srch')?.value.toLowerCase()||'';
+  docFiltered = docCache.filter(function(d){
+    if(q && !(d.name||'').toLowerCase().includes(q)) return false;
+    if(s.patient==='yes' && d.patientCount===0) return false;
+    if(s.patient==='no'  && d.patientCount>0)   return false;
+    return true;
+  });
+  docPage=1; renderDoctorsFromList(docFiltered);
+}
+
+function applyFamilyFilter(){
+  const s = filterState.fam;
+  const q = document.getElementById('fam-tab-srch')?.value.toLowerCase()||'';
+  familiesFiltered = familiesCache.filter(function(f){
+    if(q && !(f.userName||'').toLowerCase().includes(q) && !(f.patientName||'').toLowerCase().includes(q)) return false;
+    if(s.primary==='yes' && !f.isPrimary)  return false;
+    if(s.primary==='no'  &&  f.isPrimary)  return false;
+    return true;
+  });
+  famPage=1; renderFamilies(familiesFiltered);
+}
+
+// Gán sự kiện chip
+document.addEventListener('DOMContentLoaded', function(){
+  [['pt-filter-blood','pt','blood'],['pt-filter-gender','pt','gender'],
+   ['pt-filter-device','pt','device'],['pt-filter-family','pt','family'],
+   ['pt-filter-doctor','pt','doctor'],
+   ['dev-filter-status','dev','status'],['dev-filter-patient','dev','patient'],
+   ['doc-filter-patient','doc','patient'],
+   ['fam-filter-primary','fam','primary'],
+  ].forEach(function(cfg){
+    var el=document.getElementById(cfg[0]); if(!el) return;
+    el.querySelectorAll('.filter-chip').forEach(function(chip){
+      chip.addEventListener('click',function(){ selectChip(chip,cfg[1],cfg[2]); });
+    });
+  });
+});
+
 function openEditDoctor(id, name, phone, email, dob, gender){
   document.getElementById('edit-doc-id').value     = id;
   document.getElementById('edit-doc-name').value   = name;
