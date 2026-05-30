@@ -2401,7 +2401,7 @@ function applyFilter(prefix){
   if(prefix==='fam') applyFamilyFilter();
 }
 
-function applyPatientFilter(){
+async function applyPatientFilter(){
   const s = filterState.pt;
   const q = document.getElementById('pt-tab-srch')?.value.toLowerCase()||'';
   let list = ptCache.filter(function(p){
@@ -2415,6 +2415,14 @@ function applyPatientFilter(){
     return true;
   });
   if(s.family){
+    // Fetch danh sách liên kết nếu cache chưa có
+    if(!familiesCache.length){
+      try {
+        const r = await fetch(AAPI+'/admin/'+UID+'/families');
+        familiesCache = r.ok ? await r.json() : [];
+        familiesFiltered = familiesCache;
+      } catch(_){}
+    }
     const hasFam = new Set(familiesCache.map(function(f){ return f.patientId; }));
     list = list.filter(function(p){
       return s.family==='yes' ? hasFam.has(p.id) : !hasFam.has(p.id);
