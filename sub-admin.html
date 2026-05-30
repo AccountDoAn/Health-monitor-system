@@ -2852,7 +2852,7 @@ async function saveDoctor(){
     <input type="hidden" id="ep-id"/>
     <div class="field"><label>Họ tên *</label><input id="ep-name" type="text"/></div>
     <div class="field-row c2">
-      <div class="field"><label>Số điện thoại</label><input id="ep-phone" type="text"/></div>
+      <div class="field"><label>Số điện thoại</label><input id="ep-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
       <div class="field"><label>Email</label><input id="ep-email" type="email"/></div>
     </div>
     <div class="field-row c2">
