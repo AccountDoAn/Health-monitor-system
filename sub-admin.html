@@ -140,6 +140,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .card-sub{font-size:.67rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;transition:color .25s;}
 .card-tag{font-size:.6rem;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--mint);color:var(--navy);flex-shrink:0;transition:background .25s,color .25s;}
 .card-chev{color:var(--muted);transition:transform .25s,color .25s;flex-shrink:0;}
+.sa-fb{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.sa-fb.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.sa-fb:hover:not(.on){background:var(--bg);}
 .pt-info-row{display:flex;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
 .pt-info-row:last-child{border-bottom:none;}
 .pt-info-lbl{color:var(--muted);font-size:.66rem;min-width:70px;flex-shrink:0;white-space:nowrap;}
@@ -372,6 +375,14 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <button id="dark-tgl" onclick="toggleDark()" style="width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;background:var(--border);position:relative;transition:background .2s">
         <span id="dark-knob" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
       </button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.82rem;font-weight:600">🔤 Cỡ chữ</span>
+      <div style="display:flex;gap:4px">
+        <button class="sa-fb" onclick="setFont(12,this)">Nhỏ</button>
+        <button class="sa-fb on" onclick="setFont(14,this)">Vừa</button>
+        <button class="sa-fb" onclick="setFont(16,this)">Lớn</button>
+      </div>
     </div>
     <div style="margin-top:14px">
       <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Đổi mật khẩu</div>
@@ -642,17 +653,36 @@ function toggleDark(){
   knob.style.left = isDark?'3px':'21px';
 }
 
+function setFont(n, b){
+  const sizes = {12:'87.5%', 14:'100%', 16:'112.5%'};
+  document.documentElement.style.fontSize = sizes[n]||'100%';
+  localStorage.setItem('sa_font', n);
+  document.querySelectorAll('.sa-fb').forEach(x=>x.classList.remove('on'));
+  if(b) b.classList.add('on');
+}
+
 // Khởi tạo theme
 (function(){
   const t = localStorage.getItem('sa_theme');
   if(t) document.documentElement.setAttribute('data-theme', t);
-  // Sync knob sau khi DOM load
+  // Khởi tạo font size
+  const f = parseInt(localStorage.getItem('sa_font'));
+  if(f){
+    const sizes={12:'87.5%',14:'100%',16:'112.5%'};
+    document.documentElement.style.fontSize = sizes[f]||'100%';
+  }
   window.addEventListener('DOMContentLoaded', function(){
     const isDark = document.documentElement.getAttribute('data-theme')==='dark';
     const knob = document.getElementById('dark-knob');
-    const tgl = document.getElementById('dark-tgl');
+    const tgl  = document.getElementById('dark-tgl');
     if(knob) knob.style.left = isDark?'21px':'3px';
-    if(tgl) tgl.style.background = isDark?'var(--navy)':'var(--border)';
+    if(tgl)  tgl.style.background = isDark?'var(--navy)':'var(--border)';
+    // Sync font button
+    const fv = parseInt(localStorage.getItem('sa_font'))||14;
+    const labels={12:'Nhỏ',14:'Vừa',16:'Lớn'};
+    document.querySelectorAll('.sa-fb').forEach(b=>{
+      b.classList.toggle('on', b.textContent.trim()===labels[fv]);
+    });
   });
 })();
 
