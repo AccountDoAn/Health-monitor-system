@@ -367,6 +367,64 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
   </div>
 </div>
 
+<!-- MODAL: SỬA CƠ SỞ Y TẾ -->
+<div class="modal-bg" id="modal-edit-hospital" onclick="if(event.target===this)closeModal('modal-edit-hospital')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-hospital')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Sửa thông tin cơ sở y tế</div>
+    <input type="hidden" id="eh-id"/>
+    <div class="field"><label>Tên cơ sở *</label><input id="eh-name" type="text"/></div>
+    <div class="field"><label>Địa chỉ</label><input id="eh-addr" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="eh-phone" type="text"/></div>
+      <div class="field"><label>Email liên hệ</label><input id="eh-email" type="email"/></div>
+    </div>
+    <div class="field"><label>Loại hình</label>
+      <select id="eh-type">
+        <option value="benh_vien">Bệnh viện</option>
+        <option value="phong_kham">Phòng khám</option>
+        <option value="trung_tam_y_te">Trung tâm y tế</option>
+      </select>
+    </div>
+    <div class="modal-msg" id="eh-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-hospital')">Hủy</button>
+      <button class="btn-save" id="eh-save-btn" onclick="saveEditHospital()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: XÁC NHẬN DỪNG CSYT -->
+<div class="modal-bg" id="modal-confirm-stop" onclick="if(event.target===this)closeConfirmStop()">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-ttl">⚠️ Dừng hoạt động cơ sở y tế</div>
+    <div style="background:#fffbea;border:1px solid #f0d060;border-radius:9px;padding:12px 14px;font-size:.78rem;color:#7a5800;margin-bottom:16px;line-height:1.6">
+      Trước khi dừng, cơ sở phải <strong>không còn bất kỳ dữ liệu nào</strong>:<br>
+      sub-admin, bác sĩ, bệnh nhân, thiết bị đang gán và các liên kết liên quan.
+    </div>
+    <div id="confirm-stop-name" style="font-size:.9rem;font-weight:700;color:var(--navy);margin-bottom:16px;text-align:center"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeConfirmStop()">Hủy</button>
+      <button id="confirm-stop-btn" class="btn-save" style="background:#c0392b" onclick="doStopHospital()">Xác nhận dừng</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: LỖI DỪNG CSYT (còn dữ liệu) -->
+<div class="modal-bg" id="modal-stop-error" onclick="if(event.target===this)closeModal('modal-stop-error')">
+  <div class="modal" style="max-width:480px">
+    <button class="modal-x" onclick="closeModal('modal-stop-error')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl" style="color:#c0392b">❌ Không thể dừng hoạt động</div>
+    <div style="background:#fdeaea;border:1px solid #f5c0c0;border-radius:9px;padding:12px 14px;font-size:.78rem;color:#7a1a1a;margin-bottom:14px">
+      Cơ sở y tế này vẫn còn dữ liệu liên quan chưa được xóa. Vui lòng xóa toàn bộ trước khi dừng hoạt động.
+    </div>
+    <div id="stop-error-details" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+    <div class="modal-footer">
+      <button class="btn-save" onclick="closeModal('modal-stop-error')">Đã hiểu</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: THÊM CƠ SỞ Y TẾ -->
 <div class="modal-bg" id="modal-hospital" onclick="if(event.target===this)closeModal('modal-hospital')">
   <div class="modal">
@@ -554,32 +612,112 @@ function renderHospitals(list){
     +'<td class="mono">'+h.deviceCount+' thiết bị</td>'
     +'<td class="mono">'+h.staffCount+' người</td>'
     +'<td>'+(h.trang_thai_hoat_dong?'<span class="badge b-ok">● Hoạt động</span>':'<span class="badge b-off">○ Dừng</span>')+'</td>'
-    +'<td><button class="btn-outline" style="font-size:.7rem;padding:5px 10px" onclick="toggleHospital(\''+h.id+'\','+h.trang_thai_hoat_dong+')">'+(h.trang_thai_hoat_dong?'Dừng':'Kích hoạt')+'</button></td>'
+    +'<td style="display:flex;gap:6px;align-items:center">'
+    +'<button style="font-size:.7rem;padding:5px 12px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="openEditHospital(\''+h.id+'\',\''+esc(h.ten_co_so||'')+'\',\''+esc(h.dia_chi||'')+'\',\''+esc(h.so_dien_thoai||'')+'\',\''+esc(h.email_lien_he||'')+'\',\''+esc(h.loai_hinh||'')+'\')">✎ Sửa</button>'
+    +'<button style="font-size:.7rem;padding:5px 12px;border:none;border-radius:7px;background:'+(h.trang_thai_hoat_dong?'#c0392b':'#27ae60')+';color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="toggleHospital(\''+h.id+'\','+h.trang_thai_hoat_dong+',\''+esc(h.ten_co_so||h.name||'')+'\')">'
+    +(h.trang_thai_hoat_dong?'Dừng':'Kích hoạt')+'</button>'
+    +'</td>'
     +'</tr>').join('');
 }
 
-async function toggleHospital(id, currentActive){
-  if(currentActive){
-    if(!confirm('Dừng hoạt động cơ sở này?\n\nLưu ý: Cơ sở phải không còn bất kỳ dữ liệu nào (sub-admin, bác sĩ, bệnh nhân, liên kết...) thì mới có thể dừng.')) return;
-  } else {
-    if(!confirm('Kích hoạt lại cơ sở này?')) return;
-  }
+function openEditHospital(id, name, addr, phone, email, type){
+  document.getElementById('eh-id').value    = id;
+  document.getElementById('eh-name').value  = name;
+  document.getElementById('eh-addr').value  = addr;
+  document.getElementById('eh-phone').value = phone;
+  document.getElementById('eh-email').value = email;
+  document.getElementById('eh-type').value  = type||'benh_vien';
+  document.getElementById('eh-msg').textContent = '';
+  document.getElementById('modal-edit-hospital').classList.add('open');
+}
+
+async function saveEditHospital(){
+  const id   = document.getElementById('eh-id').value;
+  const name = document.getElementById('eh-name').value.trim();
+  const msg  = document.getElementById('eh-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập tên cơ sở'; return; }
+  const btn = document.getElementById('eh-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
   try {
     const r = await fetch(AAPI+'/hospitals/'+id,{
       method:'PATCH', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({adminId:UID, active:!currentActive})
+      body: JSON.stringify({
+        adminId: UID,
+        name:    name,
+        address: document.getElementById('eh-addr').value.trim()||null,
+        phone:   document.getElementById('eh-phone').value.trim()||null,
+        email:   document.getElementById('eh-email').value.trim()||null,
+        type:    document.getElementById('eh-type').value||null,
+      })
     });
     const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật thành công';
+    setTimeout(()=>{ closeModal('modal-edit-hospital'); loadHospitals(); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+let _stopHospitalId   = null;
+let _stopHospitalName = null;
+
+async function toggleHospital(id, currentActive, name){
+  if(!currentActive){
+    // Kích hoạt lại — dùng confirm đơn giản
+    if(!confirm('Kích hoạt lại cơ sở: '+name+'?')) return;
+    try {
+      const r = await fetch(AAPI+'/hospitals/'+id,{
+        method:'PATCH', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({adminId:UID, active:true})
+      });
+      if(r.ok) loadHospitals();
+      else { const d=await r.json(); showStopError([d.error||'Lỗi không xác định']); }
+    } catch(e){ showStopError([e.message]); }
+    return;
+  }
+  // Dừng hoạt động — hiện modal xác nhận
+  _stopHospitalId   = id;
+  _stopHospitalName = name;
+  document.getElementById('confirm-stop-name').textContent = '🏥 '+name;
+  document.getElementById('modal-confirm-stop').classList.add('open');
+}
+
+function closeConfirmStop(){
+  document.getElementById('modal-confirm-stop').classList.remove('open');
+  _stopHospitalId = null;
+}
+
+async function doStopHospital(){
+  if(!_stopHospitalId) return;
+  const btn = document.getElementById('confirm-stop-btn');
+  btn.disabled = true; btn.textContent = 'Đang kiểm tra...';
+  try {
+    const r = await fetch(AAPI+'/hospitals/'+_stopHospitalId,{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({adminId:UID, active:false})
+    });
+    const d = await r.json();
+    closeConfirmStop();
     if(r.ok){
       loadHospitals();
     } else if(r.status === 409){
-      // Còn dữ liệu — hiện chi tiết
-      const details = (d.details||[]).map(s=>'  • '+s).join('\n');
-      alert('❌ '+d.error+'\n\n'+d.reason+'\n'+details+'\n\nVui lòng xóa toàn bộ dữ liệu trên trước khi dừng hoạt động cơ sở y tế này.');
+      showStopError(d.details||[d.error||'Lỗi không xác định'], d.reason);
     } else {
-      alert('⚠️ Lỗi: '+(d.error||'Không xác định'));
+      showStopError([d.error||'Lỗi không xác định']);
     }
-  } catch(e){ alert('⚠️ '+e.message); }
+  } catch(e){ closeConfirmStop(); showStopError([e.message]); }
+  btn.disabled = false; btn.textContent = 'Xác nhận dừng';
+}
+
+function showStopError(details, reason){
+  const el = document.getElementById('stop-error-details');
+  const reasonEl = document.querySelector('#modal-stop-error .modal-ttl + div');
+  if(reason && reasonEl) reasonEl.textContent = reason;
+  el.innerHTML = details.map(function(s){
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:.78rem;font-weight:600;color:var(--text)">'
+      +'<span style="color:#c0392b;font-size:.9rem">•</span>'+esc(s)+'</div>';
+  }).join('');
+  document.getElementById('modal-stop-error').classList.add('open');
 }
 
 function openAddHospital(){
