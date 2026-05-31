@@ -702,6 +702,9 @@ async function loadInfo(){
 }
 
 // ── DASHBOARD ──
+let dashHsPage = 1;
+const DASH_HS_PER_PAGE = 12;
+
 async function loadDashboard(){
   try {
     const [rDash, rHs] = await Promise.all([
@@ -718,24 +721,53 @@ async function loadDashboard(){
     document.getElementById('d-dev-offline').textContent = d.devices?.offline  ?? '—';
     document.getElementById('last-upd').textContent     = new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
 
-    // Bảng CSYT nhanh
-    const tbody = document.getElementById('dash-hospitals');
-    if(!hospitalsCache.length){tbody.innerHTML='<div class="loading">Chưa có cơ sở nào</div>';return;}
-    tbody.innerHTML='<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tên cơ sở</th><th>Loại hình</th><th>Thiết bị</th><th>Nhân sự</th><th>Trạng thái</th></tr></thead><tbody>'
-      +hospitalsCache.slice(0,8).map(h=>{
-        const typeLabel={'benh_vien':'Bệnh viện','phong_kham':'Phòng khám','vien_duong_lao':'Dưỡng lão','khac':'Khác'};
-        return '<tr>'
-          +'<td style="font-weight:600">'+esc(h.ten_co_so)+'</td>'
-          +'<td><span class="badge b-purple">'+esc(typeLabel[h.loai_hinh]||h.loai_hinh||'—')+'</span></td>'
-          +'<td class="mono">'+h.deviceCount+' TB</td>'
-          +'<td class="mono">'+h.staffCount+' người</td>'
-          +'<td>'+(h.trang_thai_hoat_dong?'<span class="badge b-ok">● Hoạt động</span>':'<span class="badge b-off">○ Dừng</span>')+'</td>'
-          +'</tr>';
-      }).join('')
-      +'</tbody></table></div>';
+    dashHsPage = 1;
+    renderDashHospitals();
   } catch(e){
     document.getElementById('dash-hospitals').innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>';
   }
+}
+
+function dashHsGoPage(p){
+  const total = Math.ceil(hospitalsCache.length/DASH_HS_PER_PAGE);
+  if(p<1||p>total) return;
+  dashHsPage = p;
+  renderDashHospitals();
+}
+
+function renderDashHospitals(){
+  const el = document.getElementById('dash-hospitals');
+  if(!hospitalsCache.length){ el.innerHTML='<div class="loading">Chưa có cơ sở nào</div>'; return; }
+  const typeLabel={'benh_vien':'Bệnh viện','phong_kham':'Phòng khám','trung_tam_y_te':'TT Y tế','vien_duong_lao':'Dưỡng lão','khac':'Khác'};
+  const total = hospitalsCache.length;
+  const pages = Math.ceil(total/DASH_HS_PER_PAGE);
+  if(dashHsPage>pages) dashHsPage=1;
+  const slice = hospitalsCache.slice((dashHsPage-1)*DASH_HS_PER_PAGE, dashHsPage*DASH_HS_PER_PAGE);
+
+  let html = '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Tên cơ sở</th><th>Loại hình</th><th>Thiết bị</th><th>Nhân sự</th><th>Trạng thái</th></tr></thead><tbody>'
+    + slice.map(h=>'<tr>'
+      +'<td style="font-weight:600">'+esc(h.ten_co_so)+'</td>'
+      +'<td><span class="badge b-purple">'+esc(typeLabel[h.loai_hinh]||h.loai_hinh||'—')+'</span></td>'
+      +'<td class="mono">'+h.deviceCount+' TB</td>'
+      +'<td class="mono">'+h.staffCount+' người</td>'
+      +'<td>'+(h.trang_thai_hoat_dong?'<span class="badge b-ok">● Hoạt động</span>':'<span class="badge b-off">○ Dừng</span>')+'</td>'
+      +'</tr>').join('')
+    +'</tbody></table></div>';
+
+  if(pages>1){
+    const S="font-family:'DM Mono',monospace;font-size:.72rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px 8px;";
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-top:1px solid var(--border)">'
+      +'<span style="font-size:.72rem;color:var(--muted)">Trang '+dashHsPage+'/'+pages+' — '+total+' cơ sở</span>'
+      +'<div style="display:flex;gap:5px">'
+      +'<button onclick="dashHsGoPage('+(dashHsPage-1)+')" '+(dashHsPage<=1?'disabled':'')+' style="'+S+'border:1.5px solid var(--border);background:var(--card);color:var(--muted)">←</button>';
+    for(var i=1;i<=pages;i++){
+      var a=i===dashHsPage;
+      html+='<button onclick="dashHsGoPage('+i+')" style="'+S+'border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
+    }
+    html+='<button onclick="dashHsGoPage('+(dashHsPage+1)+')" '+(dashHsPage>=pages?'disabled':'')+' style="'+S+'border:1.5px solid var(--border);background:var(--card);color:var(--muted)">→</button>'
+      +'</div></div>';
+  }
+  el.innerHTML = html;
 }
 
 // ── CƠ SỞ Y TẾ ──
@@ -760,20 +792,27 @@ function filterHospitals(q){
   renderHospitals(hsFiltered);
 }
 
+let hsPage = 1;
+const HS_PER_PAGE = 12;
+
 function renderHospitals(list){
   const body = document.getElementById('hs-body');
-  const typeLabel={'benh_vien':'Bệnh viện','phong_kham':'Phòng khám','trung_tam_y_te':'TT Y tế','vien_duong_lao':'Dưỡng lão','khac':'Khác'};
   if(!list.length){ body.innerHTML='<div class="loading">Chưa có cơ sở nào</div>'; return; }
+  const typeLabel={'benh_vien':'Bệnh viện','phong_kham':'Phòng khám','trung_tam_y_te':'TT Y tế','vien_duong_lao':'Dưỡng lão','khac':'Khác'};
+  const total = list.length;
+  const pages = Math.ceil(total/HS_PER_PAGE);
+  if(hsPage>pages) hsPage=1;
+  const slice = list.slice((hsPage-1)*HS_PER_PAGE, hsPage*HS_PER_PAGE);
+  const BS = "font-size:.72rem;padding:5px 13px;border:none;border-radius:7px;font-family:'Sora',sans-serif;font-weight:600;cursor:pointer;";
 
-  body.innerHTML = '<div class="page-grid">'
-    + list.map(function(h){
+  let html = '<div class="page-grid">'
+    + slice.map(function(h){
       const cid  = 'hs-card-'+h.id;
       const init = (h.ten_co_so||'?').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
       const type = typeLabel[h.loai_hinh]||h.loai_hinh||'—';
       const statusTag = h.trang_thai_hoat_dong
         ? '<span class="card-tag" style="background:#e6f7e6;color:#2d7a2d">● Hoạt động</span>'
         : '<span class="card-tag" style="background:#f0f0f0;color:#888">○ Dừng</span>';
-      const BS = "font-size:.72rem;padding:5px 13px;border:none;border-radius:7px;font-family:'Sora',sans-serif;font-weight:600;cursor:pointer;";
       return '<div class="page-card" id="'+cid+'" onclick="toggleHsCard(\''+cid+'\')">'
         +'<div class="page-card-head">'
         +'<div class="card-av" style="border-radius:10px;font-size:.8rem">'+init+'</div>'
@@ -805,11 +844,31 @@ function renderHospitals(list){
         +'</div>';
     }).join('')
   +'</div>';
+
+  if(pages>1){
+    const S="font-family:'DM Mono',monospace;font-size:.72rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px 8px;";
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)">'
+      +'<span style="font-size:.72rem;color:var(--muted)">Trang '+hsPage+'/'+pages+' — '+total+' cơ sở</span>'
+      +'<div style="display:flex;gap:5px">'
+      +'<button onclick="hsGoPage('+(hsPage-1)+')" '+(hsPage<=1?'disabled':'')+' style="'+S+'border:1.5px solid var(--border);background:var(--card);color:var(--muted)">←</button>';
+    for(var i=1;i<=pages;i++){
+      var a=i===hsPage;
+      html+='<button onclick="hsGoPage('+i+')" style="'+S+'border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
+    }
+    html+='<button onclick="hsGoPage('+(hsPage+1)+')" '+(hsPage>=pages?'disabled':'')+' style="'+S+'border:1.5px solid var(--border);background:var(--card);color:var(--muted)">→</button>'
+      +'</div></div>';
+  }
+  body.innerHTML = html;
 }
 
-function toggleHsCard(id){
-  document.getElementById(id).classList.toggle('open');
+function hsGoPage(p){
+  const total=Math.ceil(hsFiltered.length/HS_PER_PAGE);
+  if(p<1||p>total) return;
+  hsPage=p; renderHospitals(hsFiltered);
 }
+
+function toggleHsCard(id){ document.getElementById(id).classList.toggle('open'); }
+
 
 // ── SỬA / XÓA SUB ADMIN ──
 function openEditSubAdmin(id, name, email, phone, hospitalId){
