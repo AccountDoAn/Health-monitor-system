@@ -222,6 +222,84 @@ app.patch("/hospitals/:id", async (req, res) => {
     const { id } = req.params;
     const { adminId, name, address, phone, email, type, active } = req.body;
 
+    // Nếu đang dừng hoạt động (active = false) → kiểm tra còn dữ liệu không
+    if (active === false) {
+      const errors = [];
+
+      // 1. Kiểm tra sub-admin
+      const { data: saRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","sub_admin").maybeSingle();
+      if (saRole) {
+        const { data: saUsers } = await supabase.from("nguoi_dung")
+          .select("id").eq("co_so_y_te_id", id).eq("trang_thai_hoat_dong", true);
+        const saIds = (saUsers||[]).map(u=>u.id);
+        if (saIds.length) {
+          const { data: saPq } = await supabase.from("phan_quyen_nguoi_dung")
+            .select("nguoi_dung_id").eq("vai_tro_id", saRole.id).in("nguoi_dung_id", saIds);
+          if (saPq?.length) errors.push(`Còn ${saPq.length} sub-admin`);
+        }
+      }
+
+      // 2. Kiểm tra bác sĩ
+      const { data: bsRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_bs").maybeSingle();
+      if (bsRole) {
+        const { data: bsUsers } = await supabase.from("nguoi_dung")
+          .select("id").eq("co_so_y_te_id", id).eq("trang_thai_hoat_dong", true);
+        const bsIds = (bsUsers||[]).map(u=>u.id);
+        if (bsIds.length) {
+          const { data: bsPq } = await supabase.from("phan_quyen_nguoi_dung")
+            .select("nguoi_dung_id").eq("vai_tro_id", bsRole.id).in("nguoi_dung_id", bsIds);
+          if (bsPq?.length) errors.push(`Còn ${bsPq.length} bác sĩ`);
+        }
+      }
+
+      // 3. Kiểm tra bệnh nhân (qua thiết bị hoặc trực tiếp)
+      const { data: tbRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle();
+      if (tbRole) {
+        const { data: tbUsers } = await supabase.from("nguoi_dung")
+          .select("id").eq("co_so_y_te_id", id).eq("trang_thai_hoat_dong", true);
+        const tbIds = (tbUsers||[]).map(u=>u.id);
+        if (tbIds.length) {
+          const { data: tbPq } = await supabase.from("phan_quyen_nguoi_dung")
+            .select("nguoi_dung_id").eq("vai_tro_id", tbRole.id).in("nguoi_dung_id", tbIds);
+          if (tbPq?.length) errors.push(`Còn ${tbPq.length} bệnh nhân`);
+        }
+      }
+
+      // 4. Kiểm tra thiết bị còn gán bệnh nhân
+      const { data: devices } = await supabase.from("thiet_bi_iot")
+        .select("id").eq("co_so_y_te_id", id);
+      const devIds = (devices||[]).map(d=>d.id);
+      if (devIds.length) {
+        const { data: assigns } = await supabase.from("lich_su_gan_thiet_bi")
+          .select("id").in("thiet_bi_id", devIds).eq("trang_thai_hoat_dong", true);
+        if (assigns?.length) errors.push(`Còn ${assigns.length} thiết bị đang gán bệnh nhân`);
+      }
+
+      // 5. Kiểm tra liên kết bác sĩ - bệnh nhân
+      if (devIds.length || (tbRole)) {
+        const { data: tbAll } = await supabase.from("nguoi_dung")
+          .select("id").eq("co_so_y_te_id", id);
+        const tbAllIds = (tbAll||[]).map(u=>u.id);
+        if (tbAllIds.length) {
+          const { data: docLinks } = await supabase.from("lien_ket_bac_si")
+            .select("id").in("nguoi_dung_tb_id", tbAllIds).eq("trang_thai_hoat_dong", true);
+          if (docLinks?.length) errors.push(`Còn ${docLinks.length} liên kết bác sĩ - bệnh nhân`);
+
+          const { data: famLinks } = await supabase.from("lien_ket_nguoi_nha")
+            .select("id").in("nguoi_dung_tb_id", tbAllIds).eq("trang_thai_hoat_dong", true);
+          if (famLinks?.length) errors.push(`Còn ${famLinks.length} liên kết người nhà - bệnh nhân`);
+        }
+      }
+
+      if (errors.length) {
+        return res.status(409).json({
+          error: "Không thể dừng hoạt động cơ sở y tế",
+          reason: "Vẫn còn dữ liệu liên quan chưa được xóa:",
+          details: errors,
+        });
+      }
+    }
+
     const updates = {};
     if (name !== undefined)    updates.ten_co_so           = name;
     if (address !== undefined) updates.dia_chi              = address;
