@@ -559,14 +559,26 @@ function renderHospitals(list){
 }
 
 async function toggleHospital(id, currentActive){
-  if(!confirm((currentActive?'Dừng hoạt động':'Kích hoạt lại')+' cơ sở này?')) return;
+  if(currentActive){
+    if(!confirm('Dừng hoạt động cơ sở này?\n\nLưu ý: Cơ sở phải không còn bất kỳ dữ liệu nào (sub-admin, bác sĩ, bệnh nhân, liên kết...) thì mới có thể dừng.')) return;
+  } else {
+    if(!confirm('Kích hoạt lại cơ sở này?')) return;
+  }
   try {
     const r = await fetch(AAPI+'/hospitals/'+id,{
-      method:'PATCH',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({adminId:UID, active:!currentActive})
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({adminId:UID, active:!currentActive})
     });
-    if(r.ok) loadHospitals();
-    else alert('⚠️ Lỗi cập nhật');
+    const d = await r.json();
+    if(r.ok){
+      loadHospitals();
+    } else if(r.status === 409){
+      // Còn dữ liệu — hiện chi tiết
+      const details = (d.details||[]).map(s=>'  • '+s).join('\n');
+      alert('❌ '+d.error+'\n\n'+d.reason+'\n'+details+'\n\nVui lòng xóa toàn bộ dữ liệu trên trước khi dừng hoạt động cơ sở y tế này.');
+    } else {
+      alert('⚠️ Lỗi: '+(d.error||'Không xác định'));
+    }
   } catch(e){ alert('⚠️ '+e.message); }
 }
 
