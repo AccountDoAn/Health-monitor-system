@@ -245,18 +245,13 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div class="sec-title">👤 Danh sách Sub Admin</div>
         <div class="srch-box">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="sa-srch" placeholder="Tìm sub admin..." oninput="filterTable('sa-tbody',this.value)"/>
+          <input type="text" id="sa-srch" placeholder="Tìm sub admin..." oninput="filterSubAdmins(this.value)"/>
         </div>
         <button class="btn-primary" onclick="openAddSubAdmin()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tạo Sub Admin
         </button>
       </div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead><tr><th>Họ tên</th><th>Email</th><th>Số điện thoại</th><th>Cơ sở y tế</th><th>Đăng nhập cuối</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-          <tbody id="sa-tbody"><tr><td colspan="7"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr></tbody>
-        </table>
-      </div>
+      <div id="sa-body" style="padding:18px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
 
@@ -332,7 +327,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       </div>
     </div>
 
-    <!-- BẢNG + PHÂN TRANG -->
+    <!-- DANH SÁCH + PHÂN TRANG -->
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">📱 Danh sách thiết bị</div>
@@ -340,22 +335,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nhập thiết bị
         </button>
       </div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead>
-            <tr>
-              <th>Serial</th>
-              <th>Cơ sở y tế</th>
-              <th>Pin</th>
-              <th>Trạng thái</th>
-              <th>Online cuối</th>
-              <th>Ngày đăng ký</th>
-            </tr>
-          </thead>
-          <tbody id="dev-tbody"><tr><td colspan="6"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr></tbody>
-        </table>
-      </div>
-      <!-- PHÂN TRANG -->
+      <div id="dev-body" style="padding:18px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
       <div id="dev-pagination" style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border)">
         <div style="font-size:.72rem;color:var(--muted)" id="dev-page-info">—</div>
         <div style="display:flex;gap:6px" id="dev-page-btns"></div>
@@ -957,27 +937,72 @@ async function saveHospital(){
 }
 
 // ── SUB ADMIN ──
+let saCache = [];
+let saFiltered = [];
+
+function filterSubAdmins(q){
+  const lq = q.toLowerCase();
+  saFiltered = q.trim()
+    ? saCache.filter(u=>(u.name||'').toLowerCase().includes(lq)||(u.email||'').toLowerCase().includes(lq)||(u.hospitalName||'').toLowerCase().includes(lq))
+    : saCache;
+  renderSubAdmins(saFiltered);
+}
+
+function renderSubAdmins(list){
+  const body = document.getElementById('sa-body');
+  if(!list.length){ body.innerHTML='<div class="loading">Chưa có Sub Admin nào</div>'; return; }
+  const BS = "font-size:.72rem;padding:5px 13px;border:none;border-radius:7px;font-family:'Sora',sans-serif;font-weight:600;cursor:pointer;";
+  body.innerHTML = '<div class="page-grid">'
+    + list.map(function(u){
+      const cid  = 'sa-card-'+u.id;
+      const init = (u.name||'SA').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+      const lastLogin = u.lastLogin ? new Date(u.lastLogin).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}) : 'Chưa đăng nhập';
+      const statusTag = u.active
+        ? '<span class="card-tag" style="background:#e6f7e6;color:#2d7a2d">● Hoạt động</span>'
+        : '<span class="card-tag" style="background:#fdeaea;color:#c0392b">○ Đã khoá</span>';
+      return '<div class="page-card" id="'+cid+'" onclick="toggleSaCard(\''+cid+'\')">'
+        +'<div class="page-card-head">'
+        +'<div class="card-av">'+init+'</div>'
+        +'<div class="card-info">'
+        +'<div class="card-name">'+esc(u.name)+'</div>'
+        +'<div class="card-sub">'+esc(u.hospitalName||'Chưa gán')+'</div>'
+        +'</div>'
+        +statusTag
+        +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+        +'</div>'
+        +'<div class="page-card-body">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;margin-bottom:14px">'
+        +'<div>'
+        +'<div class="info-row"><span class="info-lbl">✉️ Email</span><span class="info-val" style="word-break:break-all;font-size:.7rem">'+esc(u.email||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-lbl">📞 SĐT</span><span class="info-val">'+esc(u.phone||'—')+'</span></div>'
+        +'</div>'
+        +'<div>'
+        +'<div class="info-row"><span class="info-lbl">🏥 Cơ sở</span><span class="info-val">'+esc(u.hospitalName||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-lbl">🕐 Đăng nhập</span><span class="info-val" style="font-size:.7rem">'+lastLogin+'</span></div>'
+        +'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px">'
+        +'<button style="'+BS+'background:var(--navy);color:#fff" onclick="event.stopPropagation();openEditSubAdmin(\''+u.id+'\',\''+esc(u.name)+'\',\''+esc(u.email||'')+'\',\''+esc(u.phone||'')+'\',\''+u.hospitalId+'\')">✎ Sửa</button>'
+        +'<button style="'+BS+'background:'+(u.active?'#c0392b':'#27ae60')+';color:#fff" onclick="event.stopPropagation();toggleSubAdmin(\''+u.id+'\','+u.active+')">'+(u.active?'Khoá':'Mở khoá')+'</button>'
+        +'<button style="'+BS+'background:#7f8c8d;color:#fff" onclick="event.stopPropagation();deleteSubAdmin(\''+u.id+'\',\''+esc(u.name)+'\')">✕ Xóa</button>'
+        +'</div>'
+        +'</div>'
+        +'</div>';
+    }).join('')
+  +'</div>';
+}
+
+function toggleSaCard(id){ document.getElementById(id).classList.toggle('open'); }
+
 async function loadSubAdmins(){
-  const tbody = document.getElementById('sa-tbody');
-  tbody.innerHTML='<tr><td colspan="7"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>';
+  const body = document.getElementById('sa-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
     const r = await fetch(AAPI+'/subadmins');
-    const list = r.ok ? await r.json() : [];
-    if(!list.length){tbody.innerHTML='<tr><td colspan="7"><div class="loading">Chưa có Sub Admin nào</div></td></tr>';return;}
-    tbody.innerHTML=list.map(u=>'<tr>'
-      +'<td style="font-weight:600">'+esc(u.name)+'</td>'
-      +'<td class="mono">'+esc(u.email||'—')+'</td>'
-      +'<td class="mono">'+esc(u.phone||'—')+'</td>'
-      +'<td><span class="badge b-purple">'+esc(u.hospitalName)+'</span></td>'
-      +'<td class="mono">'+(u.lastLogin?new Date(u.lastLogin).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Chưa đăng nhập')+'</td>'
-      +'<td>'+(u.active?'<span class="badge b-ok">● Hoạt động</span>':'<span class="badge b-off">○ Đã khoá</span>')+'</td>'
-      +'<td style="display:flex;gap:5px">'
-      +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="openEditSubAdmin(\''+u.id+'\',\''+esc(u.name)+'\',\''+esc(u.email||'')+'\',\''+esc(u.phone||'')+'\',\''+u.hospitalId+'\')">✎ Sửa</button>'
-      +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:'+(u.active?'#c0392b':'#27ae60')+';color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="toggleSubAdmin(\''+u.id+'\','+u.active+')">'+(u.active?'Khoá':'Mở khoá')+'</button>'
-      +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:#7f8c8d;color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="deleteSubAdmin(\''+u.id+'\',\''+esc(u.name)+'\')">✕ Xóa</button>'
-      +'</td>'
-      +'</tr>').join('');
-  } catch(e){ tbody.innerHTML='<tr><td colspan="7"><div class="loading">⚠️ '+esc(e.message)+'</div></td></tr>'; }
+    saCache = r.ok ? await r.json() : [];
+    saFiltered = saCache;
+    renderSubAdmins(saCache);
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
 
 async function toggleSubAdmin(id, currentActive){
@@ -1098,66 +1123,70 @@ function applyDevFilter(){
 }
 
 function renderDevPage(){
-  const tbody   = document.getElementById('dev-tbody');
-  const total   = devFiltered.length;
-  const pages   = Math.max(1, Math.ceil(total / DEV_PER_PAGE));
-  if(devPage > pages) devPage = pages;
+  const body  = document.getElementById('dev-body');
+  const total = devFiltered.length;
+  const pages = Math.max(1, Math.ceil(total/DEV_PER_PAGE));
+  if(devPage>pages) devPage=pages;
+  const start = (devPage-1)*DEV_PER_PAGE;
+  const slice = devFiltered.slice(start, start+DEV_PER_PAGE);
+  const BS = "font-size:.72rem;padding:5px 13px;border:none;border-radius:7px;font-family:'Sora',sans-serif;font-weight:600;cursor:pointer;";
 
-  const start   = (devPage - 1) * DEV_PER_PAGE;
-  const slice   = devFiltered.slice(start, start + DEV_PER_PAGE);
-
-  if(!slice.length){
-    tbody.innerHTML='<tr><td colspan="6"><div class="loading">Không có thiết bị nào phù hợp</div></td></tr>';
-  } else {
-    tbody.innerHTML = slice.map(function(d){
-      const bat = d.battery;
-      const batColor = bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
-      const batBar   = bat!=null
-        ?'<div style="display:flex;align-items:center;gap:6px">'
-          +'<div style="width:44px;height:6px;background:var(--border);border-radius:3px;overflow:hidden">'
-          +'<div style="height:100%;width:'+bat+'%;background:'+batColor+';border-radius:3px"></div></div>'
-          +'<span style="font-family:\'DM Mono\',monospace;font-size:.74rem;font-weight:700;color:'+batColor+'">'+bat+'%</span>'
-          +'</div>'
-        :'<span class="mono">—</span>';
-      return '<tr>'
-        +'<td style="font-family:\'DM Mono\',monospace;font-weight:700;color:var(--navy)">'+esc(d.serial)+'</td>'
-        +'<td><span class="badge b-purple">'+esc(d.hospitalName)+'</span></td>'
-        +'<td>'+batBar+'</td>'
-        +'<td>'+(d.online?'<span class="badge b-ok">● Online</span>':'<span class="badge b-off">○ Offline</span>')+'</td>'
-        +'<td class="mono">'+(d.lastOnline?new Date(d.lastOnline).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—')+'</td>'
-        +'<td class="mono">'+(d.registeredAt?new Date(d.registeredAt).toLocaleDateString('vi-VN'):'—')+'</td>'
-        +'<td style="display:flex;gap:5px">'
-        +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="openEditDevice(\''+d.id+'\',\''+esc(d.serial)+'\',\''+esc(d.hospitalId||'')+'\')">✎ Sửa</button>'
-        +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:#c0392b;color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="deleteDevice(\''+d.id+'\',\''+esc(d.serial)+'\')">✕ Xóa</button>'
-        +'</td>'
-        +'</tr>';
-    }).join('');
+  if(!slice.length){ body.innerHTML='<div class="loading">Không có thiết bị nào phù hợp</div>'; }
+  else {
+    body.innerHTML = '<div class="page-grid">'+slice.map(function(d){
+      const cid='dev-card-'+d.id;
+      const bat=d.battery;
+      const bc=bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
+      const batBar=bat!=null
+        ?'<div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+bat+'%;background:'+bc+'"></div></div><span style="font-family:\'DM Mono\',monospace;font-size:.72rem;font-weight:700;color:'+bc+'">'+bat+'%</span></div>'
+        :'<span style="color:var(--muted);font-size:.72rem">—</span>';
+      const lastOn=d.lastOnline?new Date(d.lastOnline).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—';
+      const regAt=d.registeredAt?new Date(d.registeredAt).toLocaleDateString('vi-VN'):'—';
+      const onTag=d.online
+        ?'<span class="card-tag" style="background:#e6f7e6;color:#2d7a2d">● Online</span>'
+        :'<span class="card-tag" style="background:#f0f0f0;color:#888">○ Offline</span>';
+      return '<div class="page-card" id="'+cid+'" onclick="toggleDevCard(\''+cid+'\')">'
+        +'<div class="page-card-head">'
+        +'<div class="card-av" style="border-radius:10px;background:var(--bg);border:1.5px solid var(--border)">'
+        +'<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>'
+        +'</div>'
+        +'<div class="card-info">'
+        +'<div class="card-name" style="font-family:\'DM Mono\',monospace">'+esc(d.serial)+'</div>'
+        +'<div class="card-sub">'+esc(d.hospitalName||'Chưa gán CSYT')+'</div>'
+        +'</div>'+onTag
+        +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+        +'</div>'
+        +'<div class="page-card-body">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;margin-bottom:14px">'
+        +'<div>'
+        +'<div class="info-row"><span class="info-lbl">🏥 Cơ sở</span><span class="info-val">'+esc(d.hospitalName||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-lbl">🔋 Pin</span><span class="info-val">'+batBar+'</span></div>'
+        +'</div><div>'
+        +'<div class="info-row"><span class="info-lbl">🕐 Online cuối</span><span class="info-val" style="font-size:.7rem">'+lastOn+'</span></div>'
+        +'<div class="info-row"><span class="info-lbl">📅 Đăng ký</span><span class="info-val">'+regAt+'</span></div>'
+        +'</div></div>'
+        +'<div style="display:flex;gap:8px">'
+        +'<button style="'+BS+'background:var(--navy);color:#fff" onclick="event.stopPropagation();openEditDevice(\''+d.id+'\',\''+esc(d.serial)+'\',\''+esc(d.hospitalId||'')+'\')">✎ Sửa</button>'
+        +'<button style="'+BS+'background:#c0392b;color:#fff" onclick="event.stopPropagation();deleteDevice(\''+d.id+'\',\''+esc(d.serial)+'\')" >✕ Xóa</button>'
+        +'</div></div></div>';
+    }).join('')+'</div>';
   }
 
-  // Page info
-  const from = total===0 ? 0 : start+1;
-  const to   = Math.min(start+DEV_PER_PAGE, total);
-  document.getElementById('dev-page-info').textContent =
-    'Trang '+devPage+' / '+pages+' — hiển thị '+from+'–'+to+' trong '+total+' thiết bị';
-
-  // Pagination buttons
-  const pgDiv = document.getElementById('dev-page-btns');
-  let btns = '';
-  // Prev
-  btns += '<button class="pg-btn" onclick="goDevPage('+(devPage-1)+')" '+(devPage<=1?'disabled':'')+'>← Trước</button>';
-  // Page numbers (max 7 buttons)
-  const range = getPageRange(devPage, pages);
+  const from=total===0?0:start+1, to=Math.min(start+DEV_PER_PAGE,total);
+  document.getElementById('dev-page-info').textContent='Trang '+devPage+' / '+pages+' — '+from+'–'+to+' / '+total+' thiết bị';
+  const pgDiv=document.getElementById('dev-page-btns');
+  const S="font-family:'DM Mono',monospace;font-size:.74rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px 8px;";
+  let btns='<button onclick="goDevPage('+(devPage-1)+')" '+(devPage<=1?'disabled':'')+' style="'+S+'border:1.5px solid var(--border);background:var(--card);color:var(--muted)">←</button>';
+  const range=getPageRange(devPage,pages);
   range.forEach(function(p){
-    if(p === '...'){
-      btns += '<span style="padding:5px 4px;color:var(--muted);font-size:.8rem">···</span>';
-    } else {
-      btns += '<button class="pg-btn'+(p===devPage?' active':'')+'" onclick="goDevPage('+p+')">'+p+'</button>';
-    }
+    if(p==='...'){ btns+='<span style="padding:5px 4px;color:var(--muted)">···</span>'; }
+    else { var a=p===devPage; btns+='<button onclick="goDevPage('+p+')" style="'+S+'border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+p+'</button>'; }
   });
-  // Next
-  btns += '<button class="pg-btn" onclick="goDevPage('+(devPage+1)+')" '+(devPage>=pages?'disabled':'')+'>Tiếp →</button>';
-  pgDiv.innerHTML = btns;
+  btns+='<button onclick="goDevPage('+(devPage+1)+')" '+(devPage>=pages?'disabled':'')+' style="'+S+'border:1.5px solid var(--border);background:var(--card);color:var(--muted)">→</button>';
+  pgDiv.innerHTML=btns;
 }
+
+function toggleDevCard(id){ document.getElementById(id).classList.toggle('open'); }
 
 function goDevPage(p){
   const pages = Math.max(1, Math.ceil(devFiltered.length / DEV_PER_PAGE));
