@@ -415,6 +415,45 @@ app.patch("/subadmins/:id", async (req, res) => {
   }
 });
 
+app.patch("/subadmins/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminId, active, password, name, email, phone, hospitalId } = req.body;
+
+    const updates = {};
+    if (active !== undefined)     updates.trang_thai_hoat_dong = active;
+    if (password !== undefined)   updates.mat_khau             = password;
+    if (name?.trim())             updates.ho_ten               = name.trim();
+    if (email !== undefined)      updates.email                = email||null;
+    if (phone !== undefined)      updates.so_dien_thoai        = phone||null;
+    if (hospitalId !== undefined) updates.co_so_y_te_id        = hospitalId||null;
+
+    await supabase.from("nguoi_dung").update(updates).eq("id", id);
+    await logAction(adminId, "UPDATE_SUBADMIN", "nguoi_dung", id, updates);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PATCH /subadmins/:id]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /subadmins/:id — xóa sub admin
+app.delete("/subadmins/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminId } = req.body;
+    // Xóa phân quyền
+    await supabase.from("phan_quyen_nguoi_dung").delete().eq("nguoi_dung_id", id);
+    // Vô hiệu hóa tài khoản
+    await supabase.from("nguoi_dung").update({ trang_thai_hoat_dong: false }).eq("id", id);
+    await logAction(adminId, "DELETE_SUBADMIN", "nguoi_dung", id, {});
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[DELETE /subadmins/:id]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================================
 // THIẾT BỊ (chỉ xem tổng quan, không xem chi tiết y tế)
 // ============================================================
@@ -530,6 +569,43 @@ app.get("/logs", async (req, res) => {
 // START
 // ============================================================
 const PORT = process.env.PORT || 3002;
+// PATCH /devices/:id — sửa thiết bị
+app.patch("/devices/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminId, serial, hospitalId } = req.body;
+    const updates = {};
+    if (serial?.trim())           updates.so_seri        = serial.trim();
+    if (hospitalId !== undefined) updates.co_so_y_te_id  = hospitalId||null;
+    const { error } = await supabase.from("thiet_bi_iot").update(updates).eq("id", id);
+    if (error) throw error;
+    await logAction(adminId, "UPDATE_DEVICE", "thiet_bi_iot", id, updates);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[PATCH /devices/:id]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /devices/:id — xóa thiết bị
+app.delete("/devices/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { adminId } = req.body;
+    // Kiểm tra còn gán bệnh nhân không
+    const { data: assigns } = await supabase.from("lich_su_gan_thiet_bi")
+      .select("id").eq("thiet_bi_id", id).eq("trang_thai_hoat_dong", true);
+    if (assigns?.length) return res.status(409).json({ error: "Thiết bị đang được gán cho bệnh nhân. Thu hồi trước khi xóa." });
+    const { error } = await supabase.from("thiet_bi_iot").delete().eq("id", id);
+    if (error) throw error;
+    await logAction(adminId, "DELETE_DEVICE", "thiet_bi_iot", id, {});
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("[DELETE /devices/:id]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log("👑 HealthMonitor Admin API v1.0 — port " + PORT);
 });
