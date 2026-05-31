@@ -1062,8 +1062,8 @@ let devPage      = 1;
 const DEV_PER_PAGE = 20;
 
 async function loadDevices(){
-  const tbody = document.getElementById('dev-tbody');
-  tbody.innerHTML='<tr><td colspan="6"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>';
+  const body = document.getElementById('dev-body');
+  if(body) body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
     const r = await fetch(AAPI+'/devices');
     devAllData = r.ok ? await r.json() : [];
@@ -1078,7 +1078,8 @@ async function loadDevices(){
     devPage = 1;
     applyDevFilter();
   } catch(e){
-    tbody.innerHTML='<tr><td colspan="6"><div class="loading">⚠️ '+esc(e.message)+'</div></td></tr>';
+    const body = document.getElementById('dev-body');
+    if(body) body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>';
   }
 }
 
