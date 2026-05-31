@@ -476,7 +476,56 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
   </div>
 </div>
 
-<!-- MODAL: CÀI ĐẶT -->
+<!-- Supabase JS cho Realtime -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const _sb = supabase.createClient(
+  'https://czgberdpnfultxkljhko.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
+);
+
+// Subscribe bảng nhat_ky_he_thong — tự đẩy lên khi có dòng mới
+_sb.channel('nhat-ky-realtime')
+  .on('postgres_changes', {
+    event: 'INSERT',
+    schema: 'public',
+    table: 'nhat_ky_he_thong'
+  }, function(payload){
+    // Nếu đang xem tab nhật ký trang 1 → reload ngay
+    if(document.getElementById('view-logs')?.style.display !== 'none' && logPage === 1){
+      loadLogs();
+    }
+    // Hiện badge thông báo có log mới nếu không ở trang 1
+    if(document.getElementById('view-logs')?.style.display !== 'none' && logPage > 1){
+      showNewLogToast();
+    }
+  })
+  .subscribe(function(status){
+    const badge = document.getElementById('log-realtime-badge');
+    if(!badge) return;
+    if(status === 'SUBSCRIBED'){
+      badge.style.display = 'flex';
+      badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#27ae60;display:inline-block;animation:pulse 1.5s infinite"></span> Realtime';
+    } else if(status === 'CHANNEL_ERROR'){
+      badge.style.display = 'flex';
+      badge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#e74c3c;display:inline-block"></span> Lỗi kết nối';
+    }
+  });
+
+function showNewLogToast(){
+  let toast = document.getElementById('log-new-toast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'log-new-toast';
+    toast.style.cssText = 'position:fixed;bottom:80px;right:24px;background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;font-family:\'Sora\',sans-serif;font-size:.76rem;font-weight:600;cursor:pointer;z-index:999;box-shadow:0 4px 16px rgba(0,0,0,.2)';
+    toast.onclick = function(){ logPage=1; loadLogs(); toast.remove(); };
+    document.body.appendChild(toast);
+  }
+  toast.textContent = '🔔 Có nhật ký mới — nhấn để xem';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(function(){ toast.remove(); }, 5000);
+}
+</script>
 <div class="modal-bg" id="modal-admin-settings" onclick="if(event.target===this)closeModal('modal-admin-settings')">
   <div class="modal modal-sm">
     <button class="modal-x" onclick="closeModal('modal-admin-settings')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -1692,18 +1741,10 @@ async function loadLogs(){
   } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
 }
 
-// Realtime subscription
+// Realtime badge — subscription xử lý bởi Supabase JS bên dưới
 function startLogRealtime(){
-  if(logRealtimeSub) return;
-  const { createClient } = supabase_js || {};
-  if(!window.SUPABASE_KEY) return; // key không có ở admin frontend → skip
-  // Dùng polling fallback 30s thay vì WebSocket
-  logRealtimeSub = setInterval(function(){
-    if(document.getElementById('view-logs')?.style.display !== 'none'){
-      if(logPage===1) loadLogs();
-    }
-  }, 30000);
-  document.getElementById('log-realtime-badge').style.display='flex';
+  // Subscription đã được khởi tạo tự động khi load page
+  // Chỉ cần hiện badge nếu đã kết nối
 }
 
 // ── SEARCH FILTER ──
