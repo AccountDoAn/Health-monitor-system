@@ -33,6 +33,18 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .adm-fb{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
 .adm-fb.on{background:var(--navy);border-color:var(--navy);color:#fff;}
 .adm-fb:hover:not(.on){background:var(--bg);}
+.filter-panel{display:none;padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);}
+.filter-panel.open{display:flex;flex-wrap:wrap;gap:16px;align-items:center;}
+.filter-group{display:flex;flex-direction:column;gap:5px;}
+.filter-group-label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+.filter-chips{display:flex;gap:4px;}
+.filter-chip{padding:3px 10px;border:1.5px solid var(--border);border-radius:20px;background:none;font-family:'Sora',sans-serif;font-size:.68rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.filter-chip.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.filter-chip:hover:not(.on){background:var(--mint,#e8f2fc);border-color:var(--navy);color:var(--navy);}
+.filter-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:none;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.filter-btn.active{border-color:var(--navy);color:var(--navy);}
+.filter-badge{background:var(--navy);color:#fff;border-radius:10px;padding:1px 6px;font-size:.6rem;margin-left:3px;display:none;}
+.filter-badge.show{display:inline;}
 .sb-bottom{padding:10px 8px;border-top:1px solid rgba(255,255,255,.08);}
 .sb-user{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.06);margin-bottom:6px;}
 .sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4a9fd4,#6c5ce7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
@@ -236,9 +248,24 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="hs-srch" placeholder="Tìm cơ sở..." oninput="filterHospitals(this.value)"/>
         </div>
+        <button class="filter-btn" id="hs-filter-btn" onclick="toggleAdminFilter('hs')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="hs-filter-badge"></span>
+        </button>
         <button class="btn-primary" onclick="openAddHospital()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm cơ sở
         </button>
+      </div>
+      <div class="filter-panel" id="hs-filter-panel">
+        <div class="filter-group">
+          <div class="filter-group-label">Trạng thái</div>
+          <div class="filter-chips">
+            <button class="filter-chip on" data-val="" onclick="selectAdminChip(this,'hs','status')">Tất cả</button>
+            <button class="filter-chip" data-val="active" onclick="selectAdminChip(this,'hs','status')">● Đang hoạt động</button>
+            <button class="filter-chip" data-val="stopped" onclick="selectAdminChip(this,'hs','status')">○ Dừng hoạt động</button>
+          </div>
+        </div>
+        <button onclick="resetAdminFilter('hs')" style="padding:4px 12px;border:1.5px solid #c0392b;border-radius:7px;background:none;color:#c0392b;font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa lọc</button>
       </div>
       <div id="hs-body" style="padding:18px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
@@ -253,9 +280,24 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="sa-srch" placeholder="Tìm sub admin..." oninput="filterSubAdmins(this.value)"/>
         </div>
+        <button class="filter-btn" id="sa-filter-btn" onclick="toggleAdminFilter('sa')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="sa-filter-badge"></span>
+        </button>
         <button class="btn-primary" onclick="openAddSubAdmin()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Tạo Sub Admin
         </button>
+      </div>
+      <div class="filter-panel" id="sa-filter-panel">
+        <div class="filter-group">
+          <div class="filter-group-label">Trạng thái tài khoản</div>
+          <div class="filter-chips">
+            <button class="filter-chip on" data-val="" onclick="selectAdminChip(this,'sa','status')">Tất cả</button>
+            <button class="filter-chip" data-val="active" onclick="selectAdminChip(this,'sa','status')">● Hoạt động</button>
+            <button class="filter-chip" data-val="locked" onclick="selectAdminChip(this,'sa','status')">○ Đã khoá</button>
+          </div>
+        </div>
+        <button onclick="resetAdminFilter('sa')" style="padding:4px 12px;border:1.5px solid #c0392b;border-radius:7px;background:none;color:#c0392b;font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa lọc</button>
       </div>
       <div id="sa-body" style="padding:18px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
@@ -604,6 +646,77 @@ const esc  = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').repla
 
 let hospitalsCache = [];
 
+// ── FILTER CHUNG CHO ADMIN TABS ──
+const adminFilterState = { hs: {status:''}, sa: {status:''} };
+
+function toggleAdminFilter(prefix){
+  const panel = document.getElementById(prefix+'-filter-panel');
+  const btn   = document.getElementById(prefix+'-filter-btn');
+  const open  = panel.classList.toggle('open');
+  btn.classList.toggle('active', open);
+}
+
+function selectAdminChip(el, prefix, key){
+  el.closest('.filter-chips').querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  adminFilterState[prefix][key] = el.dataset.val;
+  applyAdminFilter(prefix);
+}
+
+function resetAdminFilter(prefix){
+  adminFilterState[prefix] = {status:''};
+  document.getElementById(prefix+'-filter-panel').querySelectorAll('.filter-chips').forEach(function(group){
+    group.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+    group.querySelector('.filter-chip').classList.add('on');
+  });
+  updateAdminBadge(prefix, 0);
+  applyAdminFilter(prefix);
+}
+
+function updateAdminBadge(prefix, count){
+  const badge = document.getElementById(prefix+'-filter-badge');
+  if(!badge) return;
+  badge.textContent = count;
+  badge.classList.toggle('show', count>0);
+  document.getElementById(prefix+'-filter-btn')?.classList.toggle('active', count>0);
+}
+
+function applyAdminFilter(prefix){
+  const s = adminFilterState[prefix];
+  const count = s.status ? 1 : 0;
+  updateAdminBadge(prefix, count);
+  if(prefix==='hs')  applyHsFilter();
+  if(prefix==='sa')  applySaFilter();
+}
+
+function applyHsFilter(){
+  const s = adminFilterState.hs;
+  const q = document.getElementById('hs-srch')?.value.toLowerCase()||'';
+  hsFiltered = hospitalsCache.filter(function(h){
+    if(q && !(h.ten_co_so||'').toLowerCase().includes(q) && !(h.dia_chi||'').toLowerCase().includes(q)) return false;
+    if(s.status==='active'  && !h.trang_thai_hoat_dong) return false;
+    if(s.status==='stopped' &&  h.trang_thai_hoat_dong) return false;
+    return true;
+  });
+  hsPage=1; renderHospitals(hsFiltered);
+}
+
+function applySaFilter(){
+  const s = adminFilterState.sa;
+  const q = document.getElementById('sa-srch')?.value.toLowerCase()||'';
+  saFiltered = saCache.filter(function(u){
+    if(q && !(u.name||'').toLowerCase().includes(q) && !(u.email||'').toLowerCase().includes(q) && !(u.hospitalName||'').toLowerCase().includes(q)) return false;
+    if(s.status==='active' && !u.active)  return false;
+    if(s.status==='locked' &&  u.active)  return false;
+    return true;
+  });
+  renderSubAdmins(saFiltered);
+}
+
+// Cập nhật filterHospitals và filterSubAdmins để dùng applyFilter
+function filterHospitals(q){ hsPage=1; applyHsFilter(); }
+function filterSubAdmins(q){ applySaFilter(); }
+
 // ── CÀI ĐẶT ADMIN ──
 function openAdminSettings(){
   ['adm-pw-old','adm-pw-new','adm-pw-cf'].forEach(id=>document.getElementById(id).value='');
@@ -784,13 +897,6 @@ async function loadHospitals(){
 
 let hsFiltered = [];
 
-function filterHospitals(q){
-  const lq = q.toLowerCase();
-  hsFiltered = q.trim()
-    ? hospitalsCache.filter(h=>(h.ten_co_so||'').toLowerCase().includes(lq)||(h.dia_chi||'').toLowerCase().includes(lq))
-    : hospitalsCache;
-  renderHospitals(hsFiltered);
-}
 
 let hsPage = 1;
 const HS_PER_PAGE = 12;
@@ -1107,13 +1213,6 @@ async function saveHospital(){
 let saCache = [];
 let saFiltered = [];
 
-function filterSubAdmins(q){
-  const lq = q.toLowerCase();
-  saFiltered = q.trim()
-    ? saCache.filter(u=>(u.name||'').toLowerCase().includes(lq)||(u.email||'').toLowerCase().includes(lq)||(u.hospitalName||'').toLowerCase().includes(lq))
-    : saCache;
-  renderSubAdmins(saFiltered);
-}
 
 function renderSubAdmins(list){
   const body = document.getElementById('sa-body');
