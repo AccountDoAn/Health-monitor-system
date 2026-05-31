@@ -526,39 +526,48 @@ app.post("/devices", async (req, res) => {
 // GET /logs — nhật ký hoạt động (không thể xóa/sửa)
 app.get("/logs", async (req, res) => {
   try {
-    const { page = 1, limit = 50, action, userId } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page=1, limit=20, action, target, dateFrom, dateTo } = req.query;
+    const offset = (parseInt(page)-1) * parseInt(limit);
 
     let query = supabase.from("nhat_ky_he_thong")
-      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, chi_tiet, thoi_gian")
-      .order("thoi_gian", { ascending: false })
+      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, dia_chi_ip, du_lieu_bo_sung, ngay_tao", { count: 'exact' })
+      .order("ngay_tao", { ascending: false })
       .range(offset, offset + parseInt(limit) - 1);
 
-    if (action) query = query.eq("hanh_dong", action);
-    if (userId) query = query.eq("nguoi_dung_id", userId);
+    if (action)   query = query.eq("hanh_dong", action);
+    if (target)   query = query.eq("loai_doi_tuong", target);
+    if (dateFrom) query = query.gte("ngay_tao", dateFrom);
+    if (dateTo)   query = query.lte("ngay_tao", dateTo+'T23:59:59');
 
-    const { data, error } = await query;
+    const { data, error, count } = await query;
     if (error) throw error;
 
     // Lấy tên người dùng
-    const uids = [...new Set((data||[]).map(l => l.nguoi_dung_id).filter(Boolean))];
+    const uids = [...new Set((data||[]).map(l=>l.nguoi_dung_id).filter(Boolean))];
     const uMap = {};
     if (uids.length) {
-      const { data: users } = await supabase.from("nguoi_dung").select("id, ho_ten, email").in("id", uids);
-      (users||[]).forEach(u => { uMap[u.id] = { name: u.ho_ten, email: u.email }; });
+      const { data: users } = await supabase.from("nguoi_dung")
+        .select("id, ho_ten, email").in("id", uids);
+      (users||[]).forEach(u=>{ uMap[u.id]={name:u.ho_ten, email:u.email}; });
     }
 
-    res.json((data||[]).map(l => ({
-      id:         l.id,
-      userId:     l.nguoi_dung_id,
-      userName:   uMap[l.nguoi_dung_id]?.name || '—',
-      userEmail:  uMap[l.nguoi_dung_id]?.email || '—',
-      action:     l.hanh_dong,
-      targetType: l.loai_doi_tuong,
-      targetId:   l.doi_tuong_id,
-      detail:     l.chi_tiet,
-      time:       l.thoi_gian,
-    })));
+    res.json({
+      total: count || 0,
+      page:  parseInt(page),
+      limit: parseInt(limit),
+      data: (data||[]).map(l=>({
+        id:         l.id,
+        userId:     l.nguoi_dung_id,
+        userName:   uMap[l.nguoi_dung_id]?.name || '—',
+        userEmail:  uMap[l.nguoi_dung_id]?.email || '—',
+        action:     l.hanh_dong,
+        targetType: l.loai_doi_tuong,
+        targetId:   l.doi_tuong_id,
+        ip:         l.dia_chi_ip,
+        detail:     l.du_lieu_bo_sung,
+        time:       l.ngay_tao,
+      }))
+    });
   } catch (err) {
     console.error("[GET /logs]", err.message);
     res.status(500).json({ error: err.message });
