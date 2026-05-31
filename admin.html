@@ -27,9 +27,12 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .sb-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:.78rem;font-weight:600;color:rgba(255,255,255,.6);transition:all .15s;border:none;background:none;width:100%;text-align:left;}
 .sb-btn:hover,.sb-btn.active{background:rgba(255,255,255,.12);color:#fff;}
 .sb-btn.active{background:rgba(74,159,212,.25);color:#4a9fd4;}
-.sb-btn svg{width:15px;height:15px;flex-shrink:0;}
+.sb-btn svg{width:19px;height:19px;flex-shrink:0;}
 .sb-btn.red{color:rgba(224,82,82,.8);}
 .sb-btn.red:hover{background:rgba(224,82,82,.12);}
+.adm-fb{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.adm-fb.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.adm-fb:hover:not(.on){background:var(--bg);}
 .sb-bottom{padding:10px 8px;border-top:1px solid rgba(255,255,255,.08);}
 .sb-user{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.06);margin-bottom:6px;}
 .sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4a9fd4,#6c5ce7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
@@ -177,6 +180,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div class="sb-av" id="sb-av">SA</div>
       <div><div class="sb-uname" id="sb-name">Super Admin</div><div class="sb-urole">Quản trị viên hệ thống</div></div>
     </div>
+    <button class="sb-btn" onclick="openAdminSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>Cài đặt
+    </button>
     <button class="sb-btn red" onclick="doLogout()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Đăng xuất
     </button>
@@ -373,6 +379,39 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
   </div>
 </div>
 
+<!-- MODAL: CÀI ĐẶT -->
+<div class="modal-bg" id="modal-admin-settings" onclick="if(event.target===this)closeModal('modal-admin-settings')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-admin-settings')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">⚙️ Cài đặt</div>
+    <!-- Chế độ tối -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.82rem;font-weight:600">🌙 Chế độ tối</span>
+      <button id="adm-dark-tgl" onclick="toggleAdminDark()" style="width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;background:var(--border);position:relative;transition:background .2s">
+        <span id="adm-dark-knob" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
+      </button>
+    </div>
+    <!-- Cỡ chữ -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.82rem;font-weight:600">🔤 Cỡ chữ</span>
+      <div style="display:flex;gap:4px">
+        <button class="adm-fb" onclick="setAdminFont(12,this)">Nhỏ</button>
+        <button class="adm-fb on" onclick="setAdminFont(14,this)">Vừa</button>
+        <button class="adm-fb" onclick="setAdminFont(16,this)">Lớn</button>
+      </div>
+    </div>
+    <!-- Đổi mật khẩu -->
+    <div style="margin-top:14px">
+      <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Đổi mật khẩu</div>
+      <div class="field"><input id="adm-pw-old" type="password" placeholder="Mật khẩu hiện tại"/></div>
+      <div class="field"><input id="adm-pw-new" type="password" placeholder="Mật khẩu mới (≥ 6 ký tự)"/></div>
+      <div class="field"><input id="adm-pw-cf"  type="password" placeholder="Xác nhận mật khẩu mới"/></div>
+      <div class="modal-msg" id="adm-pw-msg"></div>
+      <button class="btn-save" style="width:100%;margin-top:4px" onclick="changeAdminPassword()">Đổi mật khẩu</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: SỬA SUB ADMIN -->
 <div class="modal-bg" id="modal-edit-subadmin" onclick="if(event.target===this)closeModal('modal-edit-subadmin')">
   <div class="modal modal-sm">
@@ -564,6 +603,65 @@ const UID  = SESS.userId;
 const esc  = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 let hospitalsCache = [];
+
+// ── CÀI ĐẶT ADMIN ──
+function openAdminSettings(){
+  ['adm-pw-old','adm-pw-new','adm-pw-cf'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('adm-pw-msg').textContent='';
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  document.getElementById('adm-dark-tgl').style.background = isDark?'var(--navy)':'var(--border)';
+  document.getElementById('adm-dark-knob').style.left = isDark?'21px':'3px';
+  const fv = parseInt(localStorage.getItem('adm_font'))||14;
+  const labels={12:'Nhỏ',14:'Vừa',16:'Lớn'};
+  document.querySelectorAll('.adm-fb').forEach(b=>b.classList.toggle('on', b.textContent.trim()===labels[fv]));
+  document.getElementById('modal-admin-settings').classList.add('open');
+}
+
+function toggleAdminDark(){
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme', isDark?'light':'dark');
+  localStorage.setItem('adm_theme', isDark?'light':'dark');
+  document.getElementById('adm-dark-tgl').style.background = isDark?'var(--border)':'var(--navy)';
+  document.getElementById('adm-dark-knob').style.left = isDark?'3px':'21px';
+}
+
+function setAdminFont(n, b){
+  const sizes={12:'87.5%',14:'100%',16:'112.5%'};
+  document.documentElement.style.fontSize = sizes[n]||'100%';
+  localStorage.setItem('adm_font', n);
+  document.querySelectorAll('.adm-fb').forEach(x=>x.classList.remove('on'));
+  if(b) b.classList.add('on');
+}
+
+async function changeAdminPassword(){
+  const oldPw = document.getElementById('adm-pw-old').value;
+  const newPw = document.getElementById('adm-pw-new').value;
+  const cfPw  = document.getElementById('adm-pw-cf').value;
+  const msg   = document.getElementById('adm-pw-msg');
+  if(!oldPw){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập mật khẩu hiện tại'; return; }
+  if(newPw.length<6){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu mới phải ≥ 6 ký tự'; return; }
+  if(newPw!==cfPw){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu xác nhận không khớp'; return; }
+  msg.style.color='var(--muted)'; msg.textContent='Đang xử lý...';
+  try {
+    const r = await fetch(AAPI+'/auth/change-password',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({userId:UID, currentPassword:oldPw, newPassword:newPw})
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đổi mật khẩu thành công!';
+    setTimeout(()=>closeModal('modal-admin-settings'), 1500);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+}
+
+// Khởi tạo theme và font
+(function(){
+  const t = localStorage.getItem('adm_theme');
+  if(t) document.documentElement.setAttribute('data-theme', t);
+  const f = parseInt(localStorage.getItem('adm_font'));
+  if(f){ const sizes={12:'87.5%',14:'100%',16:'112.5%'}; document.documentElement.style.fontSize=sizes[f]||'100%'; }
+})();
 
 function doLogout(){
   if(!confirm('Đăng xuất?')) return;
