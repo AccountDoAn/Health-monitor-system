@@ -507,7 +507,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="field"><label>Tên cơ sở *</label><input id="eh-name" type="text"/></div>
     <div class="field"><label>Địa chỉ</label><input id="eh-addr" type="text"/></div>
     <div class="field-row c2">
-      <div class="field"><label>Số điện thoại</label><input id="eh-phone" type="text"/></div>
+      <div class="field"><label>Số điện thoại</label><input id="eh-phone" type="text" maxlength="15" oninput="validateAdminPhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
       <div class="field"><label>Email liên hệ</label><input id="eh-email" type="email"/></div>
     </div>
     <div class="field"><label>Loại hình</label>
@@ -571,7 +571,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           <option value="khac">Khác</option>
         </select>
       </div>
-      <div class="field"><label>Số điện thoại</label><input id="hs-phone" type="text" placeholder="024..."/></div>
+      <div class="field"><label>Số điện thoại</label><input id="hs-phone" type="text" placeholder="024..." maxlength="15" oninput="validateAdminPhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
     </div>
     <div class="field"><label>Địa chỉ</label><input id="hs-addr" type="text" placeholder="123 Đường ABC, Quận 1, TP.HCM"/></div>
     <div class="field"><label>Email liên hệ</label><input id="hs-email" type="email" placeholder="lienhe@benhvien.vn"/></div>
@@ -591,7 +591,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="field"><label>Họ tên *</label><input id="sa-name" type="text" placeholder="Nguyễn Văn A"/></div>
     <div class="field-row c2">
       <div class="field"><label>Email (đăng nhập) *</label><input id="sa-email" type="email" placeholder="admin@benhvien.vn"/></div>
-      <div class="field"><label>Số điện thoại</label><input id="sa-phone" type="text" placeholder="0912..."/></div>
+      <div class="field"><label>Số điện thoại</label><input id="sa-phone" type="text" placeholder="0912..." maxlength="10" oninput="validateAdminPhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
     </div>
     <div class="field-row c2">
       <div class="field"><label>Mật khẩu tạm</label><input id="sa-pw" type="text" value="123456"/></div>
@@ -645,6 +645,21 @@ const UID  = SESS.userId;
 const esc  = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 let hospitalsCache = [];
+
+// ── VALIDATE SỐ ĐIỆN THOẠI (admin) ──
+function validateAdminPhone(el){
+  let v = el.value.replace(/[^0-9]/g, '');
+  const max = parseInt(el.getAttribute('maxlength'))||15;
+  if(v.length > max) v = v.slice(0, max);
+  el.value = v;
+  if(v.length > 0 && v[0] !== '0'){
+    el.style.borderColor = 'var(--danger)';
+    el.title = 'Số điện thoại phải bắt đầu bằng 0';
+  } else {
+    el.style.borderColor = '';
+    el.title = '';
+  }
+}
 
 // ── FILTER CHUNG CHO ADMIN TABS ──
 const adminFilterState = { hs: {status:''}, sa: {status:''} };
