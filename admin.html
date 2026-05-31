@@ -45,6 +45,22 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .filter-btn.active{border-color:var(--navy);color:var(--navy);}
 .filter-badge{background:var(--navy);color:#fff;border-radius:10px;padding:1px 6px;font-size:.6rem;margin-left:3px;display:none;}
 .filter-badge.show{display:inline;}
+/* Log timeline */
+.log-item{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);}
+.log-item:last-child{border-bottom:none;}
+.log-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;flex-shrink:0;margin-top:2px;}
+.log-dot.CREATE{background:#e6f7e6;color:#27ae60;}
+.log-dot.UPDATE{background:#fffbea;color:#f39c12;}
+.log-dot.DELETE{background:#fdeaea;color:#c0392b;}
+.log-dot.LOGIN{background:#e8f2fc;color:var(--navy);}
+.log-dot.OTHER{background:var(--bg);color:var(--muted);}
+.log-action-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.62rem;font-weight:700;}
+.log-action-badge.CREATE{background:#e6f7e6;color:#27ae60;}
+.log-action-badge.UPDATE{background:#fffbea;color:#e67e22;}
+.log-action-badge.DELETE{background:#fdeaea;color:#c0392b;}
+.log-action-badge.LOGIN{background:#e8f2fc;color:var(--navy);}
+.log-action-badge.OTHER{background:var(--bg);color:var(--muted);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .sb-bottom{padding:10px 8px;border-top:1px solid rgba(255,255,255,.08);}
 .sb-user{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.06);margin-bottom:6px;}
 .sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4a9fd4,#6c5ce7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
@@ -406,16 +422,55 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">📋 Nhật ký hệ thống</div>
-        <span style="font-size:.7rem;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:7px;border:1px solid var(--border)">🔒 Chỉ đọc — không thể sửa/xóa</span>
+        <span style="font-size:.7rem;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:7px;border:1px solid var(--border)">🔒 Chỉ đọc</span>
+        <div id="log-realtime-badge" style="display:none;align-items:center;gap:5px;font-size:.7rem;color:#27ae60;font-weight:600">
+          <span style="width:7px;height:7px;border-radius:50%;background:#27ae60;display:inline-block;animation:pulse 1.5s infinite"></span>Realtime
+        </div>
         <button class="btn-outline" onclick="loadLogs()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
         </button>
       </div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead><tr><th>Thời gian</th><th>Người dùng</th><th>Hành động</th><th>Đối tượng</th><th>Chi tiết</th></tr></thead>
-          <tbody id="log-tbody"><tr><td colspan="5"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr></tbody>
-        </table>
+      <!-- Bộ lọc -->
+      <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Hành động</span>
+          <select id="log-flt-action" onchange="loadLogs()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)">
+            <option value="">Tất cả</option>
+            <option value="CREATE">🟢 Tạo mới</option>
+            <option value="UPDATE">🟡 Cập nhật</option>
+            <option value="DELETE">🔴 Xóa</option>
+            <option value="LOGIN">🔵 Đăng nhập</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Đối tượng</span>
+          <select id="log-flt-target" onchange="loadLogs()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)">
+            <option value="">Tất cả</option>
+            <option value="nguoi_dung">👤 Người dùng</option>
+            <option value="thiet_bi_iot">📱 Thiết bị</option>
+            <option value="lien_ket_bac_si">🩺 Liên kết BS</option>
+            <option value="lien_ket_nguoi_nha">👨‍👩‍👧 Liên kết người nhà</option>
+            <option value="lich_su_gan_thiet_bi">🔗 Gán thiết bị</option>
+            <option value="co_so_y_te">🏥 Cơ sở y tế</option>
+            <option value="ho_so_benh_nhan">📋 Hồ sơ bệnh nhân</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Từ ngày</span>
+          <input type="date" id="log-flt-from" onchange="loadLogs()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Đến ngày</span>
+          <input type="date" id="log-flt-to" onchange="loadLogs()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)"/>
+        </div>
+        <button onclick="resetLogFilter()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">✕ Xóa lọc</button>
+      </div>
+      <!-- Timeline -->
+      <div id="log-body" style="padding:12px 18px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+      <!-- Phân trang -->
+      <div id="log-pagination" style="display:none;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)">
+        <span style="font-size:.72rem;color:var(--muted)" id="log-page-info">—</span>
+        <div style="display:flex;gap:5px" id="log-page-btns"></div>
       </div>
     </div>
   </div>
@@ -814,7 +869,7 @@ function switchView(name, btn){
   if(name==='hospitals')  loadHospitals();
   if(name==='subadmins')  loadSubAdmins();
   if(name==='devices')    loadDevices();
-  if(name==='logs')       loadLogs();
+  if(name==='logs'){ loadLogs(); startLogRealtime(); }
 }
 
 // ── LOAD ADMIN INFO ──
@@ -1526,21 +1581,129 @@ async function saveDevice(){
 }
 
 // ── NHẬT KÝ ──
+// ── NHẬT KÝ HỆ THỐNG ──
+let logPage = 1;
+const LOG_PER_PAGE = 20;
+let logRealtimeSub = null;
+
+const TABLE_LABEL = {
+  nguoi_dung:'Người dùng', thiet_bi_iot:'Thiết bị IoT',
+  lien_ket_bac_si:'Liên kết bác sĩ', lien_ket_nguoi_nha:'Liên kết người nhà',
+  lich_su_gan_thiet_bi:'Gán thiết bị', co_so_y_te:'Cơ sở y tế',
+  ho_so_benh_nhan:'Hồ sơ bệnh nhân',
+};
+const ACTION_LABEL = {CREATE:'Tạo mới',UPDATE:'Cập nhật',DELETE:'Xóa',LOGIN:'Đăng nhập'};
+const ACTION_CLASS = {CREATE:'CREATE',UPDATE:'UPDATE',DELETE:'DELETE',LOGIN:'LOGIN'};
+
+function resetLogFilter(){
+  ['log-flt-action','log-flt-target','log-flt-from','log-flt-to'].forEach(function(id){
+    document.getElementById(id).value='';
+  });
+  logPage=1; loadLogs();
+}
+
+function logGoPage(p){ logPage=p; loadLogs(); }
+
 async function loadLogs(){
-  const tbody=document.getElementById('log-tbody');
-  tbody.innerHTML='<tr><td colspan="5"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>';
+  const body = document.getElementById('log-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải nhật ký...</div>';
+
+  const action   = document.getElementById('log-flt-action').value;
+  const target   = document.getElementById('log-flt-target').value;
+  const dateFrom = document.getElementById('log-flt-from').value;
+  const dateTo   = document.getElementById('log-flt-to').value;
+
+  let url = AAPI+'/logs?page='+logPage+'&limit='+LOG_PER_PAGE;
+  if(action)   url+='&action='+encodeURIComponent(action);
+  if(target)   url+='&target='+encodeURIComponent(target);
+  if(dateFrom) url+='&dateFrom='+dateFrom;
+  if(dateTo)   url+='&dateTo='+dateTo;
+
   try {
-    const r=await fetch(AAPI+'/logs?limit=100');
-    const list=r.ok?await r.json():[];
-    if(!list.length){tbody.innerHTML='<tr><td colspan="5"><div class="loading">Chưa có nhật ký nào</div></td></tr>';return;}
-    tbody.innerHTML=list.map(l=>'<tr>'
-      +'<td class="mono" style="white-space:nowrap">'+(l.time?new Date(l.time).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—')+'</td>'
-      +'<td><div style="font-size:.8rem;font-weight:600">'+esc(l.userName)+'</div><div class="mono" style="font-size:.65rem">'+esc(l.userEmail)+'</div></td>'
-      +'<td><span class="log-action">'+esc(l.action)+'</span></td>'
-      +'<td class="mono">'+esc(l.targetType||'—')+'</td>'
-      +'<td style="font-size:.72rem;color:var(--muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(l.detail||'')+'">'+esc(l.detail||'—')+'</td>'
-      +'</tr>').join('');
-  } catch(e){ tbody.innerHTML='<tr><td colspan="5"><div class="loading">⚠️ '+esc(e.message)+'</div></td></tr>'; }
+    const r = await fetch(url);
+    const res = r.ok ? await r.json() : {data:[],total:0};
+    const list = res.data||[];
+    const total = res.total||0;
+    const pages = Math.max(1, Math.ceil(total/LOG_PER_PAGE));
+
+    if(!list.length){
+      body.innerHTML='<div class="loading" style="padding:24px">Chưa có nhật ký nào phù hợp</div>';
+      document.getElementById('log-pagination').style.display='none';
+      return;
+    }
+
+    body.innerHTML = list.map(function(l){
+      const ac = ACTION_CLASS[l.action]||'OTHER';
+      const time = l.time ? new Date(l.time).toLocaleString('vi-VN',{
+        day:'2-digit',month:'2-digit',year:'numeric',
+        hour:'2-digit',minute:'2-digit',second:'2-digit'
+      }) : '—';
+      const tableLabel = TABLE_LABEL[l.targetType]||l.targetType||'—';
+      const initials = (l.userName||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+
+      // Parse detail nếu có
+      let detailHtml = '';
+      if(l.detail){
+        try {
+          const d = typeof l.detail==='string' ? JSON.parse(l.detail) : l.detail;
+          const keys = Object.keys(d).filter(k=>k!=='mat_khau'&&k!=='password').slice(0,4);
+          if(keys.length) detailHtml = '<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">'
+            +keys.map(function(k){
+              return '<span style="font-size:.62rem;padding:2px 7px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--muted)">'
+                +esc(k)+': <strong style="color:var(--text)">'+esc(String(d[k]).slice(0,30))+'</strong></span>';
+            }).join('')+'</div>';
+        } catch(_){}
+      }
+
+      return '<div class="log-item">'
+        +'<div class="log-dot '+ac+'">'+initials+'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+        +'<span class="log-action-badge '+ac+'">'+esc(ACTION_LABEL[l.action]||l.action)+'</span>'
+        +'<span style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(l.userName)+'</span>'
+        +'<span style="font-size:.66rem;color:var(--muted)">'+esc(l.userEmail)+'</span>'
+        +'</div>'
+        +'<div style="margin-top:4px;font-size:.74rem;color:var(--muted)">'
+        +'🗂 <strong style="color:var(--text)">'+esc(tableLabel)+'</strong>'
+        +(l.targetId?'<span style="font-family:\'DM Mono\',monospace;font-size:.65rem;margin-left:6px;color:var(--muted)">'+esc(l.targetId.slice(0,8).toUpperCase())+'</span>':'')
+        +(l.ip?'<span style="margin-left:10px;font-size:.65rem">🌐 '+esc(l.ip)+'</span>':'')
+        +'</div>'
+        +detailHtml
+        +'</div>'
+        +'<div style="font-size:.65rem;color:var(--muted);white-space:nowrap;text-align:right;flex-shrink:0">'+time+'</div>'
+        +'</div>';
+    }).join('');
+
+    // Pagination
+    const pgEl = document.getElementById('log-pagination');
+    const S = "font-family:'DM Mono',monospace;font-size:.72rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px 8px;";
+    document.getElementById('log-page-info').textContent =
+      'Trang '+logPage+'/'+pages+' — '+total+' bản ghi';
+    let btns = '<button onclick="logGoPage('+(logPage-1)+')" '+(logPage<=1?'disabled':'')+' style="'+S+'border:1.5px solid var(--border);background:var(--card);color:var(--muted)">←</button>';
+    const range = getPageRange(logPage, pages);
+    range.forEach(function(p){
+      if(p==='...'){ btns+='<span style="padding:5px 2px;color:var(--muted)">···</span>'; }
+      else { var a=p===logPage; btns+='<button onclick="logGoPage('+p+')" style="'+S+'border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+p+'</button>'; }
+    });
+    btns+='<button onclick="logGoPage('+(logPage+1)+')" '+(logPage>=pages?'disabled':'')+' style="'+S+'border:1.5px solid var(--border);background:var(--card);color:var(--muted)">→</button>';
+    document.getElementById('log-page-btns').innerHTML = btns;
+    pgEl.style.display = pages>1 ? 'flex' : 'none';
+
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+
+// Realtime subscription
+function startLogRealtime(){
+  if(logRealtimeSub) return;
+  const { createClient } = supabase_js || {};
+  if(!window.SUPABASE_KEY) return; // key không có ở admin frontend → skip
+  // Dùng polling fallback 30s thay vì WebSocket
+  logRealtimeSub = setInterval(function(){
+    if(document.getElementById('view-logs')?.style.display !== 'none'){
+      if(logPage===1) loadLogs();
+    }
+  }, 30000);
+  document.getElementById('log-realtime-badge').style.display='flex';
 }
 
 // ── SEARCH FILTER ──
