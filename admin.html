@@ -367,6 +367,50 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
   </div>
 </div>
 
+<!-- MODAL: SỬA SUB ADMIN -->
+<div class="modal-bg" id="modal-edit-subadmin" onclick="if(event.target===this)closeModal('modal-edit-subadmin')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-subadmin')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Sửa thông tin Sub Admin</div>
+    <input type="hidden" id="esa-id"/>
+    <div class="field"><label>Họ tên *</label><input id="esa-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Email</label><input id="esa-email" type="email"/></div>
+      <div class="field"><label>Số điện thoại</label><input id="esa-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+    </div>
+    <div class="field"><label>Cơ sở y tế</label>
+      <select id="esa-hospital">
+        <option value="">— Chọn cơ sở —</option>
+      </select>
+    </div>
+    <div class="modal-msg" id="esa-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-subadmin')">Hủy</button>
+      <button class="btn-save" id="esa-save-btn" onclick="saveEditSubAdmin()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SỬA THIẾT BỊ -->
+<div class="modal-bg" id="modal-edit-device" onclick="if(event.target===this)closeModal('modal-edit-device')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-device')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Sửa thông tin thiết bị</div>
+    <input type="hidden" id="ed-id"/>
+    <div class="field"><label>Serial *</label><input id="ed-serial" type="text" style="font-family:'DM Mono',monospace"/></div>
+    <div class="field"><label>Cơ sở y tế</label>
+      <select id="ed-hospital">
+        <option value="">— Chọn cơ sở —</option>
+      </select>
+    </div>
+    <div class="modal-msg" id="ed-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-device')">Hủy</button>
+      <button class="btn-save" id="ed-save-btn" onclick="saveEditDevice()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: SỬA CƠ SỞ Y TẾ -->
 <div class="modal-bg" id="modal-edit-hospital" onclick="if(event.target===this)closeModal('modal-edit-hospital')">
   <div class="modal modal-sm">
@@ -620,6 +664,106 @@ function renderHospitals(list){
     +'</tr>').join('');
 }
 
+// ── SỬA / XÓA SUB ADMIN ──
+function openEditSubAdmin(id, name, email, phone, hospitalId){
+  document.getElementById('esa-id').value    = id;
+  document.getElementById('esa-name').value  = name;
+  document.getElementById('esa-email').value = email;
+  document.getElementById('esa-phone').value = phone;
+  const sel = document.getElementById('esa-hospital');
+  sel.innerHTML = '<option value="">— Chọn cơ sở —</option>'
+    + hospitalsCache.map(h=>'<option value="'+h.id+'"'+(h.id===hospitalId?' selected':'')+'>'+esc(h.ten_co_so)+'</option>').join('');
+  document.getElementById('esa-msg').textContent = '';
+  document.getElementById('modal-edit-subadmin').classList.add('open');
+}
+
+async function saveEditSubAdmin(){
+  const id   = document.getElementById('esa-id').value;
+  const name = document.getElementById('esa-name').value.trim();
+  const msg  = document.getElementById('esa-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  const btn = document.getElementById('esa-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(AAPI+'/subadmins/'+id,{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        adminId:    UID,
+        name:       name,
+        email:      document.getElementById('esa-email').value.trim()||null,
+        phone:      document.getElementById('esa-phone').value.trim()||null,
+        hospitalId: document.getElementById('esa-hospital').value||null,
+      })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật';
+    setTimeout(()=>{ closeModal('modal-edit-subadmin'); loadSubAdmins(); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+async function deleteSubAdmin(id, name){
+  if(!confirm('Xóa tài khoản Sub Admin: '+name+'?\n\nThao tác này không thể hoàn tác!')) return;
+  try {
+    const r = await fetch(AAPI+'/subadmins/'+id,{
+      method:'DELETE', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({adminId:UID})
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    loadSubAdmins();
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ── SỬA / XÓA THIẾT BỊ ──
+function openEditDevice(id, serial, hospitalId){
+  document.getElementById('ed-id').value     = id;
+  document.getElementById('ed-serial').value = serial;
+  const sel = document.getElementById('ed-hospital');
+  sel.innerHTML = '<option value="">— Chọn cơ sở —</option>'
+    + hospitalsCache.map(h=>'<option value="'+h.id+'"'+(h.id===hospitalId?' selected':'')+'>'+esc(h.ten_co_so)+'</option>').join('');
+  document.getElementById('ed-msg').textContent = '';
+  document.getElementById('modal-edit-device').classList.add('open');
+}
+
+async function saveEditDevice(){
+  const id     = document.getElementById('ed-id').value;
+  const serial = document.getElementById('ed-serial').value.trim();
+  const msg    = document.getElementById('ed-msg');
+  if(!serial){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập serial'; return; }
+  const btn = document.getElementById('ed-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(AAPI+'/devices/'+id,{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        adminId:    UID,
+        serial:     serial,
+        hospitalId: document.getElementById('ed-hospital').value||null,
+      })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật';
+    setTimeout(()=>{ closeModal('modal-edit-device'); loadDevices(); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+async function deleteDevice(id, serial){
+  if(!confirm('Xóa thiết bị: '+serial+'?\n\nLưu ý: Nếu thiết bị đang gán cho bệnh nhân, hãy thu hồi trước!\nThao tác này không thể hoàn tác!')) return;
+  try {
+    const r = await fetch(AAPI+'/devices/'+id,{
+      method:'DELETE', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({adminId:UID})
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    loadDevices();
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
 function openEditHospital(id, name, addr, phone, email, type){
   document.getElementById('eh-id').value    = id;
   document.getElementById('eh-name').value  = name;
@@ -768,7 +912,11 @@ async function loadSubAdmins(){
       +'<td><span class="badge b-purple">'+esc(u.hospitalName)+'</span></td>'
       +'<td class="mono">'+(u.lastLogin?new Date(u.lastLogin).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'Chưa đăng nhập')+'</td>'
       +'<td>'+(u.active?'<span class="badge b-ok">● Hoạt động</span>':'<span class="badge b-off">○ Đã khoá</span>')+'</td>'
-      +'<td><button class="btn-outline" style="font-size:.7rem;padding:5px 10px" onclick="toggleSubAdmin(\''+u.id+'\','+u.active+')">'+(u.active?'Khoá':'Mở khoá')+'</button></td>'
+      +'<td style="display:flex;gap:5px">'
+      +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="openEditSubAdmin(\''+u.id+'\',\''+esc(u.name)+'\',\''+esc(u.email||'')+'\',\''+esc(u.phone||'')+'\',\''+u.hospitalId+'\')">✎ Sửa</button>'
+      +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:'+(u.active?'#c0392b':'#27ae60')+';color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="toggleSubAdmin(\''+u.id+'\','+u.active+')">'+(u.active?'Khoá':'Mở khoá')+'</button>'
+      +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:#7f8c8d;color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="deleteSubAdmin(\''+u.id+'\',\''+esc(u.name)+'\')">✕ Xóa</button>'
+      +'</td>'
       +'</tr>').join('');
   } catch(e){ tbody.innerHTML='<tr><td colspan="7"><div class="loading">⚠️ '+esc(e.message)+'</div></td></tr>'; }
 }
@@ -919,6 +1067,10 @@ function renderDevPage(){
         +'<td>'+(d.online?'<span class="badge b-ok">● Online</span>':'<span class="badge b-off">○ Offline</span>')+'</td>'
         +'<td class="mono">'+(d.lastOnline?new Date(d.lastOnline).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'—')+'</td>'
         +'<td class="mono">'+(d.registeredAt?new Date(d.registeredAt).toLocaleDateString('vi-VN'):'—')+'</td>'
+        +'<td style="display:flex;gap:5px">'
+        +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="openEditDevice(\''+d.id+'\',\''+esc(d.serial)+'\',\''+esc(d.hospitalId||'')+'\')">✎ Sửa</button>'
+        +'<button style="font-size:.7rem;padding:4px 10px;border:none;border-radius:7px;background:#c0392b;color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="deleteDevice(\''+d.id+'\',\''+esc(d.serial)+'\')">✕ Xóa</button>'
+        +'</td>'
         +'</tr>';
     }).join('');
   }
