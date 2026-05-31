@@ -99,6 +99,27 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .btn-save{padding:8px 22px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;}
 .btn-save:hover{background:#0f2744;}
 .btn-save:disabled{opacity:.5;cursor:not-allowed;}
+/* Accordion cards */
+.page-grid{display:flex;flex-direction:column;gap:10px;}
+.page-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:box-shadow .15s;}
+.page-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.07);}
+.page-card-head{display:flex;align-items:center;gap:12px;padding:13px 16px;}
+.page-card-body{display:none;padding:14px 16px;border-top:1px solid var(--border);background:var(--card);}
+.page-card.open .page-card-body{display:block;}
+.page-card.open .page-card-head{background:var(--navy);}
+.page-card.open .card-name,.page-card.open .card-sub,.page-card.open .card-chev{color:#fff!important;}
+.page-card.open .card-av{background:rgba(255,255,255,.2)!important;color:#fff!important;}
+.card-av{width:38px;height:38px;border-radius:10px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;}
+.card-info{flex:1;min-width:0;}
+.card-name{font-size:.88rem;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-sub{font-size:.68rem;color:var(--muted);margin-top:2px;}
+.card-tag{font-size:.62rem;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--mint);color:var(--navy);flex-shrink:0;}
+.card-chev{color:var(--muted);transition:transform .25s;flex-shrink:0;}
+.page-card.open .card-chev{transform:rotate(180deg);}
+.info-row{display:flex;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
+.info-row:last-child{border-bottom:none;}
+.info-lbl{color:var(--muted);font-size:.66rem;min-width:80px;flex-shrink:0;}
+.info-val{color:var(--text);font-weight:600;font-size:.76rem;}
 .modal-msg{font-size:.72rem;text-align:center;min-height:16px;margin-top:8px;}
 .divider{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:14px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
 
@@ -207,18 +228,13 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div class="sec-title">🏥 Danh sách cơ sở y tế</div>
         <div class="srch-box">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="hs-srch" placeholder="Tìm cơ sở..." oninput="filterTable('hs-tbody',this.value)"/>
+          <input type="text" id="hs-srch" placeholder="Tìm cơ sở..." oninput="filterHospitals(this.value)"/>
         </div>
         <button class="btn-primary" onclick="openAddHospital()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm cơ sở
         </button>
       </div>
-      <div class="tbl-wrap">
-        <table class="tbl">
-          <thead><tr><th>Tên cơ sở</th><th>Loại hình</th><th>Địa chỉ</th><th>Thiết bị</th><th>Nhân sự</th><th>Trạng thái</th><th>Thao tác</th></tr></thead>
-          <tbody id="hs-tbody"><tr><td colspan="7"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr></tbody>
-        </table>
-      </div>
+      <div id="hs-body" style="padding:18px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
 
@@ -636,32 +652,75 @@ async function loadDashboard(){
 
 // ── CƠ SỞ Y TẾ ──
 async function loadHospitals(){
-  const tbody = document.getElementById('hs-tbody');
-  tbody.innerHTML='<tr><td colspan="7"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>';
+  const body = document.getElementById('hs-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
     const r = await fetch(AAPI+'/hospitals');
     hospitalsCache = r.ok ? await r.json() : [];
+    hsFiltered = hospitalsCache;
     renderHospitals(hospitalsCache);
-  } catch(e){ tbody.innerHTML='<tr><td colspan="7"><div class="loading">⚠️ '+esc(e.message)+'</div></td></tr>'; }
+  } catch(e){ document.getElementById('hs-body').innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+
+let hsFiltered = [];
+
+function filterHospitals(q){
+  const lq = q.toLowerCase();
+  hsFiltered = q.trim()
+    ? hospitalsCache.filter(h=>(h.ten_co_so||'').toLowerCase().includes(lq)||(h.dia_chi||'').toLowerCase().includes(lq))
+    : hospitalsCache;
+  renderHospitals(hsFiltered);
 }
 
 function renderHospitals(list){
-  const tbody = document.getElementById('hs-tbody');
-  const typeLabel={'benh_vien':'Bệnh viện','phong_kham':'Phòng khám','vien_duong_lao':'Dưỡng lão','khac':'Khác'};
-  if(!list.length){tbody.innerHTML='<tr><td colspan="7"><div class="loading">Chưa có cơ sở nào</div></td></tr>';return;}
-  tbody.innerHTML=list.map(h=>'<tr>'
-    +'<td><div style="font-weight:600;color:var(--navy)">'+esc(h.ten_co_so)+'</div><div class="mono" style="font-size:.66rem">'+esc(h.email_lien_he||h.so_dien_thoai||'—')+'</div></td>'
-    +'<td><span class="badge b-purple">'+esc(typeLabel[h.loai_hinh]||h.loai_hinh||'—')+'</span></td>'
-    +'<td class="mono">'+esc(h.dia_chi||'—')+'</td>'
-    +'<td class="mono">'+h.deviceCount+' thiết bị</td>'
-    +'<td class="mono">'+h.staffCount+' người</td>'
-    +'<td>'+(h.trang_thai_hoat_dong?'<span class="badge b-ok">● Hoạt động</span>':'<span class="badge b-off">○ Dừng</span>')+'</td>'
-    +'<td style="display:flex;gap:6px;align-items:center">'
-    +'<button style="font-size:.7rem;padding:5px 12px;border:none;border-radius:7px;background:var(--navy);color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="openEditHospital(\''+h.id+'\',\''+esc(h.ten_co_so||'')+'\',\''+esc(h.dia_chi||'')+'\',\''+esc(h.so_dien_thoai||'')+'\',\''+esc(h.email_lien_he||'')+'\',\''+esc(h.loai_hinh||'')+'\')">✎ Sửa</button>'
-    +'<button style="font-size:.7rem;padding:5px 12px;border:none;border-radius:7px;background:'+(h.trang_thai_hoat_dong?'#c0392b':'#27ae60')+';color:#fff;font-family:\'Sora\',sans-serif;font-weight:600;cursor:pointer" onclick="toggleHospital(\''+h.id+'\','+h.trang_thai_hoat_dong+',\''+esc(h.ten_co_so||h.name||'')+'\')">'
-    +(h.trang_thai_hoat_dong?'Dừng':'Kích hoạt')+'</button>'
-    +'</td>'
-    +'</tr>').join('');
+  const body = document.getElementById('hs-body');
+  const typeLabel={'benh_vien':'Bệnh viện','phong_kham':'Phòng khám','trung_tam_y_te':'TT Y tế','vien_duong_lao':'Dưỡng lão','khac':'Khác'};
+  if(!list.length){ body.innerHTML='<div class="loading">Chưa có cơ sở nào</div>'; return; }
+
+  body.innerHTML = '<div class="page-grid">'
+    + list.map(function(h){
+      const cid  = 'hs-card-'+h.id;
+      const init = (h.ten_co_so||'?').split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+      const type = typeLabel[h.loai_hinh]||h.loai_hinh||'—';
+      const statusTag = h.trang_thai_hoat_dong
+        ? '<span class="card-tag" style="background:#e6f7e6;color:#2d7a2d">● Hoạt động</span>'
+        : '<span class="card-tag" style="background:#f0f0f0;color:#888">○ Dừng</span>';
+      const BS = "font-size:.72rem;padding:5px 13px;border:none;border-radius:7px;font-family:'Sora',sans-serif;font-weight:600;cursor:pointer;";
+      return '<div class="page-card" id="'+cid+'" onclick="toggleHsCard(\''+cid+'\')">'
+        +'<div class="page-card-head">'
+        +'<div class="card-av" style="border-radius:10px;font-size:.8rem">'+init+'</div>'
+        +'<div class="card-info">'
+        +'<div class="card-name">'+esc(h.ten_co_so)+'</div>'
+        +'<div class="card-sub">'+type+' · '+esc(h.dia_chi||'—')+'</div>'
+        +'</div>'
+        +statusTag
+        +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+        +'</div>'
+        +'<div class="page-card-body">'
+        +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;margin-bottom:14px">'
+        +'<div>'
+        +'<div class="info-row"><span class="info-lbl">📞 Điện thoại</span><span class="info-val">'+esc(h.so_dien_thoai||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-lbl">✉️ Email</span><span class="info-val" style="word-break:break-all;font-size:.7rem">'+esc(h.email_lien_he||'—')+'</span></div>'
+        +'<div class="info-row"><span class="info-lbl">📍 Địa chỉ</span><span class="info-val">'+esc(h.dia_chi||'—')+'</span></div>'
+        +'</div>'
+        +'<div>'
+        +'<div class="info-row"><span class="info-lbl">🏷️ Loại hình</span><span class="info-val">'+type+'</span></div>'
+        +'<div class="info-row"><span class="info-lbl">📱 Thiết bị</span><span class="info-val">'+h.deviceCount+' thiết bị</span></div>'
+        +'<div class="info-row"><span class="info-lbl">👥 Nhân sự</span><span class="info-val">'+h.staffCount+' người</span></div>'
+        +'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:8px">'
+        +'<button style="'+BS+'background:var(--navy);color:#fff" onclick="event.stopPropagation();openEditHospital(\''+h.id+'\',\''+esc(h.ten_co_so||'')+'\',\''+esc(h.dia_chi||'')+'\',\''+esc(h.so_dien_thoai||'')+'\',\''+esc(h.email_lien_he||'')+'\',\''+esc(h.loai_hinh||'')+'\')">✎ Sửa</button>'
+        +'<button style="'+BS+'background:'+(h.trang_thai_hoat_dong?'#c0392b':'#27ae60')+';color:#fff" onclick="event.stopPropagation();toggleHospital(\''+h.id+'\','+h.trang_thai_hoat_dong+',\''+esc(h.ten_co_so||'')+'\')">'+(h.trang_thai_hoat_dong?'Dừng hoạt động':'Kích hoạt lại')+'</button>'
+        +'</div>'
+        +'</div>'
+        +'</div>';
+    }).join('')
+  +'</div>';
+}
+
+function toggleHsCard(id){
+  document.getElementById(id).classList.toggle('open');
 }
 
 // ── SỬA / XÓA SUB ADMIN ──
