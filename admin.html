@@ -812,12 +812,11 @@ function previewAvatar(input){
 async function uploadAvatarToStorage(file, userId){
   const ext  = file.name.split('.').pop().toLowerCase()||'jpg';
   const path = userId+'.'+ext;
-  // Xóa tất cả file cũ của user này trước
-  const { data: existing } = await _sb.storage.from('avatars').list('', { search: userId });
-  if(existing?.length){
-    const old = existing.map(f=>f.name);
-    await _sb.storage.from('avatars').remove(old);
-  }
+  // Xóa tất cả extension có thể có của user này
+  const allExts = ['jpg','jpeg','png','webp','gif'];
+  const toDelete = allExts.map(e => userId+'.'+e);
+  await _sb.storage.from('avatars').remove(toDelete);
+  // Upload file mới
   const { error } = await _sb.storage.from('avatars').upload(path, file, {
     upsert: true, contentType: file.type,
   });
