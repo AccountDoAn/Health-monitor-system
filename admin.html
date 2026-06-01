@@ -778,71 +778,7 @@ let hospitalsCache = [];
 
 // ── HỒ SƠ CÁ NHÂN ──
 let _profileAvatarBase64 = null;
-
-function previewAvatar(input){
-  const file = input.files[0];
-  if(!file) return;
-  if(file.size > 5*1024*1024){ alert('Ảnh tối đa 5MB'); return; }
-  const reader = new FileReader();
-  reader.onload = function(e){
-    // Nén ảnh xuống max 300x300px và quality 0.7
-    const img = new Image();
-    img.onload = function(){
-      const canvas = document.createElement('canvas');
-      const MAX = 300;
-      let w = img.width, h = img.height;
-      if(w > h){ if(w>MAX){h=Math.round(h*MAX/w);w=MAX;} }
-      else      { if(h>MAX){w=Math.round(w*MAX/h);h=MAX;} }
-      canvas.width=w; canvas.height=h;
-      canvas.getContext('2d').drawImage(img,0,0,w,h);
-      _profileAvatarBase64 = canvas.toDataURL('image/jpeg', 0.7);
-      const imgEl = document.getElementById('profile-av-img');
-      imgEl.src = _profileAvatarBase64; imgEl.style.display='block';
-      document.getElementById('profile-av-initials').style.display='none';
-      updateSidebarAvatar(_profileAvatarBase64);
-    };
-    img.src = e.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-async function openProfile(){
-  const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
-  document.getElementById('pf-msg').textContent = '';
-  _profileAvatarBase64 = null;
-  // Load thông tin mới nhất từ API
-  try {
-    const r = await fetch(AAPI+'/profile/'+UID);
-    if(r.ok){
-      const d = await r.json();
-      document.getElementById('pf-name').value  = d.name||sess.name||'';
-      document.getElementById('pf-phone').value = d.phone||sess.phone||'';
-      document.getElementById('pf-email').value = d.email||sess.email||'';
-      const av = d.avatar||sess.avatar;
-      const initials = (d.name||sess.name||'SA').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-      document.getElementById('profile-av-initials').textContent = initials;
-      const imgEl = document.getElementById('profile-av-img');
-      if(av){ imgEl.src=av; imgEl.style.display='block'; document.getElementById('profile-av-initials').style.display='none'; }
-      else  { imgEl.style.display='none'; document.getElementById('profile-av-initials').style.display=''; }
-    }
-  } catch(_){
-    document.getElementById('pf-name').value  = sess.name||'';
-    document.getElementById('pf-phone').value = sess.phone||'';
-    document.getElementById('pf-email').value = sess.email||'';
-  }
-  document.getElementById('modal-profile').classList.add('open');
-}
-
-function updateSidebarAvatar(src){
-  const av = document.getElementById('sb-av');
-  if(!av) return;
-  if(src){
-    av.innerHTML = '<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>';
-  } else {
-    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
-    av.textContent = (sess.name||'SA').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-  }
-}
+let _profileAvatarFile   = null;
 
 async function saveProfile(){
   const name = document.getElementById('pf-name').value.trim();
@@ -851,36 +787,35 @@ async function saveProfile(){
   const btn = document.getElementById('pf-save-btn');
   btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
   try {
+    let avatarUrl = null;
+    if(_profileAvatarFile){
+      msg.textContent = 'Đang upload ảnh...';
+      avatarUrl = await uploadAvatarToStorage(_profileAvatarFile, UID);
+    }
     const body = {
-      adminId: UID,
-      name:    name,
-      phone:   document.getElementById('pf-phone').value.trim()||null,
-      email:   document.getElementById('pf-email').value.trim()||null,
+      adminId: UID, name,
+      phone: document.getElementById('pf-phone').value.trim()||null,
+      email: document.getElementById('pf-email').value.trim()||null,
     };
-    if(_profileAvatarBase64) body.avatar = _profileAvatarBase64;
+    if(avatarUrl) body.avatar = avatarUrl;
+    msg.textContent = 'Đang lưu thông tin...';
     const r = await fetch(AAPI+'/profile', {
       method:'PATCH', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(body)
     });
     const d = await r.json();
     if(!r.ok) throw new Error(d.error||'Lỗi');
-    // Cập nhật session
     const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
-    sess.name  = name;
-    sess.phone = body.phone;
-    sess.email = body.email;
-    if(_profileAvatarBase64) sess.avatar = _profileAvatarBase64;
+    sess.name=name; sess.phone=body.phone; sess.email=body.email;
+    if(avatarUrl) sess.avatar=avatarUrl;
     localStorage.setItem('hm_session', JSON.stringify(sess));
-    // Cập nhật sidebar
-    document.getElementById('sb-name').textContent = name;
+    document.getElementById('sb-name').textContent=name;
     updateSidebarAvatar(sess.avatar||null);
     msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật hồ sơ';
-    setTimeout(()=>closeModal('modal-profile'), 1500);
+    setTimeout(()=>closeModal('modal-profile'),1500);
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
   btn.disabled=false;
 }
-
-// ── VALIDATE SỐ ĐIỆN THOẠI (admin) ──
 function validateAdminPhone(el){
   let v = el.value.replace(/[^0-9]/g, '');
   const max = parseInt(el.getAttribute('maxlength'))||15;
