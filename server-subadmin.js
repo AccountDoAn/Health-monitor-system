@@ -62,6 +62,36 @@ async function getAdminHospital(userId) {
 }
 
 // GET /admin/:userId/me — thông tin sub-admin + CSYT
+// GET /admin/:userId/profile
+app.get("/admin/:userId/profile", async (req, res) => {
+  try {
+    const { data, error } = await supabase.from("nguoi_dung")
+      .select("id, ho_ten, so_dien_thoai, email, anh_dai_dien_url")
+      .eq("id", req.params.userId).single();
+    if(error) throw error;
+    res.json({ name:data.ho_ten, phone:data.so_dien_thoai, email:data.email, avatar:data.anh_dai_dien_url });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
+// PATCH /admin/:userId/profile — cập nhật hồ sơ cá nhân
+app.patch("/admin/:userId/profile", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name, phone, email, avatar } = req.body;
+    const updates = {};
+    if(name?.trim())        updates.ho_ten           = name.trim();
+    if(phone !== undefined) updates.so_dien_thoai    = phone||null;
+    if(email !== undefined) updates.email            = email||null;
+    if(avatar)              updates.anh_dai_dien_url = avatar;
+    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", userId);
+    if(error) throw error;
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[PATCH /admin/profile]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get("/admin/:userId/me", async (req, res) => {
   try {
     const { userId } = req.params;
