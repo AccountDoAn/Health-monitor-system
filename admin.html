@@ -1058,9 +1058,28 @@ async function loadInfo(){
   try {
     const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
     if(s.name){
-      const i = s.name.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-      document.getElementById('sb-av').textContent = i;
       document.getElementById('sb-name').textContent = s.name;
+      // Hiện ảnh đại diện nếu có, không thì hiện initials
+      if(s.avatar){
+        updateSidebarAvatar(s.avatar);
+      } else {
+        // Fetch từ DB để lấy avatar mới nhất
+        const r = await fetch(AAPI+'/profile/'+UID);
+        if(r.ok){
+          const d = await r.json();
+          if(d.avatar){
+            s.avatar = d.avatar;
+            localStorage.setItem('hm_session', JSON.stringify(s));
+            updateSidebarAvatar(d.avatar);
+          } else {
+            const i = s.name.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+            document.getElementById('sb-av').textContent = i;
+          }
+        } else {
+          const i = s.name.split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+          document.getElementById('sb-av').textContent = i;
+        }
+      }
     }
   } catch(_){}
 }
