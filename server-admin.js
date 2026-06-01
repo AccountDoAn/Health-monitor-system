@@ -244,9 +244,7 @@ app.patch("/profile", async (req, res) => {
     if(name?.trim())        updates.ho_ten           = name.trim();
     if(phone !== undefined) updates.so_dien_thoai    = phone||null;
     if(email?.trim())       updates.email            = email.trim();
-    // Avatar: chỉ lưu nếu là URL hoặc base64 ngắn (<500KB)
-    if(avatar && avatar.length < 500000) updates.anh_dai_dien_url = avatar;
-    else if(avatar) return res.status(400).json({ error: "Ảnh quá lớn, vui lòng chọn ảnh nhỏ hơn 400KB" });
+    if(avatar)              updates.anh_dai_dien_url = avatar;
     const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", adminId);
     if(error) throw error;
     res.json({ ok: true });
