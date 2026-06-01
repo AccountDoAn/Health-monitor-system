@@ -2014,8 +2014,14 @@ async function uploadAvatarSA(file, userId){
     'https://czgberdpnfultxkljhko.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
   );
+  window._sb = _sbSA;
   const ext  = file.name.split('.').pop().toLowerCase()||'jpg';
   const path = userId+'.'+ext;
+  // Xóa file cũ trước
+  const { data: existing } = await _sbSA.storage.from('avatars').list('', { search: userId });
+  if(existing?.length){
+    await _sbSA.storage.from('avatars').remove(existing.map(f=>f.name));
+  }
   const { error } = await _sbSA.storage.from('avatars').upload(path, file, {upsert:true, contentType:file.type});
   if(error) throw new Error('Upload thất bại: '+error.message);
   const { data } = _sbSA.storage.from('avatars').getPublicUrl(path);
