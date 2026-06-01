@@ -529,6 +529,8 @@ app.get("/logs", async (req, res) => {
     const { page=1, limit=20, action, target, dateFrom, dateTo } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
 
+    const EXCLUDED_TABLES = ['lien_ket_bac_si','lien_ket_nguoi_nha','lich_su_gan_thiet_bi','ho_so_benh_nhan'];
+
     let query = supabase.from("nhat_ky_he_thong")
       .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, dia_chi_ip, du_lieu_bo_sung, ngay_tao", { count: 'exact' })
       .order("ngay_tao", { ascending: false })
@@ -536,6 +538,7 @@ app.get("/logs", async (req, res) => {
 
     if (action)   query = query.eq("hanh_dong", action);
     if (target)   query = query.eq("loai_doi_tuong", target);
+    else          query = query.not("loai_doi_tuong", "in", `(${EXCLUDED_TABLES.join(',')})`);
     if (dateFrom) query = query.gte("ngay_tao", dateFrom);
     if (dateTo)   query = query.lte("ngay_tao", dateTo+'T23:59:59');
 
