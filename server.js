@@ -1840,6 +1840,32 @@ app.get("/doctor/:doctorId/active-alerts", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
+// GET /doctor/:id/profile
+app.get("/doctor/:id/profile", async (req, res) => {
+  try {
+    const { data, error } = await supabase.from("nguoi_dung")
+      .select("id, ho_ten, so_dien_thoai, email, anh_dai_dien_url")
+      .eq("id", req.params.id).single();
+    if(error) throw error;
+    res.json({ name:data.ho_ten, phone:data.so_dien_thoai, email:data.email, avatar:data.anh_dai_dien_url });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
+// PATCH /doctor/:id/profile
+app.patch("/doctor/:id/profile", async (req, res) => {
+  try {
+    const { name, phone, email, avatar } = req.body;
+    const updates = {};
+    if(name?.trim())        updates.ho_ten           = name.trim();
+    if(phone !== undefined) updates.so_dien_thoai    = phone||null;
+    if(email?.trim())       updates.email            = email.trim();
+    if(avatar)              updates.anh_dai_dien_url = avatar;
+    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", req.params.id);
+    if(error) throw error;
+    res.json({ ok: true });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
 app.listen(PORT, () => {
   console.log(`🚀 Health Monitor API v3.3 running on port ${PORT}`);
   console.log("Routes:");
