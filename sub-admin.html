@@ -143,6 +143,12 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .sa-fb{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
 .sa-fb.on{background:var(--navy);border-color:var(--navy);color:#fff;}
 .sa-fb:hover:not(.on){background:var(--bg);}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;overflow:hidden;}
+.sb-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.profile-av{width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;margin:0 auto 12px;overflow:hidden;cursor:pointer;position:relative;}
+.profile-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.profile-av-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+.profile-av:hover .profile-av-overlay{opacity:1;}
 /* Filter panel */
 .filter-panel{display:none;padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);}
 .filter-panel.open{display:block;}
@@ -197,6 +203,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .lnk-doc-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;}
 .lnk-empty{color:var(--muted);font-size:.76rem;font-style:italic;padding:6px 0;}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -226,12 +233,13 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </button>
   </div>
   <div class="sb-bottom">
-    <div class="sb-user">
+    <div class="sb-user" onclick="openProfile()" style="cursor:pointer" title="Chỉnh sửa hồ sơ">
       <div class="sb-av" id="sb-av">SA</div>
       <div><div class="sb-uname" id="sb-name">Sub Admin</div><div class="sb-urole" id="sb-role">Quản trị đơn vị</div></div>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </div>
     <button class="sb-btn" onclick="openSettings()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>Cài đặt
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="25" height="25"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Cài đặt
     </button>
     <button class="sb-btn red" onclick="doLogout()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Đăng xuất
@@ -496,6 +504,35 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
   </div>
 </div>
+<!-- MODAL: HỒ SƠ CÁ NHÂN -->
+<div class="modal-bg" id="modal-profile" onclick="if(event.target===this)closeModal('modal-profile')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-profile')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👤 Hồ sơ cá nhân</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div class="profile-av" id="profile-av-wrap" onclick="document.getElementById('profile-av-input').click()">
+        <span id="profile-av-initials"></span>
+        <img id="profile-av-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%"/>
+        <div class="profile-av-overlay">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+      </div>
+      <input type="file" id="profile-av-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="previewAvatar(this)"/>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:6px">Nhấn vào ảnh để thay đổi · Tối đa 2MB</div>
+    </div>
+    <div class="field"><label>Họ tên *</label><input id="pf-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="pf-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+      <div class="field"><label>Email</label><input id="pf-email" type="email"/></div>
+    </div>
+    <div class="modal-msg" id="pf-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-profile')">Hủy</button>
+      <button class="btn-save" id="pf-save-btn" onclick="saveProfile()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CÀI ĐẶT -->
 <div class="modal-bg" id="modal-settings" onclick="if(event.target===this)closeModal('modal-settings')">
   <div class="modal modal-sm">
@@ -911,18 +948,43 @@ function alphabetSort(arr, nameKey){
 
 // ── LOAD ADMIN INFO ──
 async function loadInfo(){
+  // Khởi tạo Supabase client cho storage
+  if(!window._sb && window.supabase){
+    window._sb = supabase.createClient(
+      'https://czgberdpnfultxkljhko.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
+    );
+  }
   try {
     const r = await fetch(AAPI+'/admin/'+UID+'/me');
     if(r.ok){
       const d=await r.json();
       const i=(d.name||'SA').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
-      document.getElementById('sb-av').textContent=i;
       document.getElementById('sb-name').textContent=d.name||'Sub Admin';
       document.getElementById('sb-role').textContent='Quản trị đơn vị';
       document.getElementById('hs-name').textContent=d.hospital?.name||d.hospital?.ten_co_so||'—';
+      // Hiện avatar
+      const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+      const av = sess.avatar;
+      if(av){ updateSidebarAvatar(av); }
+      else {
+        // Fetch avatar từ DB
+        const rp = await fetch(AAPI+'/admin/'+UID+'/profile');
+        if(rp.ok){
+          const dp = await rp.json();
+          if(dp.avatar){
+            sess.avatar = dp.avatar;
+            localStorage.setItem('hm_session', JSON.stringify(sess));
+            updateSidebarAvatar(dp.avatar);
+          } else {
+            document.getElementById('sb-av').textContent = i;
+          }
+        } else {
+          document.getElementById('sb-av').textContent = i;
+        }
+      }
     }
   } catch(_){}
-  // Kiểm tra first login sau khi load xong
   checkFirstLogin();
 }
 
@@ -1917,6 +1979,106 @@ async function saveEditRecord(){
       msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi');
     }
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
+
+// ── HỒ SƠ CÁ NHÂN ──
+let _profileAvatarFile = null;
+
+function updateSidebarAvatar(src){
+  const av = document.getElementById('sb-av');
+  if(!av) return;
+  if(src){ av.innerHTML='<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>'; }
+  else {
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    av.textContent = (sess.name||'SA').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+  }
+}
+
+function previewAvatar(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 5*1024*1024){ alert('Ảnh tối đa 5MB'); return; }
+  _profileAvatarFile = file;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = document.getElementById('profile-av-img');
+    img.src = e.target.result; img.style.display='block';
+    document.getElementById('profile-av-initials').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadAvatarSA(file, userId){
+  const _sbSA = window._sb || supabase.createClient(
+    'https://czgberdpnfultxkljhko.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
+  );
+  const ext  = file.name.split('.').pop().toLowerCase()||'jpg';
+  const path = userId+'.'+ext;
+  const { error } = await _sbSA.storage.from('avatars').upload(path, file, {upsert:true, contentType:file.type});
+  if(error) throw new Error('Upload thất bại: '+error.message);
+  const { data } = _sbSA.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl + '?t=' + Date.now();
+}
+
+async function openProfile(){
+  const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  document.getElementById('pf-msg').textContent = '';
+  _profileAvatarFile = null;
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/profile');
+    const d = r.ok ? await r.json() : {};
+    document.getElementById('pf-name').value  = d.name||sess.name||'';
+    document.getElementById('pf-phone').value = d.phone||sess.phone||'';
+    document.getElementById('pf-email').value = d.email||sess.email||'';
+    const av = d.avatar||sess.avatar;
+    const initials = (d.name||sess.name||'SA').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+    document.getElementById('profile-av-initials').textContent = initials;
+    const img = document.getElementById('profile-av-img');
+    if(av){ img.src=av; img.style.display='block'; document.getElementById('profile-av-initials').style.display='none'; }
+    else  { img.style.display='none'; document.getElementById('profile-av-initials').style.display=''; }
+  } catch(_){
+    document.getElementById('pf-name').value  = sess.name||'';
+    document.getElementById('pf-phone').value = sess.phone||'';
+    document.getElementById('pf-email').value = sess.email||'';
+  }
+  document.getElementById('modal-profile').classList.add('open');
+}
+
+async function saveProfile(){
+  const name = document.getElementById('pf-name').value.trim();
+  const msg  = document.getElementById('pf-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  const btn = document.getElementById('pf-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    let avatarUrl = null;
+    if(_profileAvatarFile){
+      msg.textContent='Đang upload ảnh...';
+      avatarUrl = await uploadAvatarSA(_profileAvatarFile, UID);
+    }
+    const body = {
+      name, phone: document.getElementById('pf-phone').value.trim()||null,
+      email: document.getElementById('pf-email').value.trim()||null,
+    };
+    if(avatarUrl) body.avatar = avatarUrl;
+    msg.textContent='Đang lưu thông tin...';
+    const r = await fetch(AAPI+'/admin/'+UID+'/profile', {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    sess.name=name; sess.phone=body.phone; sess.email=body.email;
+    if(avatarUrl) sess.avatar=avatarUrl;
+    localStorage.setItem('hm_session', JSON.stringify(sess));
+    document.getElementById('sb-name').textContent=name;
+    updateSidebarAvatar(sess.avatar||null);
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật hồ sơ';
+    setTimeout(()=>closeModal('modal-profile'),1500);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
   btn.disabled=false;
 }
 
