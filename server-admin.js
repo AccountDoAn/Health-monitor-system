@@ -216,6 +216,25 @@ app.post("/hospitals", async (req, res) => {
   }
 });
 
+// PATCH /profile — cập nhật hồ sơ cá nhân
+app.patch("/profile", async (req, res) => {
+  try {
+    const { adminId, name, phone, email, avatar } = req.body;
+    if(!adminId) return res.status(400).json({ error: "Thiếu adminId" });
+    const updates = {};
+    if(name?.trim())       updates.ho_ten          = name.trim();
+    if(phone !== undefined) updates.so_dien_thoai  = phone||null;
+    if(email !== undefined) updates.email          = email||null;
+    if(avatar)             updates.anh_dai_dien_url = avatar;
+    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", adminId);
+    if(error) throw error;
+    res.json({ ok: true });
+  } catch(err) {
+    console.error("[PATCH /profile]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PATCH /hospitals/:id — cập nhật CSYT
 app.patch("/hospitals/:id", async (req, res) => {
   try {
