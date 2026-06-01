@@ -63,7 +63,12 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .sb-bottom{padding:10px 8px;border-top:1px solid rgba(255,255,255,.08);}
 .sb-user{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.06);margin-bottom:6px;}
-.sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4a9fd4,#6c5ce7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
+.sb-av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#4a9fd4,#6c5ce7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;overflow:hidden;}
+.sb-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.profile-av{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,#4a9fd4,#6c5ce7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;margin:0 auto 12px;overflow:hidden;cursor:pointer;position:relative;}
+.profile-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.profile-av-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+.profile-av:hover .profile-av-overlay{opacity:1;}
 .sb-uname{font-size:.76rem;font-weight:700;color:#fff;}
 .sb-urole{font-size:.6rem;color:rgba(255,255,255,.45);}
 
@@ -204,9 +209,10 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </button>
   </div>
   <div class="sb-bottom">
-    <div class="sb-user">
+    <div class="sb-user" onclick="openProfile()" style="cursor:pointer" title="Chỉnh sửa hồ sơ">
       <div class="sb-av" id="sb-av">SA</div>
       <div><div class="sb-uname" id="sb-name">Super Admin</div><div class="sb-urole">Quản trị viên hệ thống</div></div>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
     </div>
     <button class="sb-btn" onclick="openAdminSettings()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>Cài đặt
@@ -517,6 +523,35 @@ function showNewLogToast(){
   toast._timer = setTimeout(function(){ toast.remove(); }, 5000);
 }
 </script>
+<!-- MODAL: HỒ SƠ CÁ NHÂN -->
+<div class="modal-bg" id="modal-profile" onclick="if(event.target===this)closeModal('modal-profile')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-profile')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👤 Hồ sơ cá nhân</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div class="profile-av" id="profile-av-wrap" onclick="document.getElementById('profile-av-input').click()">
+        <span id="profile-av-initials"></span>
+        <img id="profile-av-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%"/>
+        <div class="profile-av-overlay">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+      </div>
+      <input type="file" id="profile-av-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="previewAvatar(this)"/>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:6px">Nhấn vào ảnh để thay đổi · JPG, PNG, WEBP · Tối đa 2MB</div>
+    </div>
+    <div class="field"><label>Họ tên *</label><input id="pf-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="pf-phone" type="text" maxlength="10" oninput="validateAdminPhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+      <div class="field"><label>Email</label><input id="pf-email" type="email"/></div>
+    </div>
+    <div class="modal-msg" id="pf-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-profile')">Hủy</button>
+      <button class="btn-save" id="pf-save-btn" onclick="saveProfile()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-admin-settings" onclick="if(event.target===this)closeModal('modal-admin-settings')">
   <div class="modal modal-sm">
     <button class="modal-x" onclick="closeModal('modal-admin-settings')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
@@ -740,6 +775,89 @@ const UID  = SESS.userId;
 const esc  = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 let hospitalsCache = [];
+
+// ── HỒ SƠ CÁ NHÂN ──
+let _profileAvatarBase64 = null;
+
+function openProfile(){
+  const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  document.getElementById('pf-name').value  = sess.name||'';
+  document.getElementById('pf-phone').value = sess.phone||'';
+  document.getElementById('pf-email').value = sess.email||'';
+  document.getElementById('pf-msg').textContent = '';
+  _profileAvatarBase64 = null;
+  // Hiện avatar hiện tại
+  const initials = (sess.name||'SA').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+  document.getElementById('profile-av-initials').textContent = initials;
+  const img = document.getElementById('profile-av-img');
+  if(sess.avatar){ img.src=sess.avatar; img.style.display='block'; document.getElementById('profile-av-initials').style.display='none'; }
+  else { img.style.display='none'; document.getElementById('profile-av-initials').style.display=''; }
+  document.getElementById('modal-profile').classList.add('open');
+}
+
+function previewAvatar(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024){ alert('Ảnh tối đa 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    _profileAvatarBase64 = e.target.result;
+    const img = document.getElementById('profile-av-img');
+    img.src = _profileAvatarBase64;
+    img.style.display = 'block';
+    document.getElementById('profile-av-initials').style.display = 'none';
+    // Cập nhật sidebar avatar ngay
+    updateSidebarAvatar(_profileAvatarBase64);
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateSidebarAvatar(src){
+  const av = document.getElementById('sb-av');
+  if(!av) return;
+  if(src){
+    av.innerHTML = '<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>';
+  } else {
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    av.textContent = (sess.name||'SA').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+  }
+}
+
+async function saveProfile(){
+  const name = document.getElementById('pf-name').value.trim();
+  const msg  = document.getElementById('pf-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  const btn = document.getElementById('pf-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const body = {
+      adminId: UID,
+      name:    name,
+      phone:   document.getElementById('pf-phone').value.trim()||null,
+      email:   document.getElementById('pf-email').value.trim()||null,
+    };
+    if(_profileAvatarBase64) body.avatar = _profileAvatarBase64;
+    const r = await fetch(AAPI+'/profile', {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    // Cập nhật session
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    sess.name  = name;
+    sess.phone = body.phone;
+    sess.email = body.email;
+    if(_profileAvatarBase64) sess.avatar = _profileAvatarBase64;
+    localStorage.setItem('hm_session', JSON.stringify(sess));
+    // Cập nhật sidebar
+    document.getElementById('sb-name').textContent = name;
+    updateSidebarAvatar(sess.avatar||null);
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật hồ sơ';
+    setTimeout(()=>closeModal('modal-profile'), 1500);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
 
 // ── VALIDATE SỐ ĐIỆN THOẠI (admin) ──
 function validateAdminPhone(el){
