@@ -1043,17 +1043,16 @@ function previewAvatar(input){
 }
 
 async function uploadAvatarDoc(file, userId){
-  if(!_sb_doc) throw new Error('Supabase chưa khởi tạo');
+  // Dùng _sb đã có sẵn thay vì _sb_doc
+  const client = _sb;
+  if(!client) throw new Error('Supabase chưa khởi tạo');
   const ext  = file.name.split('.').pop().toLowerCase()||'jpg';
   const path = userId+'.'+ext;
-  // Xóa file cũ trước
-  const { data: existing } = await _sb_doc.storage.from('avatars').list('', { search: userId });
-  if(existing?.length){
-    await _sb_doc.storage.from('avatars').remove(existing.map(f=>f.name));
-  }
-  const { error } = await _sb_doc.storage.from('avatars').upload(path, file, {upsert:true, contentType:file.type});
+  const allExts = ['jpg','jpeg','png','webp','gif'];
+  await client.storage.from('avatars').remove(allExts.map(e => userId+'.'+e));
+  const { error } = await client.storage.from('avatars').upload(path, file, {upsert:true, contentType:file.type});
   if(error) throw new Error('Upload thất bại: '+error.message);
-  const { data } = _sb_doc.storage.from('avatars').getPublicUrl(path);
+  const { data } = client.storage.from('avatars').getPublicUrl(path);
   return data.publicUrl + '?t=' + Date.now();
 }
 
