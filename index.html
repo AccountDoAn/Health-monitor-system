@@ -821,11 +821,13 @@ async function doChangePass(){
 
 // ── SESSION HELPERS ──
 function saveSession(userId, role, name, extra){
+  const SESSION_HOURS = 8; // Hết hạn sau 8 tiếng
   localStorage.setItem('hm_session', JSON.stringify({
     userId, role, roles: [role], name,
     hospitalId:   extra?.hospitalId   || null,
     isFirstLogin: extra?.isFirstLogin || false,
-    loginAt: Date.now()
+    loginAt:   Date.now(),
+    expiresAt: Date.now() + SESSION_HOURS * 60 * 60 * 1000,
   }));
 }
 function clearSession(){
