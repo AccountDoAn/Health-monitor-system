@@ -751,7 +751,7 @@ app.get("/admin/:userId/families", async (req, res) => {
 
     // Lấy role user_nha và user_tb
     const [{ data: nhaRole }, { data: tbRole }] = await Promise.all([
-      supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_nha").maybeSingle(),
+      supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle(),
       supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle(),
     ]);
 
