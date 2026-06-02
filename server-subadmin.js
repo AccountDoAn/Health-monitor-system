@@ -24,6 +24,7 @@ const apiLimiter = rateLimit({
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
+app.set('trust proxy', 1); // Cần cho Render/proxy
 
 // ===== CORS =====
 const corsOptions = {
