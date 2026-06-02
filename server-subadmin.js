@@ -696,11 +696,14 @@ app.patch("/admin/:userId/medical-record/:patientId", async (req, res) => {
 // POST /admin/:userId/families/create-user — tạo tài khoản người nhà độc lập
 app.post("/admin/:userId/families/create-user", async (req, res) => {
   try {
+    const { userId } = req.params;
     const { name, phone, email, password } = req.body;
     if(!name?.trim()) return res.status(400).json({ error: "Thiếu họ tên" });
+    const hsId = await getAdminHospital(userId);
     const { data: newUser, error } = await supabase.from("nguoi_dung").insert({
       ho_ten: name.trim(), so_dien_thoai: phone||null, email: email||null,
       mat_khau: password||"123456", trang_thai_hoat_dong: true,
+      co_so_y_te_id: hsId||null,
     }).select("id").single();
     if(error) throw error;
     const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
@@ -749,11 +752,12 @@ app.get("/admin/:userId/families", async (req, res) => {
     const hsId = await getAdminHospital(userId);
     if (!hsId) return res.status(403).json({ error: "Không có quyền" });
 
-    // Lấy role user_nha và user_tb
+    // Lấy role user_lq và user_tb
     const [{ data: nhaRole }, { data: tbRole }] = await Promise.all([
       supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle(),
       supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle(),
     ]);
+    console.log('[families] hsId:', hsId, '| nhaRole:', nhaRole, '| tbRole:', tbRole);
 
     // Lấy tất cả người nhà thuộc CSYT (kể cả chưa gán bệnh nhân)
     let allFamilyUsers = [];
@@ -761,12 +765,14 @@ app.get("/admin/:userId/families", async (req, res) => {
       const { data: pqNha } = await supabase.from("phan_quyen_nguoi_dung")
         .select("nguoi_dung_id").eq("vai_tro_id", nhaRole.id);
       const nhaIds = (pqNha||[]).map(p=>p.nguoi_dung_id);
+      console.log('[families] nhaIds count:', nhaIds.length);
       if (nhaIds.length) {
         const { data: nhaUsers } = await supabase.from("nguoi_dung")
           .select("id, ho_ten, so_dien_thoai, email, gioi_tinh, ngay_sinh, anh_dai_dien_url")
           .in("id", nhaIds)
-          .eq("co_so_y_te_id", hsId)
+          .or(`co_so_y_te_id.eq.${hsId},co_so_y_te_id.is.null`)
           .eq("trang_thai_hoat_dong", true);
+        console.log('[families] allFamilyUsers count:', (nhaUsers||[]).length);
         allFamilyUsers = nhaUsers || [];
       }
     }
@@ -857,10 +863,10 @@ app.post("/admin/:userId/families", async (req, res) => {
       const { data: newUser, error: userErr } = await supabase.from("nguoi_dung").insert({
         ho_ten: name.trim(), so_dien_thoai: phone||null, email: email||null,
         mat_khau: password||"123456", trang_thai_hoat_dong: true,
+        co_so_y_te_id: hsId,
       }).select("id").single();
       if (userErr) throw userErr;
       lqId = newUser.id;
-
       const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
       if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:lqId, vai_tro_id:role.id });
     }
