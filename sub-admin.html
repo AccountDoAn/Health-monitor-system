@@ -2153,6 +2153,7 @@ function renderFamilies(list){
     body.innerHTML='<div class="loading">Chưa có người nhà nào</div>'; return;
   }
 
+  const GENDER = {nam:'Nam', nu:'Nữ', khac:'Khác'};
   const totalPages = Math.ceil(list.length / FAM_PER_PAGE);
   if(famPage > totalPages) famPage = 1;
   const slice = list.slice((famPage-1)*FAM_PER_PAGE, famPage*FAM_PER_PAGE);
@@ -2160,28 +2161,57 @@ function renderFamilies(list){
   let html = '<div class="page-grid">';
   html += slice.map(function(f){
     const init = (f.userName||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
-    const rel   = REL_LABEL[f.relation]||f.relation||'—';
-    const cid   = 'fam-card-'+f.linkId;
+    const cid  = 'fam-card-'+(f.userId||f.linkId||Math.random().toString(36).slice(2));
+    const dob  = f.dob ? new Date(f.dob).toLocaleDateString('vi-VN') : '—';
+    const gender = GENDER[f.gender]||f.gender||'—';
+
+    // Avatar
+    const avHtml = f.avatar
+      ? '<div class="card-av" style="background:none;border:2px solid var(--border)"><img src="'+esc(f.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>'
+      : '<div class="card-av">'+init+'</div>';
+
+    // Danh sách bệnh nhân liên kết
+    const links = f.allLinks||[];
+    const linksHtml = links.length
+      ? links.map(function(l){
+          const rel = REL_LABEL[l.relation]||l.relation||'—';
+          return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border-radius:8px;margin-bottom:4px">'
+            +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+            +'<span style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(l.patientName)+'</span>'
+            +'<span style="font-size:.66rem;color:var(--muted)">· '+esc(rel)+'</span>'
+            +(l.isPrimary?'<span class="card-tag" style="font-size:.58rem;padding:1px 6px;margin-left:auto">Giám sát chính</span>':'')
+            +'<button onclick="event.stopPropagation();confirmDeleteFamily(\''+l.linkId+'\',\''+esc(f.userName)+'\')" style="margin-left:auto;padding:2px 7px;border:1px solid var(--danger);border-radius:5px;background:none;color:var(--danger);font-size:.62rem;font-weight:600;cursor:pointer">✕</button>'
+            +'</div>';
+        }).join('')
+      : '<div style="font-size:.72rem;color:var(--muted);font-style:italic;padding:6px 0">Chưa được gán bệnh nhân nào</div>';
+
     return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
       +'<div class="page-card-head">'
-      +'<div class="card-av">'+init+'</div>'
+      +avHtml
       +'<div class="card-info">'
       +'<div class="card-name">'+esc(f.userName)+'</div>'
-      +'<div class="card-sub">'+rel+' · '+esc(f.patientName)+'</div>'
+      +'<div class="card-sub">'+(links.length ? links.length+' bệnh nhân' : 'Chưa gán')+'</div>'
       +'</div>'
       +(f.isPrimary?'<span class="card-tag">Giám sát chính</span>':'')
       +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
       +'</div>'
       +'<div class="page-card-body">'
-      +'<div style="display:flex;flex-direction:column;gap:8px">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;margin-bottom:14px">'
+      +'<div>'
       +'<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(f.phone||'—')+'</span></div>'
-      +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val">'+esc(f.email||'—')+'</span></div>'
-      +'<div class="pt-info-row"><span class="pt-info-lbl">🏥 Bệnh nhân</span><span class="pt-info-val">'+esc(f.patientName)+'</span></div>'
-      +'<div class="pt-info-row"><span class="pt-info-lbl">🔗 Quan hệ</span><span class="pt-info-val">'+rel+'</span></div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val" style="font-size:.7rem;word-break:break-all">'+esc(f.email||'—')+'</span></div>'
       +'</div>'
-      +'<div style="display:flex;gap:8px;margin-top:10px">'
+      +'<div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">⚥ Giới tính</span><span class="pt-info-val">'+gender+'</span></div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">🎂 Ngày sinh</span><span class="pt-info-val">'+dob+'</span></div>'
+      +'</div>'
+      +'</div>'
+      +'<div style="margin-bottom:10px">'
+      +'<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">🔗 Liên kết bệnh nhân</div>'
+      +linksHtml
+      +'</div>'
+      +'<div style="display:flex;gap:8px">'
       +'<button onclick="event.stopPropagation();openEditFamily(\''+f.linkId+'\',\''+f.userId+'\',\''+esc(f.userName)+'\',\''+esc(f.phone||'')+'\',\''+esc(f.email||'')+'\',\''+esc(f.relation||'')+'\','+f.isPrimary+')" style="padding:5px 14px;border:1.5px solid var(--navy);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✎ Sửa</button>'
-      +'<button onclick="event.stopPropagation();confirmDeleteFamily(\''+f.linkId+'\',\''+esc(f.userName)+'\')" style="padding:5px 14px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa</button>'
       +'</div>'
       +'</div>'
       +'</div>';
