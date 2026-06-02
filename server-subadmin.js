@@ -697,13 +697,15 @@ app.patch("/admin/:userId/medical-record/:patientId", async (req, res) => {
 app.post("/admin/:userId/families/create-user", async (req, res) => {
   try {
     const { userId } = req.params;
-    const { name, phone, email, password } = req.body;
+    const { name, phone, email, password, gender, dob } = req.body;
     if(!name?.trim()) return res.status(400).json({ error: "Thiếu họ tên" });
     const hsId = await getAdminHospital(userId);
     const { data: newUser, error } = await supabase.from("nguoi_dung").insert({
       ho_ten: name.trim(), so_dien_thoai: phone||null, email: email||null,
       mat_khau: password||"123456", trang_thai_hoat_dong: true,
       co_so_y_te_id: hsId||null,
+      gioi_tinh: gender||null,
+      ngay_sinh: dob||null,
     }).select("id").single();
     if(error) throw error;
     const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
@@ -905,11 +907,28 @@ app.post("/admin/:userId/families", async (req, res) => {
   }
 });
 
+// PATCH /admin/:userId/families/user/:famUserId — sửa thông tin người nhà (không qua linkId)
+app.patch("/admin/:userId/families/user/:famUserId", async (req, res) => {
+  try {
+    const { name, phone, email, gender, dob, password } = req.body;
+    const updates = {};
+    if(name?.trim())       updates.ho_ten           = name.trim();
+    if(phone !== undefined) updates.so_dien_thoai   = phone||null;
+    if(email !== undefined) updates.email           = email||null;
+    if(gender !== undefined) updates.gioi_tinh      = gender||null;
+    if(dob !== undefined)   updates.ngay_sinh       = dob||null;
+    if(password?.length >= 6) updates.mat_khau      = password;
+    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", req.params.famUserId);
+    if(error) throw error;
+    res.json({ ok: true });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
 // PATCH /admin/:userId/families/:linkId — cập nhật thông tin người nhà
 app.patch("/admin/:userId/families/:linkId", async (req, res) => {
   try {
     const { linkId } = req.params;
-    const { relation, name, phone, email, password, isPrimary } = req.body;
+    const { relation, name, phone, email, password, isPrimary, gender, dob } = req.body;
 
     // Cập nhật link (quan hệ + giám sát chính)
     const linkUpd = {};
@@ -923,9 +942,11 @@ app.patch("/admin/:userId/families/:linkId", async (req, res) => {
       .select("nguoi_dung_lq_id").eq("id", linkId).single();
     if (link) {
       const updates = {};
-      if (name?.trim())  updates.ho_ten        = name.trim();
-      if (phone !== undefined) updates.so_dien_thoai = phone||null;
-      if (email !== undefined) updates.email         = email||null;
+      if (name?.trim())             updates.ho_ten          = name.trim();
+      if (phone !== undefined)      updates.so_dien_thoai   = phone||null;
+      if (email !== undefined)      updates.email           = email||null;
+      if (gender !== undefined)     updates.gioi_tinh       = gender||null;
+      if (dob !== undefined)        updates.ngay_sinh       = dob||null;
       if (password?.trim() && password.length>=6) updates.mat_khau = password.trim();
       if (Object.keys(updates).length)
         await supabase.from("nguoi_dung").update(updates).eq("id", link.nguoi_dung_lq_id);
