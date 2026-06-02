@@ -1,5 +1,26 @@
 const express = require("express");
 const cors    = require("cors");
+const rateLimit = require('express-rate-limit');
+
+// Rate limit cho login - tối đa 10 lần/15 phút/IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limit chung cho API - tối đa 200 request/phút/IP
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  message: { error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
@@ -22,6 +43,7 @@ const corsOptions = {
   optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
+app.use(apiLimiter);
 app.options("*", cors(corsOptions));
 app.use(express.json());
 
@@ -41,7 +63,7 @@ app.get("/", (req, res) => {
 // ============================================================
 
 // POST /auth/login — chỉ cho role admin
-app.post("/auth/login", async (req, res) => {
+app.post("/auth/login", loginLimiter, async (req, res) => {
   try {
     const { login, password } = req.body;
     if (!login || !password)
@@ -78,7 +100,7 @@ app.post("/auth/login", async (req, res) => {
       return res.status(403).json({ error: "Tài khoản Admin không hợp lệ" });
 
     // Ghi nhật ký đăng nhập
-    await logAction(user.id, "LOGIN", "admin", null, { email: user.email });
+    await logAction(user.id, "LOGIN", "admin", null, { email: user.email }, getIp(req));
 
     await supabase.from("nguoi_dung")
       .update({ lan_dang_nhap_cuoi: new Date().toISOString() })
@@ -98,7 +120,7 @@ app.post("/auth/change-password", async (req, res) => {
     if (!userId || !newPassword) return res.status(400).json({ error: "Thiếu thông tin" });
     if (newPassword.length < 6) return res.status(400).json({ error: "Mật khẩu phải ≥ 6 ký tự" });
     await supabase.from("nguoi_dung").update({ mat_khau: newPassword }).eq("id", userId);
-    await logAction(userId, "CHANGE_PASSWORD", "admin", null, {});
+    await logAction(userId, "CHANGE_PASSWORD", "admin", null, {}, getIp(req));
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -108,15 +130,21 @@ app.post("/auth/change-password", async (req, res) => {
 // ============================================================
 // HELPER — GHI NHẬT KÝ
 // ============================================================
-async function logAction(userId, action, targetType, targetId, detail) {
+
+function getIp(req){
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || null;
+}
+
+async function logAction(userId, action, targetType, targetId, detail, ip) {
   try {
     await supabase.from("nhat_ky_he_thong").insert({
-      nguoi_dung_id: userId,
-      hanh_dong:     action,
+      nguoi_dung_id:  userId || null,
+      hanh_dong:      action,
       loai_doi_tuong: targetType,
-      doi_tuong_id:  targetId || null,
-      chi_tiet:      JSON.stringify(detail || {}),
-      thoi_gian:     new Date().toISOString(),
+      doi_tuong_id:   targetId || null,
+      du_lieu_bo_sung: detail || {},
+      dia_chi_ip:     ip || null,
+      ngay_tao:       new Date().toISOString(),
     });
   } catch (_) { /* Không throw — nhật ký không được làm gián đoạn nghiệp vụ */ }
 }
@@ -208,7 +236,7 @@ app.post("/hospitals", async (req, res) => {
     }).select("id, ten_co_so").single();
     if (error) throw error;
 
-    await logAction(adminId, "CREATE_HOSPITAL", "co_so_y_te", data.id, { name: data.ten_co_so });
+    await logAction(adminId, "CREATE_HOSPITAL", "co_so_y_te", data.id, { name: data.ten_co_so }, getIp(req));
     res.json({ hospitalId: data.id, name: data.ten_co_so });
   } catch (err) {
     console.error("[POST /hospitals]", err.message);
@@ -349,7 +377,7 @@ app.patch("/hospitals/:id", async (req, res) => {
     const { error } = await supabase.from("co_so_y_te").update(updates).eq("id", id);
     if (error) throw error;
 
-    await logAction(adminId, "UPDATE_HOSPITAL", "co_so_y_te", id, updates);
+    await logAction(adminId, "UPDATE_HOSPITAL", "co_so_y_te", id, updates, getIp(req));
     res.json({ ok: true });
   } catch (err) {
     console.error("[PATCH /hospitals/:id]", err.message);
@@ -426,7 +454,7 @@ app.post("/subadmins", async (req, res) => {
     const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","sub_admin").maybeSingle();
     if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id: newUser.id, vai_tro_id: role.id });
 
-    await logAction(adminId, "CREATE_SUBADMIN", "nguoi_dung", newUser.id, { name, email, hospitalId });
+    await logAction(adminId, "CREATE_SUBADMIN", "nguoi_dung", newUser.id, { name, email, hospitalId }, getIp(req));
     res.json({ userId: newUser.id, name: name.trim() });
   } catch (err) {
     console.error("[POST /subadmins]", err.message);
@@ -445,7 +473,7 @@ app.patch("/subadmins/:id", async (req, res) => {
     if (password !== undefined) updates.mat_khau = password;
 
     await supabase.from("nguoi_dung").update(updates).eq("id", id);
-    await logAction(adminId, "UPDATE_SUBADMIN", "nguoi_dung", id, updates);
+    await logAction(adminId, "UPDATE_SUBADMIN", "nguoi_dung", id, updates, getIp(req));
     res.json({ ok: true });
   } catch (err) {
     console.error("[PATCH /subadmins/:id]", err.message);
@@ -467,7 +495,7 @@ app.patch("/subadmins/:id", async (req, res) => {
     if (hospitalId !== undefined) updates.co_so_y_te_id        = hospitalId||null;
 
     await supabase.from("nguoi_dung").update(updates).eq("id", id);
-    await logAction(adminId, "UPDATE_SUBADMIN", "nguoi_dung", id, updates);
+    await logAction(adminId, "UPDATE_SUBADMIN", "nguoi_dung", id, updates, getIp(req));
     res.json({ ok: true });
   } catch (err) {
     console.error("[PATCH /subadmins/:id]", err.message);
@@ -484,7 +512,7 @@ app.delete("/subadmins/:id", async (req, res) => {
     await supabase.from("phan_quyen_nguoi_dung").delete().eq("nguoi_dung_id", id);
     // Vô hiệu hóa tài khoản
     await supabase.from("nguoi_dung").update({ trang_thai_hoat_dong: false }).eq("id", id);
-    await logAction(adminId, "DELETE_SUBADMIN", "nguoi_dung", id, {});
+    await logAction(adminId, "DELETE_SUBADMIN", "nguoi_dung", id, {}, getIp(req));
     res.json({ ok: true });
   } catch (err) {
     console.error("[DELETE /subadmins/:id]", err.message);
@@ -549,7 +577,7 @@ app.post("/devices", async (req, res) => {
     }).select("id, so_seri").single();
     if (error) throw error;
 
-    await logAction(adminId, "CREATE_DEVICE", "thiet_bi_iot", data.id, { serial, hospitalId });
+    await logAction(adminId, "CREATE_DEVICE", "thiet_bi_iot", data.id, { serial, hospitalId }, getIp(req));
     res.json({ deviceId: data.id, serial: data.so_seri });
   } catch (err) {
     console.error("[POST /devices]", err.message);
@@ -629,7 +657,7 @@ app.patch("/devices/:id", async (req, res) => {
     if (hospitalId !== undefined) updates.co_so_y_te_id  = hospitalId||null;
     const { error } = await supabase.from("thiet_bi_iot").update(updates).eq("id", id);
     if (error) throw error;
-    await logAction(adminId, "UPDATE_DEVICE", "thiet_bi_iot", id, updates);
+    await logAction(adminId, "UPDATE_DEVICE", "thiet_bi_iot", id, updates, getIp(req));
     res.json({ ok: true });
   } catch (err) {
     console.error("[PATCH /devices/:id]", err.message);
@@ -648,7 +676,7 @@ app.delete("/devices/:id", async (req, res) => {
     if (assigns?.length) return res.status(409).json({ error: "Thiết bị đang được gán cho bệnh nhân. Thu hồi trước khi xóa." });
     const { error } = await supabase.from("thiet_bi_iot").delete().eq("id", id);
     if (error) throw error;
-    await logAction(adminId, "DELETE_DEVICE", "thiet_bi_iot", id, {});
+    await logAction(adminId, "DELETE_DEVICE", "thiet_bi_iot", id, {}, getIp(req));
     res.json({ ok: true });
   } catch (err) {
     console.error("[DELETE /devices/:id]", err.message);
