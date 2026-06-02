@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>404 — Không tìm thấy trang</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Sora',sans-serif;background:#f4f6f9;display:flex;align-items:center;justify-content:center;min-height:100vh;color:#1a2535;}
+    .wrap{text-align:center;padding:40px 24px;}
+    .code{font-size:7rem;font-weight:800;color:#1a3a5c;line-height:1;letter-spacing:-4px;}
+    .icon{font-size:3rem;margin:12px 0;}
+    h1{font-size:1.3rem;font-weight:700;margin-bottom:8px;color:#1a2535;}
+    p{font-size:.85rem;color:#6b7a99;margin-bottom:28px;line-height:1.6;}
+    a{display:inline-block;padding:10px 28px;background:#1a3a5c;color:#fff;border-radius:10px;font-size:.82rem;font-weight:700;text-decoration:none;transition:background .15s;}
+    a:hover{background:#2a5a8c;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="code">404</div>
+    <div class="icon">🏥</div>
+    <h1>Không tìm thấy trang</h1>
+    <p>Trang bạn đang tìm không tồn tại hoặc đã bị di chuyển.<br/>Vui lòng quay lại trang chủ.</p>
+    <a href="index.html">← Quay về trang đăng nhập</a>
+  </div>
+  <script>
+    // Tự redirect sau 5 giây
+    setTimeout(function(){ window.location.replace('index.html'); }, 5000);
+  </script>
+</body>
+</html>
