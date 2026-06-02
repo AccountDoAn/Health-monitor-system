@@ -735,6 +735,25 @@ try {
 const AAPI = 'https://health-monitor-subadmin.onrender.com';
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const UID = SESS.userId;
+
+// Kiểm tra session hết hạn
+(function checkSessionExpiry(){
+  if(!SESS.userId){ window.location.replace('index.html'); return; }
+  if(SESS.expiresAt && Date.now() > SESS.expiresAt){
+    localStorage.removeItem('hm_session');
+    alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    window.location.replace('index.html');
+    return;
+  }
+  setInterval(function(){
+    const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    if(!s.userId || (s.expiresAt && Date.now() > s.expiresAt)){
+      localStorage.removeItem('hm_session');
+      alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      window.location.replace('index.html');
+    }
+  }, 60000);
+})();
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
 let devCache=[], ptCache=[], docCache=[], familiesCache=[], familiesFiltered=[];
@@ -2017,12 +2036,12 @@ async function uploadAvatarSA(file, userId){
   window._sb = _sbSA;
   const ext  = file.name.split('.').pop().toLowerCase()||'jpg';
   const path = userId+'.'+ext;
-  // Xóa file cũ trước
-  const { data: existing } = await _sbSA.storage.from('avatars').list('', { search: userId });
-  if(existing?.length){
-    await _sbSA.storage.from('avatars').remove(existing.map(f=>f.name));
-  }
-  const { error } = await _sbSA.storage.from('avatars').upload(path, file, {upsert:true, contentType:file.type});
+  // Xóa tất cả file cũ của user trước khi upload mới
+  const allExts = ['jpg','jpeg','png','webp','gif'];
+  await _sbSA.storage.from('avatars').remove(allExts.map(e => userId+'.'+e));
+  const { error } = await _sbSA.storage.from('avatars').upload(path, file, {
+    upsert: true, contentType: file.type,
+  });
   if(error) throw new Error('Upload thất bại: '+error.message);
   const { data } = _sbSA.storage.from('avatars').getPublicUrl(path);
   return data.publicUrl + '?t=' + Date.now();
@@ -2243,8 +2262,6 @@ async function acSearchFamily(q){
 }
 
 // Không dùng hover fill/clear nữa — tránh layout flicker
-function acFill(){}
-function acClear(){}
 
 // Khi click chọn gợi ý
 function acSelect(name, phone, email, uid){
@@ -2781,8 +2798,6 @@ async function acSearchPtFamily(q){
   }, 300);
 }
 // Không dùng hover fill/clear — tránh layout flicker
-function acFillPtFam(){}
-function acClearPtFam(){}
 function acSelectPtFam(name,phone,email,uid){
   document.getElementById('pt-fam-name').value  = name;
   document.getElementById('pt-fam-phone').value = phone;
