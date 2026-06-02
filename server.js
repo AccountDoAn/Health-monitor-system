@@ -1,5 +1,26 @@
 const express    = require("express");
 const cors       = require("cors");
+const rateLimit = require('express-rate-limit');
+
+// Rate limit cho login - tối đa 10 lần/15 phút/IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate limit chung cho API - tối đa 200 request/phút/IP
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  message: { error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+
 const { createClient } = require("@supabase/supabase-js");
 const crypto     = require("crypto");
 
@@ -15,6 +36,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(apiLimiter);
 
 // ===== Supabase (service_role để bypass RLS) =====
 const supabase = createClient(
@@ -1255,7 +1277,7 @@ app.post("/chat/:patientId", async (req, res) => {
 // POST /auth/login
 // Body: { login, password, hospitalId? }
 // hospitalId = null/undefined → chỉ admin được phép
-app.post("/auth/login", async (req, res) => {
+app.post("/auth/login", loginLimiter, async (req, res) => {
   try {
     const { login, password, hospitalId } = req.body;
     if (!login || !password) {
