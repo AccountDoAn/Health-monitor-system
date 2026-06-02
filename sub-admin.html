@@ -2363,15 +2363,22 @@ async function saveAddFamily(){
   btn.disabled=false;
 }
 
-function openEditFamily(linkId, userId, name, phone, email, rel){
-  document.getElementById('ef-link-id').value = linkId;
-  document.getElementById('ef-user-id').value = userId;
-  document.getElementById('ef-name').value    = name;
-  document.getElementById('ef-phone').value   = phone;
-  document.getElementById('ef-email').value   = email;
-  document.getElementById('ef-rel').value     = rel;
-  document.getElementById('ef-pw').value      = '';
+function openEditFamily(linkId, userId, name, phone, email, rel, isPrimary){
+  document.getElementById('ef-link-id').value   = linkId||'';
+  document.getElementById('ef-user-id').value   = userId;
+  document.getElementById('ef-name').value      = name;
+  document.getElementById('ef-phone').value     = phone;
+  document.getElementById('ef-email').value     = email||'';
+  document.getElementById('ef-pw').value        = '';
   document.getElementById('ef-msg').textContent = '';
+
+  const hasLink = linkId && linkId !== 'null' && linkId !== 'undefined';
+  document.getElementById('ef-link-section').style.display = hasLink ? '' : 'none';
+  document.getElementById('ef-no-link-note').style.display = hasLink ? 'none' : '';
+  if(hasLink){
+    document.getElementById('ef-rel').value       = rel||'';
+    document.getElementById('ef-primary').checked = (isPrimary===true||isPrimary==='true');
+  }
   document.getElementById('modal-edit-family').classList.add('open');
 }
 
@@ -3048,21 +3055,28 @@ async function saveDoctor(){
       <div class="field"><label>Số điện thoại</label><input id="ef-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
       <div class="field"><label>Email</label><input id="ef-email" type="email"/></div>
     </div>
-    <div class="field"><label>Quan hệ</label>
-      <select id="ef-rel">
-        <option value="vo_chong">Vợ/Chồng</option><option value="con">Con</option>
-        <option value="cha_me">Cha/Mẹ</option><option value="anh_chi_em">Anh/Chị/Em</option>
-        <option value="than_nhan">Thân nhân khác</option><option value="nguoi_giam_ho">Người giám hộ</option>
-      </select>
+    <!-- Chỉ hiện khi đã có liên kết bệnh nhân -->
+    <div id="ef-link-section">
+      <div class="field"><label>Quan hệ</label>
+        <select id="ef-rel">
+          <option value="vo_chong">Vợ/Chồng</option><option value="con">Con</option>
+          <option value="cha_me">Cha/Mẹ</option><option value="anh_chi_em">Anh/Chị/Em</option>
+          <option value="than_nhan">Thân nhân khác</option><option value="nguoi_giam_ho">Người giám hộ</option>
+        </select>
+      </div>
+      <div style="margin-top:8px;margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="ef-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
+          Là người giám sát chính
+        </label>
+      </div>
+    </div>
+    <!-- Hiện khi chưa gán bệnh nhân -->
+    <div id="ef-no-link-note" style="display:none;padding:8px 12px;background:#f4f6f9;border-radius:8px;font-size:.74rem;color:var(--muted);margin-bottom:8px">
+      ℹ️ Chưa gán bệnh nhân — quan hệ sẽ được thiết lập tại tab Bệnh nhân
     </div>
     <div class="field"><label>Đặt lại mật khẩu <span style="font-weight:400;color:var(--muted)">(để trống = không đổi)</span></label>
       <input id="ef-pw" type="text" placeholder="Tối thiểu 6 ký tự"/>
-    </div>
-    <div style="margin-top:8px">
-      <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
-        <input type="checkbox" id="ef-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
-        Là người giám sát chính
-      </label>
     </div>
     <div class="modal-msg" id="ef-msg"></div>
     <div class="modal-footer">
