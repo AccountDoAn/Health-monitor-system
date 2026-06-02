@@ -25,6 +25,7 @@ const { createClient } = require("@supabase/supabase-js");
 const crypto     = require("crypto");
 
 const app = express();
+app.set('trust proxy', 1); // Cần cho Render/proxy
 
 // ===== CORS =====
 app.use(
