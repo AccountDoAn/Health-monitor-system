@@ -749,52 +749,87 @@ app.get("/admin/:userId/families", async (req, res) => {
     const hsId = await getAdminHospital(userId);
     if (!hsId) return res.status(403).json({ error: "Không có quyền" });
 
-    // Lấy bệnh nhân thuộc CSYT trực tiếp qua co_so_y_te_id
-    const { data: tbRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle();
-    if (!tbRole) return res.json([]);
+    // Lấy role user_nha và user_tb
+    const [{ data: nhaRole }, { data: tbRole }] = await Promise.all([
+      supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_nha").maybeSingle(),
+      supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle(),
+    ]);
 
-    const { data: pq } = await supabase.from("phan_quyen_nguoi_dung")
-      .select("nguoi_dung_id").eq("vai_tro_id", tbRole.id);
-    const allPtIds = (pq||[]).map(p=>p.nguoi_dung_id);
-    if (!allPtIds.length) return res.json([]);
+    // Lấy tất cả người nhà thuộc CSYT (kể cả chưa gán bệnh nhân)
+    let allFamilyUsers = [];
+    if (nhaRole) {
+      const { data: pqNha } = await supabase.from("phan_quyen_nguoi_dung")
+        .select("nguoi_dung_id").eq("vai_tro_id", nhaRole.id);
+      const nhaIds = (pqNha||[]).map(p=>p.nguoi_dung_id);
+      if (nhaIds.length) {
+        const { data: nhaUsers } = await supabase.from("nguoi_dung")
+          .select("id, ho_ten, so_dien_thoai, email, gioi_tinh, ngay_sinh, anh_dai_dien_url")
+          .in("id", nhaIds)
+          .eq("co_so_y_te_id", hsId)
+          .eq("trang_thai_hoat_dong", true);
+        allFamilyUsers = nhaUsers || [];
+      }
+    }
 
-    const { data: ptUsers } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten")
-      .in("id", allPtIds)
-      .eq("co_so_y_te_id", hsId)
-      .eq("trang_thai_hoat_dong", true);
-    if (!ptUsers?.length) return res.json([]);
-
-    const ptUserIds = ptUsers.map(p => p.id);
+    // Lấy bệnh nhân thuộc CSYT để map tên
     const ptUserMap = {};
-    ptUsers.forEach(u => ptUserMap[u.id] = u.ho_ten);
+    if (tbRole) {
+      const { data: pqTb } = await supabase.from("phan_quyen_nguoi_dung")
+        .select("nguoi_dung_id").eq("vai_tro_id", tbRole.id);
+      const ptIds = (pqTb||[]).map(p=>p.nguoi_dung_id);
+      if (ptIds.length) {
+        const { data: ptUsers } = await supabase.from("nguoi_dung")
+          .select("id, ho_ten").in("id", ptIds).eq("co_so_y_te_id", hsId).eq("trang_thai_hoat_dong", true);
+        (ptUsers||[]).forEach(u => ptUserMap[u.id] = u.ho_ten);
+      }
+    }
 
-    // Lấy liên kết người nhà
-    const { data: links, error: linkErr } = await supabase.from("lien_ket_nguoi_nha")
-      .select("id, nguoi_dung_tb_id, nguoi_dung_lq_id, moi_quan_he, la_nguoi_giam_sat_chinh")
-      .in("nguoi_dung_tb_id", ptUserIds)
-      .eq("trang_thai_hoat_dong", true);
-    if (linkErr) throw linkErr;
-    if (!links?.length) return res.json([]);
+    // Lấy tất cả liên kết người nhà trong CSYT
+    const ptIds = Object.keys(ptUserMap);
+    let links = [];
+    if (ptIds.length) {
+      const { data: linkData } = await supabase.from("lien_ket_nguoi_nha")
+        .select("id, nguoi_dung_tb_id, nguoi_dung_lq_id, moi_quan_he, la_nguoi_giam_sat_chinh")
+        .in("nguoi_dung_tb_id", ptIds)
+        .eq("trang_thai_hoat_dong", true);
+      links = linkData || [];
+    }
 
-    // Lấy thông tin người nhà
-    const lqIds = [...new Set(links.map(l => l.nguoi_dung_lq_id))];
-    const { data: lqUsers } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten, so_dien_thoai, email").in("id", lqIds);
-    const lqMap = {};
-    (lqUsers||[]).forEach(u => lqMap[u.id] = u);
+    // Map linkId, patientId, relation theo userId người nhà
+    const linkMap = {}; // userId → [{linkId, patientId, patientName, relation, isPrimary}]
+    links.forEach(l => {
+      if (!linkMap[l.nguoi_dung_lq_id]) linkMap[l.nguoi_dung_lq_id] = [];
+      linkMap[l.nguoi_dung_lq_id].push({
+        linkId:      l.id,
+        patientId:   l.nguoi_dung_tb_id,
+        patientName: ptUserMap[l.nguoi_dung_tb_id] || '—',
+        relation:    l.moi_quan_he,
+        isPrimary:   l.la_nguoi_giam_sat_chinh,
+      });
+    });
 
-    res.json(links.map(l => ({
-      linkId:      l.id,
-      userId:      l.nguoi_dung_lq_id,
-      userName:    lqMap[l.nguoi_dung_lq_id]?.ho_ten || '—',
-      phone:       lqMap[l.nguoi_dung_lq_id]?.so_dien_thoai || null,
-      email:       lqMap[l.nguoi_dung_lq_id]?.email || null,
-      patientId:   l.nguoi_dung_tb_id,
-      patientName: ptUserMap[l.nguoi_dung_tb_id] || '—',
-      relation:    l.moi_quan_he,
-      isPrimary:   l.la_nguoi_giam_sat_chinh,
-    })));
+    // Trả về tất cả người nhà, kể cả chưa gán bệnh nhân
+    const result = allFamilyUsers.map(u => {
+      const userLinks = linkMap[u.id] || [];
+      const firstLink = userLinks[0] || {};
+      return {
+        linkId:      firstLink.linkId      || null,
+        userId:      u.id,
+        userName:    u.ho_ten,
+        phone:       u.so_dien_thoai,
+        email:       u.email,
+        gender:      u.gioi_tinh,
+        dob:         u.ngay_sinh,
+        avatar:      u.anh_dai_dien_url,
+        patientId:   firstLink.patientId   || null,
+        patientName: firstLink.patientName || 'Chưa gán bệnh nhân',
+        relation:    firstLink.relation    || null,
+        isPrimary:   firstLink.isPrimary   || false,
+        allLinks:    userLinks,
+      };
+    });
+
+    res.json(result);
   } catch(err) {
     console.error("[GET /admin/families]", err.message);
     res.status(500).json({ error: err.message });
