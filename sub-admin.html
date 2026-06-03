@@ -2443,7 +2443,6 @@ function openEditFamily(linkId, userId, name, phone, email, rel, isPrimary, gend
   document.getElementById('ef-email').value     = email||'';
   document.getElementById('ef-gender').value    = gender||'';
   document.getElementById('ef-dob').value       = dob ? dob.slice(0,10) : '';
-  document.getElementById('ef-pw').value        = '';
   document.getElementById('ef-msg').textContent = '';
 
   const hasLink = linkId && linkId !== 'null' && linkId !== 'undefined';
@@ -2463,7 +2462,6 @@ async function saveEditFamily(){
   const btn    = document.getElementById('ef-save-btn');
   btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
   try {
-    const pw = document.getElementById('ef-pw').value.trim();
     const hasLink = linkId && linkId !== 'null' && linkId !== 'undefined';
     const body = {
       name:     document.getElementById('ef-name').value.trim()||null,
@@ -2471,7 +2469,6 @@ async function saveEditFamily(){
       email:    document.getElementById('ef-email').value.trim()||null,
       gender:   document.getElementById('ef-gender').value||null,
       dob:      document.getElementById('ef-dob').value||null,
-      password: pw&&pw.length>=6?pw:undefined,
     };
     if(hasLink){
       body.relation  = document.getElementById('ef-rel').value;
@@ -2593,7 +2590,6 @@ function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimar
   document.getElementById('ef-email').value     = email;
   document.getElementById('ef-rel').value       = relation;
   document.getElementById('ef-primary').checked = (isPrimary === true || isPrimary === 'true');
-  document.getElementById('ef-pw').value        = '';
   document.getElementById('ef-msg').textContent = '';
   document.getElementById('modal-edit-family').classList.add('open');
 }
@@ -3304,9 +3300,6 @@ async function saveDoctor(){
     <!-- Hiện khi chưa gán bệnh nhân -->
     <div id="ef-no-link-note" style="display:none;padding:8px 12px;background:#f4f6f9;border-radius:8px;font-size:.74rem;color:var(--muted);margin-bottom:8px">
       ℹ️ Chưa gán bệnh nhân — quan hệ sẽ được thiết lập tại tab Bệnh nhân
-    </div>
-    <div class="field"><label>Đặt lại mật khẩu <span style="font-weight:400;color:var(--muted)">(để trống = không đổi)</span></label>
-      <input id="ef-pw" type="text" placeholder="Tối thiểu 6 ký tự"/>
     </div>
     <div class="modal-msg" id="ef-msg"></div>
     <div class="modal-footer">
