@@ -63,6 +63,25 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", service: "HealthMonitor Admin API", version: "1.0" });
 });
 
+// ===== Helpers: IP + Log =====
+function getIp(req){
+  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || null;
+}
+
+async function logAction(userId, action, targetType, targetId, detail, ip){
+  try {
+    await supabase.from("nhat_ky_he_thong").insert({
+      nguoi_dung_id:   userId || null,
+      hanh_dong:       action,
+      loai_doi_tuong:  targetType,
+      doi_tuong_id:    targetId || null,
+      du_lieu_bo_sung: detail || {},
+      dia_chi_ip:      ip || null,
+      ngay_tao:        new Date().toISOString(),
+    });
+  } catch(_){}
+}
+
 // ============================================================
 // HELPER — xác minh sub_admin + lấy co_so_y_te_id
 // ============================================================
@@ -710,6 +729,7 @@ app.post("/admin/:userId/families/create-user", async (req, res) => {
     if(error) throw error;
     const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
     if(role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:newUser.id, vai_tro_id:role.id });
+    await logAction(userId,"CREATE_FAMILY","nguoi_dung",newUser.id,{name},getIp(req));
     res.json({ ok: true, userId: newUser.id });
   } catch(err) {
     console.error("[POST /families/create-user]", err.message);
@@ -951,6 +971,7 @@ app.patch("/admin/:userId/families/:linkId", async (req, res) => {
       if (Object.keys(updates).length)
         await supabase.from("nguoi_dung").update(updates).eq("id", link.nguoi_dung_lq_id);
     }
+    await logAction(req.params.userId,"UPDATE_FAMILY","lien_ket_nguoi_nha",req.params.linkId||req.params.famUserId,req.body,getIp(req));
     res.json({ ok: true });
   } catch(err) {
     console.error("[PATCH /admin/families]", err.message);
