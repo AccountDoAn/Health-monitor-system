@@ -1,1171 +1,3491 @@
-const express = require("express");
-const cors    = require("cors");
-const rateLimit = require('express-rate-limit');
+<!doctype html>
+<html lang="vi" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Sub Admin — Health Monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#2b5f8e;--sky:#85c8ee;--green:#5ab52a;--mint:#ceecd8;
+  --bg:#f0f7f4;--card:#fff;--text:#1a2e1e;--muted:#6b8f7a;
+  --border:#d0e8da;--danger:#e05252;--warn:#e8a930;--sw:220px;
+}
+[data-theme=dark]{--bg:#0f1a14;--card:#18261b;--text:#d4ead9;--border:#2a4030;}
+body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);display:flex;min-height:100vh;}
 
-// Rate limit cho login - tối đa 10 lần/15 phút/IP
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 10,
-  message: { error: 'Quá nhiều lần đăng nhập thất bại. Vui lòng thử lại sau 15 phút.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+/* SIDEBAR */
+.sb{width:var(--sw);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid rgba(255,255,255,.1);}
+.sb-logo-icon{width:32px;height:32px;background:rgba(255,255,255,.15);border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.sb-logo-icon svg{color:var(--sky);width:17px;height:17px;}
+.sb-logo-name{font-size:.85rem;font-weight:800;color:#fff;line-height:1.2;}
+.sb-logo-name span{color:var(--mint);display:block;font-size:.65rem;font-weight:600;opacity:.8;}
+.sb-nav{flex:1;padding:10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sb-sec{padding:10px 10px 4px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.35);}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:.78rem;font-weight:600;color:rgba(255,255,255,.65);transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left;}
+.sb-btn:hover,.sb-btn.active{background:rgba(255,255,255,.15);color:#fff;}
+.sb-btn svg{width:19px;height:19px;flex-shrink:0;}
+.sb-btn.red{color:rgba(224,82,82,.85);}
+.sb-btn.red:hover{background:rgba(224,82,82,.15);}
+.sb-bottom{padding:10px;border-top:1px solid rgba(255,255,255,.1);display:flex;flex-direction:column;gap:2px;}
+.sb-user{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;background:rgba(255,255,255,.08);margin-bottom:4px;}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;}
+.sb-uname{font-size:.76rem;font-weight:700;color:#fff;line-height:1.2;}
+.sb-urole{font-size:.62rem;color:rgba(255,255,255,.5);}
 
-// Rate limit chung cho API - tối đa 200 request/phút/IP
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 200,
-  message: { error: 'Quá nhiều yêu cầu. Vui lòng thử lại sau.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+/* MAIN */
+.main{margin-left:var(--sw);flex:1;display:flex;flex-direction:column;}
+.topbar{background:var(--card);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:.92rem;font-weight:700;color:var(--navy);flex:1;}
+.topbar-hs{font-size:.7rem;color:var(--muted);font-family:'DM Mono',monospace;}
+.content{flex:1;padding:20px 24px;display:flex;flex-direction:column;gap:16px;}
 
+/* CARDS */
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;display:flex;align-items:center;gap:14px;}
+.stat-ic{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.stat-ic svg{width:20px;height:20px;}
+.stat-val{font-size:1.5rem;font-weight:800;font-family:'DM Mono',monospace;color:var(--navy);}
+.stat-lbl{font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:2px;}
 
-const { createClient } = require("@supabase/supabase-js");
+/* SEC CARD */
+.sec-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.sec-head{padding:13px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.sec-title{font-size:.84rem;font-weight:700;color:var(--navy);flex:1;}
+.sec-head .btn-primary{display:flex;align-items:center;gap:6px;padding:7px 14px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;}
+.sec-head .btn-primary:hover{background:#1e4a72;}
+.sec-head .btn-outline{display:flex;align-items:center;gap:6px;padding:6px 12px;background:none;color:var(--navy);border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;}
+.sec-head .btn-outline:hover{border-color:var(--navy);}
 
-const app = express();
-app.set('trust proxy', 1); // Cần cho Render/proxy
+/* TABLE */
+.tbl-header,.tbl-row{display:grid;align-items:center;padding:10px 18px;gap:8px;}
+.tbl-header{background:var(--bg);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border);}
+.tbl-row{border-bottom:1px solid var(--border);font-size:.78rem;transition:background .1s;}
+.tbl-row:last-child{border-bottom:none;}
+.tbl-row:hover{background:rgba(43,95,142,.03);}
+.mono{font-family:'DM Mono',monospace;font-size:.72rem;color:var(--muted);}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:.62rem;font-weight:700;}
+.b-ok{background:#e6f7e6;color:#2d7a2d;}
+.b-off{background:#f0f0f0;color:#888;}
+.b-warn{background:#fff4e0;color:#8a5800;}
+.b-danger{background:#fdeaea;color:#c0392b;}
 
-// ===== CORS =====
-const corsOptions = {
-  origin: function(origin, callback) {
-    // Cho phép: GitHub Pages, localhost dev, và không có origin (Postman/curl)
-    const allowed = [
-      "https://accountdoan.github.io",
-      "http://localhost:3000",
-      "http://localhost:5500",
-      "http://127.0.0.1:5500",
-    ];
-    if (!origin || allowed.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS: " + origin));
-    }
-  },
-  methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
-app.use(apiLimiter);
-app.options("*", cors(corsOptions)); // Xử lý preflight cho tất cả routes
-app.use(express.json());
+/* GRID COLUMNS */
+.dev-grid{grid-template-columns:130px 1fr 80px 90px 100px 120px;}
+.pt-grid{grid-template-columns:1fr 100px 90px 100px 1fr 110px;}
+.doc-grid{grid-template-columns:1fr 130px 80px 130px;}
 
-// ===== Supabase =====
-const supabase = createClient(
-  "https://czgberdpnfultxkljhko.supabase.co",
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg"
+/* LOADING */
+.loading{padding:32px;text-align:center;color:var(--muted);font-size:.82rem;}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .65s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:400;align-items:center;justify-content:center;}
+.modal-bg.open{display:flex;}
+.modal{background:var(--card);border-radius:16px;padding:28px;width:460px;max-width:95vw;position:relative;max-height:90vh;overflow-y:auto;}
+.modal-sm{width:360px;}
+.modal-ttl{font-size:.92rem;font-weight:700;color:var(--navy);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+.modal-x{position:absolute;top:14px;right:14px;background:none;border:none;cursor:pointer;color:var(--muted);display:flex;}
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px;}
+.field input,.field select,.field textarea{width:100%;padding:8px 11px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.8rem;background:var(--bg);color:var(--text);outline:none;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--navy);}
+.field textarea{resize:vertical;min-height:70px;}
+.field-row{display:grid;gap:10px;}
+.field-row.c2{grid-template-columns:1fr 1fr;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.btn-cancel{padding:8px 18px;border:1.5px solid var(--border);border-radius:8px;background:none;font-family:'Sora',sans-serif;font-size:.78rem;font-weight:600;color:var(--muted);cursor:pointer;}
+.btn-save{padding:8px 20px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:'Sora',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;}
+.btn-save:hover{background:#1e4a72;}
+.btn-save:disabled{opacity:.5;cursor:not-allowed;}
+.modal-msg{font-size:.72rem;text-align:center;min-height:16px;margin-top:8px;}
+.divider{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+/* ACTION BTNS */
+.act-btn{width:28px;height:28px;border-radius:7px;border:1px solid var(--border);background:var(--bg);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--muted);transition:all .15s;}
+.act-btn:hover{border-color:var(--navy);color:var(--navy);}
+.act-btn.red:hover{border-color:var(--danger);color:var(--danger);}
+
+/* SCAN */
+.scan-area{background:var(--bg);border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;margin-bottom:12px;}
+.scan-area input{border:none;background:none;font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:700;text-align:center;outline:none;width:100%;color:var(--navy);}
+.scan-hint{font-size:.7rem;color:var(--muted);margin-top:6px;}
+
+/* BATTERY BAR */
+.bat-bar{width:48px;height:8px;background:var(--border);border-radius:4px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:4px;}
+.bat-fill{height:100%;border-radius:4px;transition:width .3s;}
+/* Card grid */
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.page-grid{display:flex;flex-direction:column;gap:12px;}
+.page-card{background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;transition:border-color .25s,box-shadow .25s;}
+.page-card:hover{box-shadow:0 4px 16px rgba(43,95,142,.1);}
+.page-card-head{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border-bottom:1px solid var(--border);transition:background .25s,border-color .25s;}
+.page-card.expandable .page-card-head{cursor:pointer;user-select:none;}
+.page-card.expandable .page-card-head:hover{background:rgba(43,95,142,.05);}
+.page-card.expandable.open{border-color:var(--navy);}
+.page-card.expandable.open .page-card-head{background:var(--navy);border-bottom-color:var(--navy);}
+.page-card.expandable.open .page-card-head .card-av{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.3);}
+.page-card.expandable.open .page-card-head .card-name{color:#fff;}
+.page-card.expandable.open .page-card-head .card-sub{color:rgba(255,255,255,.65);}
+.page-card.expandable.open .page-card-head .card-tag{background:rgba(255,255,255,.18);color:#fff;}
+.page-card.expandable.open .page-card-head .card-chev{transform:rotate(180deg);color:rgba(255,255,255,.8);}
+.page-card.expandable.open .page-card-body{display:block;animation:fadeIn .2s ease;border-top:2px solid var(--navy);}
+.page-card.expandable .page-card-body{display:none;}
+.card-av{width:40px;height:40px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.74rem;font-weight:800;flex-shrink:0;border:2px solid var(--border);transition:background .25s,color .25s,border-color .25s;}
+.card-info{flex:1;min-width:0;}
+.card-name{font-size:.88rem;font-weight:700;color:var(--navy);transition:color .25s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-sub{font-size:.67rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;transition:color .25s;}
+.card-tag{font-size:.6rem;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--mint);color:var(--navy);flex-shrink:0;transition:background .25s,color .25s;}
+.card-chev{color:var(--muted);transition:transform .25s,color .25s;flex-shrink:0;}
+.sa-fb{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.sa-fb.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.sa-fb:hover:not(.on){background:var(--bg);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;overflow:hidden;}
+.sb-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.profile-av{width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;margin:0 auto 12px;overflow:hidden;cursor:pointer;position:relative;}
+.profile-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.profile-av-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;}
+.profile-av:hover .profile-av-overlay{opacity:1;}
+/* Filter panel */
+.filter-panel{display:none;padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);}
+.filter-panel.open{display:block;}
+.filter-row{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;}
+.filter-group{display:flex;flex-direction:column;gap:6px;}
+.filter-group-label{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);}
+.filter-chips{display:flex;flex-wrap:wrap;gap:4px;}
+.filter-chip{padding:3px 10px;border:1.5px solid var(--border);border-radius:20px;background:none;font-family:'Sora',sans-serif;font-size:.68rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.filter-chip.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.filter-chip:hover:not(.on){background:var(--mint);border-color:var(--navy);color:var(--navy);}
+.filter-btn{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:none;font-family:'Sora',sans-serif;font-size:.74rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
+.filter-btn.active{border-color:var(--navy);color:var(--navy);}
+.filter-badge{background:var(--navy);color:#fff;border-radius:10px;padding:1px 6px;font-size:.6rem;display:none;}
+.filter-badge.show{display:inline;}
+.pt-info-row{display:flex;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--border);font-size:.78rem;}
+.pt-info-row:last-child{border-bottom:none;}
+.pt-info-lbl{color:var(--muted);font-size:.66rem;min-width:70px;flex-shrink:0;white-space:nowrap;}
+.pt-info-val{color:var(--text);font-weight:600;font-size:.76rem;overflow:hidden;text-overflow:ellipsis;}
+/* Autocomplete */
+.ac-wrap{position:relative;}
+.ac-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--card);border:1.5px solid var(--navy);border-radius:9px;box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:200;max-height:200px;overflow-y:auto;margin-top:3px;}
+.ac-item{padding:8px 12px;font-size:.78rem;cursor:pointer;border-bottom:1px solid var(--border);transition:background .1s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover{background:var(--mint);}
+.ac-name{font-weight:600;color:var(--navy);}
+.ac-sub{font-size:.66rem;color:var(--muted);margin-top:1px;}
+.page-card-body{padding:14px 16px;background:var(--card);}
+/* Device list item */
+.dev-item{background:var(--card);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;overflow:hidden;}
+.dev-item:last-child{margin-bottom:0;}
+.dev-item-head{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);background:var(--bg);}
+.dev-item-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+/* Search wrap */
+.srch-wrap{display:flex;align-items:center;gap:6px;background:var(--bg);border:1.5px solid var(--border);border-radius:8px;padding:6px 11px;}
+.srch-wrap:focus-within{border-color:var(--navy);}
+/* Links accordion */
+.lnk-acc{border-bottom:1px solid var(--border);}
+.lnk-acc:last-child{border-bottom:none;}
+.lnk-acc.hidden{display:none;}
+.lnk-head{display:flex;align-items:center;gap:12px;padding:13px 18px;cursor:pointer;user-select:none;transition:background .12s;}
+.lnk-head:hover{background:rgba(43,95,142,.04);}
+.lnk-av{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;}
+.lnk-info{flex:1;min-width:0;}
+.lnk-name{font-size:.88rem;font-weight:700;color:var(--text);}
+.lnk-sub{font-size:.68rem;color:var(--muted);font-family:'DM Mono',monospace;margin-top:2px;}
+.lnk-chev{color:var(--muted);transition:transform .2s;flex-shrink:0;}
+.lnk-acc.open .lnk-chev{transform:rotate(180deg);}
+.lnk-body{display:none;padding:0 18px 16px 68px;}
+.lnk-acc.open .lnk-body{display:block;}
+.lnk-doc-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg);border-radius:9px;margin-bottom:8px;border:1px solid var(--border);}
+.lnk-doc-info{display:flex;align-items:center;gap:10px;}
+.lnk-doc-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;flex-shrink:0;}
+.lnk-empty{color:var(--muted);font-size:.76rem;font-style:italic;padding:6px 0;}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<aside class="sb">
+  <div class="sb-logo">
+    <div class="sb-logo-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg></div>
+    <div class="sb-logo-name">HealthMonitor<span>Quản trị đơn vị</span></div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Tổng quan</div>
+    <button class="sb-btn active" onclick="switchView('overview',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Dashboard
+    </button>
+    <div class="sb-sec">Quản lý</div>
+    <button class="sb-btn" onclick="switchView('devices',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Thiết bị
+    </button>
+    <button class="sb-btn" onclick="switchView('patients',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Bệnh nhân
+    </button>
+
+    <button class="sb-btn" onclick="switchView('families',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>Người nhà
+    </button>
+    <button class="sb-btn" onclick="switchView('doctors',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"/><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"/><circle cx="20" cy="10" r="2"/></svg>Bác sĩ
+    </button>
+  </div>
+  <div class="sb-bottom">
+    <div class="sb-user" onclick="openProfile()" style="cursor:pointer" title="Chỉnh sửa hồ sơ">
+      <div class="sb-av" id="sb-av">SA</div>
+      <div><div class="sb-uname" id="sb-name">Sub Admin</div><div class="sb-urole" id="sb-role">Quản trị đơn vị</div></div>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.4)" stroke-width="2" style="margin-left:auto;flex-shrink:0"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </div>
+    <button class="sb-btn" onclick="openSettings()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="25" height="25"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Cài đặt
+    </button>
+    <button class="sb-btn red" onclick="doLogout()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Đăng xuất
+    </button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div id="sa-realtime-badge" style="display:none;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#27ae60;background:#e6f7e6;padding:3px 10px;border-radius:8px;border:1px solid #b7e4c7">
+      <span style="width:7px;height:7px;border-radius:50%;background:#27ae60;display:inline-block;animation:pulse 1.5s infinite"></span>Realtime
+    </div>
+    <div class="topbar-hs" id="hs-name">—</div>
+    <div class="last-upd" id="last-upd" style="font-size:.65rem;color:var(--muted);font-family:'DM Mono',monospace">—</div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="content" id="view-overview">
+    <!-- 3 stat cards -->
+    <div class="stat-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#ceecd8"><svg viewBox="0 0 24 24" fill="none" stroke="#2b5f8e" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+        <div><div class="stat-val" id="ov-pt-total">—</div><div class="stat-lbl">Bệnh nhân</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#e6f7e6"><svg viewBox="0 0 24 24" fill="none" stroke="#2d7a2d" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+        <div><div class="stat-val" id="ov-dev-online" style="color:var(--green)">—</div><div class="stat-lbl">Thiết bị Online</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-ic" style="background:#e8f2fc"><svg viewBox="0 0 24 24" fill="none" stroke="#2b5f8e" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div>
+        <div><div class="stat-val" id="ov-dev-total">—</div><div class="stat-lbl">Tổng thiết bị</div></div>
+      </div>
+    </div>
+
+    <!-- Bảng liên kết -->
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🔗 Liên kết Bệnh nhân — Thiết bị — Bác sĩ</div>
+        <button class="btn-outline" onclick="loadOverview()" style="display:flex;align-items:center;gap:5px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
+        </button>
+      </div>
+      <!-- Table header -->
+      <div style="display:grid;grid-template-columns:1fr 140px 90px 80px 1fr;gap:8px;padding:10px 18px;background:var(--bg);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)">
+        <div>Bệnh nhân</div>
+        <div>Thiết bị</div>
+        <div>Pin</div>
+        <div>Trạng thái</div>
+        <div>Bác sĩ phụ trách</div>
+      </div>
+      <div id="ov-links-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- THIẾT BỊ -->
+  <div class="content" id="view-devices" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">📱 Danh sách thiết bị</div>
+        <div class="srch-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Tìm theo serial..."
+            oninput="filterDevices(this.value)"
+            style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:160px"/>
+        </div>
+        <button class="filter-btn" id="dev-filter-btn" onclick="toggleFilter('dev')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="dev-filter-badge">0</span>
+        </button>
+      </div>
+      <div class="filter-panel" id="dev-filter-panel">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-group-label">Trạng thái</div>
+            <div class="filter-chips" id="dev-filter-status">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="online">Online</button>
+              <button class="filter-chip" data-val="offline">Offline</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Bệnh nhân</div>
+            <div class="filter-chips" id="dev-filter-patient">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Đã gán</button>
+              <button class="filter-chip" data-val="no">Chưa gán</button>
+            </div>
+          </div>
+          <div class="filter-group" style="min-width:200px">
+            <div class="filter-group-label">Pin tối đa (≤) — <span id="dev-bat-label">100%</span></div>
+            <input type="range" id="dev-filter-bat" min="0" max="100" step="20" value="100"
+              oninput="document.getElementById('dev-bat-label').textContent=this.value+'%';applyFilter('dev')"
+              style="width:180px;accent-color:var(--navy)"/>
+            <div style="display:flex;justify-content:space-between;width:180px;font-size:.6rem;color:var(--muted);margin-top:2px">
+              <span>0</span><span>20</span><span>40</span><span>60</span><span>80</span><span>100</span>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetFilter('dev')" style="margin-top:10px;padding:4px 12px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa bộ lọc</button>
+      </div>
+      <div id="dev-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- BỆNH NHÂN -->
+  <div class="content" id="view-patients" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🧑‍⚕️ Danh sách bệnh nhân</div>
+        <div class="srch-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="pt-tab-srch" placeholder="Tìm theo tên bệnh nhân..."
+            oninput="filterPatients(this.value)"
+            style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:180px"/>
+        </div>
+        <button class="filter-btn" id="pt-filter-btn" onclick="toggleFilter('pt')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="pt-filter-badge">0</span>
+        </button>
+        <button class="btn-primary" onclick="openAddPatient()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Tiếp nhận bệnh nhân
+        </button>
+      </div>
+      <div class="filter-panel" id="pt-filter-panel">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-group-label">Nhóm máu</div>
+            <div class="filter-chips" id="pt-filter-blood">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="A+">A+</button><button class="filter-chip" data-val="A-">A-</button>
+              <button class="filter-chip" data-val="B+">B+</button><button class="filter-chip" data-val="B-">B-</button>
+              <button class="filter-chip" data-val="O+">O+</button><button class="filter-chip" data-val="O-">O-</button>
+              <button class="filter-chip" data-val="AB+">AB+</button><button class="filter-chip" data-val="AB-">AB-</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Giới tính</div>
+            <div class="filter-chips" id="pt-filter-gender">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="nam">Nam</button>
+              <button class="filter-chip" data-val="nu">Nữ</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Thiết bị</div>
+            <div class="filter-chips" id="pt-filter-device">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Đã gán</button>
+              <button class="filter-chip" data-val="no">Chưa gán</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Người nhà</div>
+            <div class="filter-chips" id="pt-filter-family">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Có</button>
+              <button class="filter-chip" data-val="no">Chưa có</button>
+            </div>
+          </div>
+          <div class="filter-group">
+            <div class="filter-group-label">Bác sĩ</div>
+            <div class="filter-chips" id="pt-filter-doctor">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Có</button>
+              <button class="filter-chip" data-val="no">Chưa có</button>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetFilter('pt')" style="margin-top:10px;padding:4px 12px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa bộ lọc</button>
+      </div>
+      <div id="pt-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- BÁC SĨ -->
+  <div class="content" id="view-doctors" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">👨‍⚕️ Danh sách bác sĩ trong đơn vị</div>
+        <div class="srch-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="doc-tab-srch" placeholder="Tìm theo tên bác sĩ..."
+            oninput="filterDoctors(this.value)"
+            style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:180px"/>
+        </div>
+        <button class="filter-btn" id="doc-filter-btn" onclick="toggleFilter('doc')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="doc-filter-badge">0</span>
+        </button>
+        <button class="btn-primary" onclick="openAddDoctor()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Tạo tài khoản bác sĩ
+        </button>
+      </div>
+      <div class="filter-panel" id="doc-filter-panel">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-group-label">Bệnh nhân được gán</div>
+            <div class="filter-chips" id="doc-filter-patient">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Đã có bệnh nhân</button>
+              <button class="filter-chip" data-val="no">Chưa có bệnh nhân</button>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetFilter('doc')" style="margin-top:10px;padding:4px 12px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa bộ lọc</button>
+      </div>
+      <div id="doc-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+
+  <!-- VIEW: LIÊN KẾT BÁC SĨ - BỆNH NHÂN -->
+  <div class="content" id="view-links" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">🔗 Liên kết bác sĩ — Bệnh nhân</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+          <div class="srch-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="lnk-srch" placeholder="Tìm bệnh nhân..." oninput="filterLinks(this.value)"
+              style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:140px"/>
+          </div>
+          <button onclick="expandAllLinks()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Mở tất cả</button>
+          <button onclick="collapseAllLinks()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:8px;background:var(--bg);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">Thu tất cả</button>
+        </div>
+      </div>
+      <div id="links-body"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+  <!-- VIEW: NGƯỜI NHÀ -->
+  <div class="content" id="view-families" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">👨‍👩‍👧 Người nhà — Người liên quan</div>
+        <div class="srch-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="color:var(--muted)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="fam-tab-srch" placeholder="Tìm theo tên người nhà..." oninput="filterFamilies(this.value)"
+            style="border:none;background:none;outline:none;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);width:180px"/>
+        </div>
+        <button class="filter-btn" id="fam-filter-btn" onclick="toggleFilter('fam')">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Lọc <span class="filter-badge" id="fam-filter-badge">0</span>
+        </button>
+        <button class="btn-primary" onclick="openCreateFamily()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Thêm người nhà
+        </button>
+      </div>
+      <div class="filter-panel" id="fam-filter-panel">
+        <div class="filter-row">
+          <div class="filter-group">
+            <div class="filter-group-label">Vai trò giám sát</div>
+            <div class="filter-chips" id="fam-filter-primary">
+              <button class="filter-chip" data-val="">Tất cả</button>
+              <button class="filter-chip" data-val="yes">Giám sát chính</button>
+              <button class="filter-chip" data-val="no">Không phải chính</button>
+            </div>
+          </div>
+        </div>
+        <button onclick="resetFilter('fam')" style="margin-top:10px;padding:4px 12px;border:1.5px solid var(--danger);border-radius:7px;background:none;color:var(--danger);font-family:'Sora',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✕ Xóa bộ lọc</button>
+      </div>
+      <div id="families-body" style="padding:12px 16px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+    </div>
+  </div>
+</div>
+<!-- MODAL: HỒ SƠ CÁ NHÂN -->
+<div class="modal-bg" id="modal-profile" onclick="if(event.target===this)closeModal('modal-profile')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-profile')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👤 Hồ sơ cá nhân</div>
+    <div style="text-align:center;margin-bottom:16px">
+      <div class="profile-av" id="profile-av-wrap" onclick="document.getElementById('profile-av-input').click()">
+        <span id="profile-av-initials"></span>
+        <img id="profile-av-img" src="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%"/>
+        <div class="profile-av-overlay">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+      </div>
+      <input type="file" id="profile-av-input" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="previewAvatar(this)"/>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:6px">Nhấn vào ảnh để thay đổi · Tối đa 2MB</div>
+    </div>
+    <div class="field"><label>Họ tên *</label><input id="pf-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="pf-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+      <div class="field"><label>Email</label><input id="pf-email" type="email"/></div>
+    </div>
+    <div class="modal-msg" id="pf-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-profile')">Hủy</button>
+      <button class="btn-save" id="pf-save-btn" onclick="saveProfile()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: THÊM LIÊN KẾT BỆNH NHÂN CHO NGƯỜI NHÀ -->
+<div class="modal-bg" id="modal-add-link" onclick="if(event.target===this)closeModal('modal-add-link')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-add-link')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">🔗 Thêm liên kết bệnh nhân</div>
+    <input type="hidden" id="al-user-id"/>
+    <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:12px">Người nhà: <span id="al-user-name" style="color:var(--navy)"></span></div>
+    <div class="field"><label>Chọn bệnh nhân *</label>
+      <select id="al-patient-id" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.76rem">
+        <option value="">— Chọn bệnh nhân —</option>
+      </select>
+    </div>
+    <div class="field"><label>Quan hệ</label>
+      <select id="al-rel">
+        <option value="">— Chọn —</option>
+        <option value="vo_chong">Vợ/Chồng</option><option value="con">Con</option>
+        <option value="cha_me">Cha/Mẹ</option><option value="anh_chi_em">Anh/Chị/Em</option>
+        <option value="than_nhan">Thân nhân khác</option><option value="nguoi_giam_ho">Người giám hộ</option>
+      </select>
+    </div>
+    <div style="margin:8px 0">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="al-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
+        Là người giám sát chính
+      </label>
+    </div>
+    <div class="modal-msg" id="al-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-add-link')">Hủy</button>
+      <button class="btn-save" id="al-save-btn" onclick="saveAddLink()">💾 Thêm liên kết</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SỬA LIÊN KẾT BỆNH NHÂN -->
+<div class="modal-bg" id="modal-edit-link" onclick="if(event.target===this)closeModal('modal-edit-link')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-link')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Sửa liên kết bệnh nhân</div>
+    <input type="hidden" id="el-link-id"/>
+    <div style="font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:12px">Bệnh nhân: <span id="el-patient-name" style="color:var(--navy)"></span></div>
+    <div class="field"><label>Quan hệ</label>
+      <select id="el-rel">
+        <option value="">— Chọn —</option>
+        <option value="vo_chong">Vợ/Chồng</option><option value="con">Con</option>
+        <option value="cha_me">Cha/Mẹ</option><option value="anh_chi_em">Anh/Chị/Em</option>
+        <option value="than_nhan">Thân nhân khác</option><option value="nguoi_giam_ho">Người giám hộ</option>
+      </select>
+    </div>
+    <div style="margin:8px 0">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="el-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
+        Là người giám sát chính
+      </label>
+    </div>
+    <div class="modal-msg" id="el-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-link')">Hủy</button>
+      <button class="btn-save" id="el-save-btn" onclick="saveEditLink()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CÀI ĐẶT -->
+<div class="modal-bg" id="modal-settings" onclick="if(event.target===this)closeModal('modal-settings')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-settings')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">⚙️ Cài đặt</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.82rem;font-weight:600">🌙 Chế độ tối</span>
+      <button id="dark-tgl" onclick="toggleDark()" style="width:42px;height:24px;border-radius:12px;border:none;cursor:pointer;background:var(--border);position:relative;transition:background .2s">
+        <span id="dark-knob" style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></span>
+      </button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.82rem;font-weight:600">🔤 Cỡ chữ</span>
+      <div style="display:flex;gap:4px">
+        <button class="sa-fb" onclick="setFont(12,this)">Nhỏ</button>
+        <button class="sa-fb on" onclick="setFont(14,this)">Vừa</button>
+        <button class="sa-fb" onclick="setFont(16,this)">Lớn</button>
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Đổi mật khẩu</div>
+      <div class="field"><input id="set-pw-old" type="password" placeholder="Mật khẩu hiện tại"/></div>
+      <div class="field"><input id="set-pw-new" type="password" placeholder="Mật khẩu mới (≥ 6 ký tự)"/></div>
+      <div class="field"><input id="set-pw-cf" type="password" placeholder="Xác nhận mật khẩu mới"/></div>
+      <div class="modal-msg" id="set-pw-msg"></div>
+      <button class="btn-save" style="width:100%;margin-top:4px" onclick="changePasswordSettings()">Đổi mật khẩu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ĐỔI MẬT KHẨU LẦN ĐẦU -->
+<div class="modal-bg" id="modal-first-login" style="display:none;z-index:300">
+  <div class="modal modal-sm">
+    <div class="modal-ttl">🔐 Đổi mật khẩu lần đầu</div>
+    <div style="background:#e8f2fc;border-radius:9px;padding:10px 14px;font-size:.76rem;color:var(--navy);margin-bottom:14px;border:1px solid #b8d4f0">
+      Đây là lần đầu bạn đăng nhập. Vui lòng đặt mật khẩu mới để bảo mật tài khoản.
+    </div>
+    <div class="field"><label>Mật khẩu mới *</label><input id="fl-pw-new" type="password" placeholder="Tối thiểu 6 ký tự"/></div>
+    <div class="field"><label>Xác nhận mật khẩu *</label><input id="fl-pw-cf" type="password" placeholder="Nhập lại mật khẩu mới"/></div>
+    <div class="modal-msg" id="fl-pw-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-save" style="width:100%" id="fl-pw-btn" onclick="saveFirstLoginPassword()">✅ Xác nhận & Tiếp tục</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-device" onclick="if(event.target===this)closeModal('modal-device')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-device')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">📦 Nhập thiết bị mới vào kho</div>
+    <div class="scan-area">
+      <input id="dev-serial" type="text" placeholder="Quét hoặc nhập số serial..." autofocus autocomplete="off" onkeydown="if(event.key==='Enter')registerDevice()"/>
+      <div class="scan-hint">Đặt con trỏ vào đây rồi quét mã vạch hoặc nhập thủ công</div>
+    </div>
+    <div class="field">
+      <label>Phiên bản firmware (tuỳ chọn)</label>
+      <input id="dev-fw" type="text" placeholder="VD: 1.2.0"/>
+    </div>
+    <div class="modal-msg" id="dev-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-device')">Đóng</button>
+      <button class="btn-save" id="dev-save-btn" onclick="registerDevice()">✅ Đăng ký thiết bị</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GÁN THIẾT BỊ -->
+<div class="modal-bg" id="modal-assign" onclick="if(event.target===this)closeModal('modal-assign')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-assign')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">🔗 Gán thiết bị cho bệnh nhân</div>
+    <div class="field">
+      <label>Thiết bị</label>
+      <input id="assign-dev-serial" type="text" disabled style="opacity:.7"/>
+    </div>
+    <div class="field">
+      <label>Chọn bệnh nhân</label>
+      <select id="assign-pt-select"><option value="">— Chọn bệnh nhân —</option></select>
+    </div>
+    <div class="modal-msg" id="assign-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-assign')">Hủy</button>
+      <button class="btn-save" onclick="confirmAssign()">✅ Xác nhận gán</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: THÊM BỆNH NHÂN -->
+<div class="modal-bg" id="modal-patient" onclick="if(event.target===this)closeModal('modal-patient')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-patient')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">🏥 Tiếp nhận bệnh nhân mới</div>
+
+    <div class="divider">Thông tin cá nhân</div>
+    <div class="field-row c2">
+      <div class="field"><label>Họ tên *</label><input id="pt-name" type="text" placeholder="Nguyễn Văn A"/></div>
+      <div class="field"><label>Số điện thoại</label><input id="pt-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Ngày sinh</label><input id="pt-dob" type="date"/></div>
+      <div class="field"><label>Giới tính</label>
+        <select id="pt-gender"><option value="">— Chọn —</option><option value="nam">Nam</option><option value="nu">Nữ</option><option value="khac">Khác</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Email</label><input id="pt-email" type="email" placeholder="email@..."/></div>
+
+    <div class="divider">Thông tin y tế</div>
+    <div class="field-row c2">
+      <div class="field"><label>Nhóm máu</label>
+        <select id="pt-blood"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+      </div>
+      <div class="field"><label>Dị ứng</label><input id="pt-allergy" type="text" placeholder="Penicillin, ..."/></div>
+    </div>
+    <div class="field"><label>Bệnh mãn tính</label><input id="pt-disease" type="text" placeholder="Tiểu đường, huyết áp..."/></div>
+    <div class="field"><label>Tiền sử y tế</label><textarea id="pt-history" placeholder="Mô tả tiền sử..."></textarea></div>
+
+    <!-- Người nhà -->
+    <div class="divider" style="margin:14px 0 10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:flex;align-items:center;gap:8px">
+      <span>👨‍👩‍👧 Người nhà (tuỳ chọn)</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <!-- Radio chọn trạng thái -->
+    <div style="display:flex;gap:16px;margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="pt-fam-mode" value="new" checked onchange="toggleFamMode('pt','new')"
+          style="accent-color:var(--navy);width:15px;height:15px"/>
+        Tạo tài khoản mới
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="pt-fam-mode" value="existing" onchange="toggleFamMode('pt','existing')"
+          style="accent-color:var(--navy);width:15px;height:15px"/>
+        Đã có tài khoản
+      </label>
+    </div>
+    <div class="field">
+      <label>Họ tên người nhà
+        <span id="pt-fam-name-hint" style="font-weight:400;color:var(--muted);font-size:.62rem"> — nhập để tìm hoặc tạo mới</span>
+      </label>
+      <div class="ac-wrap">
+        <input id="pt-fam-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
+          oninput="acSearchPtFamily(this.value)" onfocus="acSearchPtFamily(this.value)"/>
+        <div class="ac-dropdown" id="pt-fam-ac-drop"></div>
+      </div>
+    </div>
+    <div id="pt-fam-new-fields">
+      <div class="field-row c2">
+        <div class="field"><label>SĐT người nhà</label><input id="pt-fam-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+        <div class="field"><label>Email người nhà</label><input id="pt-fam-email" type="email" placeholder="email@..."/></div>
+      </div>
+      <div class="field-row c2">
+        <div class="field"><label>Quan hệ</label>
+          <select id="pt-fam-rel">
+            <option value="">— Chọn —</option>
+            <option value="vo_chong">Vợ/Chồng</option>
+            <option value="con">Con</option>
+            <option value="cha_me">Cha/Mẹ</option>
+            <option value="anh_chi_em">Anh/Chị/Em</option>
+            <option value="than_nhan">Thân nhân khác</option>
+            <option value="nguoi_giam_ho">Người giám hộ</option>
+          </select>
+        </div>
+        <div class="field"><label>Mật khẩu app</label><input id="pt-fam-pw" type="text" value="123456"/></div>
+      </div>
+    </div>
+    <input type="hidden" id="pt-fam-existing-id"/>
+
+    <div class="modal-msg" id="pt-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-patient')">Hủy</button>
+      <button class="btn-save" id="pt-save-btn" onclick="savePatient()">✅ Tạo hồ sơ</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: PHÂN CÔNG BÁC SĨ -->
+<div class="modal-bg" id="modal-doc-assign" onclick="if(event.target===this)closeModal('modal-doc-assign')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-doc-assign')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👨‍⚕️ Phân công bác sĩ</div>
+    <div class="field"><label>Bệnh nhân</label><input id="da-pt-name" type="text" disabled style="opacity:.7"/></div>
+    <div class="field"><label>Chọn bác sĩ phụ trách</label>
+      <select id="da-doc-select"><option value="">— Chọn bác sĩ —</option></select>
+    </div>
+    <div class="modal-msg" id="da-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-doc-assign')">Hủy</button>
+      <button class="btn-save" onclick="confirmDocAssign()">✅ Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// SESSION CHECK
+try {
+  const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  const _roles = s.roles || (s.role ? [s.role] : []);
+  if(!s.userId || !_roles.includes('sub_admin')){ localStorage.removeItem('hm_session'); location.replace('index.html'); }
+} catch(_){ location.replace('index.html'); }
+
+const AAPI = 'https://health-monitor-subadmin.onrender.com';
+const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
+const UID = SESS.userId;
+
+// Khởi tạo Supabase client ngay lập tức
+window._sb = supabase.createClient(
+  'https://czgberdpnfultxkljhko.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
 );
 
-// ===== Health check =====
-app.get("/", (req, res) => {
-  res.json({ status: "ok", service: "HealthMonitor Admin API", version: "1.0" });
-});
+// Kiểm tra session hết hạn
+(function checkSessionExpiry(){
+  if(!SESS.userId){ window.location.replace('index.html'); return; }
+  if(SESS.expiresAt && Date.now() > SESS.expiresAt){
+    localStorage.removeItem('hm_session');
+    alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    window.location.replace('index.html');
+    return;
+  }
+  setInterval(function(){
+    const s = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    if(!s.userId || (s.expiresAt && Date.now() > s.expiresAt)){
+      localStorage.removeItem('hm_session');
+      alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+      window.location.replace('index.html');
+    }
+  }, 60000);
+})();
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-// ===== Helpers: IP + Log =====
-function getIp(req){
-  return req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || null;
+let devCache=[], ptCache=[], docCache=[], familiesCache=[], familiesFiltered=[];
+let assignDevId=null, assignDocPtId=null;
+let _afSelectedUserId = null;
+
+function doLogout(){ if(!confirm('Đăng xuất?'))return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
+
+// ── VIEW SWITCHING ──
+function switchView(name, btn){
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  ['overview','devices','patients','doctors','families'].forEach(v=>{
+    document.getElementById('view-'+v).style.display='none';
+  });
+  document.getElementById('view-'+name).style.display='flex';
+  const titles={overview:'Dashboard',devices:'Thiết bị theo dõi',patients:'Bệnh nhân',doctors:'Bác sĩ',families:'Người nhà'};
+  document.getElementById('page-title').textContent = titles[name]||name;
+  if(name==='overview')  loadOverview();
+  if(name==='devices')   loadDevices();
+  if(name==='patients')  loadPatients();
+  if(name==='doctors')   loadDoctors();
+  if(name==='families')  loadFamilies();
 }
 
-async function logAction(userId, action, targetType, targetId, detail, ip){
+// Toggle expand card (bác sĩ, bệnh nhân)
+function toggleCard(id){
+  const card = document.getElementById(id);
+  if(!card) return;
+  card.classList.toggle('open');
+  if(card.classList.contains('open') && id.startsWith('pt-card-')){
+    const pid = id.replace('pt-card-','');
+    loadPatientFamilies(pid);
+  }
+}
+
+// Load và render danh sách người nhà của bệnh nhân
+async function loadPatientFamilies(pid){
+  const el = document.getElementById('pt-fam-list-'+pid);
+  if(!el) return;
+  // Chỉ skip nếu đã load VÀ không bị force reload
+  if(el.dataset.loaded && !el.dataset.forceReload) return;
+  delete el.dataset.forceReload;
+  el.innerHTML = '<span style="color:var(--muted);font-size:.7rem">Đang tải...</span>';
   try {
-    await supabase.from("nhat_ky_he_thong").insert({
-      nguoi_dung_id:   userId || null,
-      hanh_dong:       action,
-      loai_doi_tuong:  targetType,
-      doi_tuong_id:    targetId || null,
-      du_lieu_bo_sung: detail || {},
-      dia_chi_ip:      ip || null,
-      ngay_tao:        new Date().toISOString(),
+    const r = await fetch(AAPI+'/admin/'+UID+'/patients/'+pid+'/families');
+    const list = r.ok ? await r.json() : [];
+    el.dataset.loaded = '1';
+    if(!list.length){
+      el.innerHTML = '<span style="color:var(--muted);font-size:.72rem;font-style:italic">Chưa có người nhà</span>';
+      return;
+    }
+    const REL = {vo_chong:'Vợ/Chồng',con:'Con',cha_me:'Cha/Mẹ',anh_chi_em:'Anh/Chị/Em',than_nhan:'Thân nhân',nguoi_giam_ho:'Người giám hộ'};
+    el.innerHTML = list.map(function(f){
+      const rel = REL[f.relation]||f.relation||'—';
+      const init = (f.name||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+      return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);margin-bottom:6px">'
+        +'<div style="width:28px;height:28px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">'+init+'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(f.name)+'</div>'
+        +'<div style="font-size:.63rem;color:var(--muted)">'+rel+(f.phone?' · '+f.phone:'')+'</div>'
+        +'</div>'
+        +(f.isPrimary?'<span style="font-size:.58rem;font-weight:700;background:var(--mint);color:var(--navy);padding:2px 7px;border-radius:8px;flex-shrink:0">Chính</span>':'')
+        +'<button onclick="event.stopPropagation();openEditPtFamily(\''+f.linkId+'\',\''+f.userId+'\',\''+esc(f.name)+'\',\''+esc(f.phone||'')+'\',\''+esc(f.email||'')+'\',\''+esc(f.relation||'')+'\','+f.isPrimary+')" style="padding:3px 10px;border:1.5px solid var(--navy);border-radius:6px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.65rem;font-weight:600;cursor:pointer;flex-shrink:0">✎ Sửa</button>'
+        +'<button onclick="event.stopPropagation();confirmDeletePtFamily(\''+f.linkId+'\',\''+esc(f.name)+'\',\''+pid+'\')" style="padding:3px 10px;border:1.5px solid var(--danger);border-radius:6px;background:none;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.65rem;font-weight:600;cursor:pointer;flex-shrink:0">✕ Xóa</button>'
+        +'</div>';
+    }).join('');
+  } catch(_){
+    el.innerHTML = '<span style="color:var(--danger);font-size:.7rem">⚠️ Lỗi tải</span>';
+  }
+}
+
+// ── CÀI ĐẶT ──
+function openSettings(){
+  document.getElementById('set-pw-old').value='';
+  document.getElementById('set-pw-new').value='';
+  document.getElementById('set-pw-cf').value='';
+  document.getElementById('set-pw-msg').textContent='';
+  // Sync dark mode toggle state
+  const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+  const tgl = document.getElementById('dark-tgl');
+  const knob = document.getElementById('dark-knob');
+  if(tgl){ tgl.style.background = isDark?'var(--navy)':'var(--border)'; }
+  if(knob){ knob.style.left = isDark?'21px':'3px'; }
+  document.getElementById('modal-settings').classList.add('open');
+}
+
+function toggleDark(){
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme')==='dark';
+  html.setAttribute('data-theme', isDark?'light':'dark');
+  localStorage.setItem('sa_theme', isDark?'light':'dark');
+  const tgl = document.getElementById('dark-tgl');
+  const knob = document.getElementById('dark-knob');
+  tgl.style.background = isDark?'var(--border)':'var(--navy)';
+  knob.style.left = isDark?'3px':'21px';
+}
+
+function setFont(n, b){
+  const sizes = {12:'87.5%', 14:'100%', 16:'112.5%'};
+  document.documentElement.style.fontSize = sizes[n]||'100%';
+  localStorage.setItem('sa_font', n);
+  document.querySelectorAll('.sa-fb').forEach(x=>x.classList.remove('on'));
+  if(b) b.classList.add('on');
+}
+
+// Khởi tạo theme
+(function(){
+  const t = localStorage.getItem('sa_theme');
+  if(t) document.documentElement.setAttribute('data-theme', t);
+  // Khởi tạo font size
+  const f = parseInt(localStorage.getItem('sa_font'));
+  if(f){
+    const sizes={12:'87.5%',14:'100%',16:'112.5%'};
+    document.documentElement.style.fontSize = sizes[f]||'100%';
+  }
+  window.addEventListener('DOMContentLoaded', function(){
+    const isDark = document.documentElement.getAttribute('data-theme')==='dark';
+    const knob = document.getElementById('dark-knob');
+    const tgl  = document.getElementById('dark-tgl');
+    if(knob) knob.style.left = isDark?'21px':'3px';
+    if(tgl)  tgl.style.background = isDark?'var(--navy)':'var(--border)';
+    // Sync font button
+    const fv = parseInt(localStorage.getItem('sa_font'))||14;
+    const labels={12:'Nhỏ',14:'Vừa',16:'Lớn'};
+    document.querySelectorAll('.sa-fb').forEach(b=>{
+      b.classList.toggle('on', b.textContent.trim()===labels[fv]);
     });
+  });
+})();
+
+async function changePasswordSettings(){
+  const oldPw = document.getElementById('set-pw-old').value;
+  const newPw = document.getElementById('set-pw-new').value;
+  const cfPw  = document.getElementById('set-pw-cf').value;
+  const msg   = document.getElementById('set-pw-msg');
+
+  if(!oldPw){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập mật khẩu hiện tại'; return; }
+  if(newPw.length < 6){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu mới phải ≥ 6 ký tự'; return; }
+  if(newPw !== cfPw){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu xác nhận không khớp'; return; }
+
+  msg.style.color='var(--muted)'; msg.textContent='Đang xử lý...';
+  try {
+    // Verify mật khẩu cũ
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    const r = await fetch(AAPI+'/auth/change-password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ userId: UID, currentPassword: oldPw, newPassword: newPw })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đổi mật khẩu thành công!';
+    setTimeout(()=>{ closeModal('modal-settings'); }, 1500);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+}
+
+// ── ĐỔI MẬT KHẨU LẦN ĐẦU ──
+function checkFirstLogin(){
+  const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  if(sess.isFirstLogin){
+    const modal = document.getElementById('modal-first-login');
+    modal.style.display='flex';
+    modal.classList.add('open');
+  }
+}
+
+async function saveFirstLoginPassword(){
+  const newPw = document.getElementById('fl-pw-new').value;
+  const cfPw  = document.getElementById('fl-pw-cf').value;
+  const msg   = document.getElementById('fl-pw-msg');
+  const btn   = document.getElementById('fl-pw-btn');
+
+  if(newPw.length < 6){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu phải ≥ 6 ký tự'; return; }
+  if(newPw !== cfPw){ msg.style.color='var(--danger)'; msg.textContent='Mật khẩu xác nhận không khớp'; return; }
+
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(AAPI+'/auth/change-password', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ userId: UID, newPassword: newPw })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    // Xóa flag first login
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    sess.isFirstLogin = false;
+    localStorage.setItem('hm_session', JSON.stringify(sess));
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã đặt mật khẩu thành công!';
+    setTimeout(()=>{
+      document.getElementById('modal-first-login').style.display='none';
+      document.getElementById('modal-first-login').classList.remove('open');
+    }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+// ── ALPHABET SORT (tên tiếng Việt — đọc từ chữ cuối) ──
+function getLastWord(name){
+  if(!name) return '';
+  const parts = name.trim().split(/\s+/);
+  return parts[parts.length - 1].toLowerCase();
+}
+
+function alphabetSort(arr, nameKey){
+  return arr.slice().sort(function(a, b){
+    const na = getLastWord(a[nameKey]||'');
+    const nb = getLastWord(b[nameKey]||'');
+    return na.localeCompare(nb, 'vi', {sensitivity:'base'});
+  });
+}
+
+// ── SUPABASE REALTIME CHO SUB-ADMIN ──
+function setupSubAdminRealtime(){
+  if(!window._sb) return;
+
+  const RELOAD_DEBOUNCE = 2000; // tránh reload liên tục
+  const debounceMap = {};
+
+  function debounceReload(key, fn){
+    clearTimeout(debounceMap[key]);
+    debounceMap[key] = setTimeout(fn, RELOAD_DEBOUNCE);
+  }
+
+  function currentView(){
+    return document.querySelector('.content[style*="block"]')?.id || '';
+  }
+
+  // Bệnh nhân & hồ sơ bệnh nhân
+  _sb.channel('sa-patients')
+    .on('postgres_changes',{event:'*',schema:'public',table:'nguoi_dung'},function(payload){
+      debounceReload('patients', function(){
+        loadPatients();
+        if(currentView()==='view-overview') loadOverview();
+      });
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'ho_so_benh_nhan'},function(){
+      debounceReload('patients', function(){ loadPatients(); });
+    })
+    .subscribe();
+
+  // Thiết bị
+  _sb.channel('sa-devices')
+    .on('postgres_changes',{event:'*',schema:'public',table:'thiet_bi_iot'},function(){
+      debounceReload('devices', function(){
+        loadDevices();
+        if(currentView()==='view-overview') loadOverview();
+      });
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'lich_su_gan_thiet_bi'},function(){
+      debounceReload('devices', function(){
+        loadDevices();
+        loadPatients();
+        if(currentView()==='view-overview') loadOverview();
+      });
+    })
+    .subscribe();
+
+  // Người nhà
+  _sb.channel('sa-families')
+    .on('postgres_changes',{event:'*',schema:'public',table:'lien_ket_nguoi_nha'},function(){
+      debounceReload('families', function(){
+        familiesCache=[];
+        if(currentView()==='view-families') loadFamilies();
+      });
+    })
+    .subscribe();
+
+  // Bác sĩ & liên kết bác sĩ
+  _sb.channel('sa-doctors')
+    .on('postgres_changes',{event:'*',schema:'public',table:'lien_ket_bac_si'},function(){
+      debounceReload('doctors', function(){
+        loadDoctors();
+        loadPatients();
+        if(currentView()==='view-overview') loadOverview();
+      });
+    })
+    .subscribe();
+
+  // Badge realtime
+  showRealtimeBadge();
+}
+
+function showRealtimeBadge(){
+  const badge = document.getElementById('sa-realtime-badge');
+  if(badge) badge.style.display='flex';
+}
+
+// Khởi động realtime sau khi _sb sẵn sàng
+function initRealtime(){
+  setupSubAdminRealtime();
+}
+
+// ── LOAD ADMIN INFO ──
+async function loadInfo(){
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/me');
+    if(r.ok){
+      const d=await r.json();
+      const i=(d.name||'SA').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+      document.getElementById('sb-name').textContent=d.name||'Sub Admin';
+      document.getElementById('sb-role').textContent='Quản trị đơn vị';
+      document.getElementById('hs-name').textContent=d.hospital?.name||d.hospital?.ten_co_so||'—';
+      // Hiện avatar
+      const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+      const av = sess.avatar;
+      if(av){ updateSidebarAvatar(av); }
+      else {
+        // Fetch avatar từ DB
+        const rp = await fetch(AAPI+'/admin/'+UID+'/profile');
+        if(rp.ok){
+          const dp = await rp.json();
+          if(dp.avatar){
+            sess.avatar = dp.avatar;
+            localStorage.setItem('hm_session', JSON.stringify(sess));
+            updateSidebarAvatar(dp.avatar);
+          } else {
+            document.getElementById('sb-av').textContent = i;
+          }
+        } else {
+          document.getElementById('sb-av').textContent = i;
+        }
+      }
+    }
   } catch(_){}
+  checkFirstLogin();
 }
 
-// ============================================================
-// HELPER — xác minh sub_admin + lấy co_so_y_te_id
-// ============================================================
-// Cache CSYT của sub-admin — tránh query lại mỗi request
-const _hsCache = new Map();
+// ── OVERVIEW ──
+let ovPage = 1;
+const OV_PER_PAGE = 9;
+let ovPatients = [];
 
-async function getAdminHospital(userId) {
-  if(_hsCache.has(userId)) return _hsCache.get(userId);
+async function loadOverview(){
+  const linksBody = document.getElementById('ov-links-body');
+  linksBody.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const [rOv, rPt] = await Promise.all([
+      fetch(AAPI+'/admin/'+UID+'/overview'),
+      fetch(AAPI+'/admin/'+UID+'/patients'),
+    ]);
+    const ov = rOv.ok ? await rOv.json() : {};
+    ovPatients = rPt.ok ? alphabetSort(await rPt.json(), 'name') : [];
 
-  const [{ data: user }, { data: pq }] = await Promise.all([
-    supabase.from("nguoi_dung")
-      .select("co_so_y_te_id, trang_thai_hoat_dong")
-      .eq("id", userId).maybeSingle(),
-    supabase.from("phan_quyen_nguoi_dung")
-      .select("vai_tro(ten_vai_tro)")
-      .eq("nguoi_dung_id", userId),
-  ]);
-  if (!user || !user.trang_thai_hoat_dong) return null;
-  const roles = (pq||[]).map(p=>p.vai_tro?.ten_vai_tro).filter(Boolean);
-  if (!roles.includes("sub_admin")) return null;
+    document.getElementById('ov-pt-total').textContent  = ov.patients?.total ?? ovPatients.length ?? '—';
+    document.getElementById('ov-dev-online').textContent = ov.devices?.online ?? '—';
+    document.getElementById('ov-dev-total').textContent  = ov.devices?.total  ?? '—';
+    document.getElementById('last-upd').textContent = new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'});
 
-  const hsId = user.co_so_y_te_id || null;
-  _hsCache.set(userId, hsId);
-  // Xóa cache sau 5 phút
-  setTimeout(()=>_hsCache.delete(userId), 5 * 60 * 1000);
-  return hsId;
+    ovPage = 1;
+    renderOverviewPage();
+  } catch(e){
+    document.getElementById('ov-links-body').innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>';
+  }
 }
 
-// GET /admin/:userId/me — thông tin sub-admin + CSYT
-// GET /admin/:userId/profile
-app.get("/admin/:userId/profile", async (req, res) => {
-  try {
-    const { data, error } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten, so_dien_thoai, email, anh_dai_dien_url")
-      .eq("id", req.params.userId).single();
-    if(error) throw error;
-    res.json({ name:data.ho_ten, phone:data.so_dien_thoai, email:data.email, avatar:data.anh_dai_dien_url });
-  } catch(err){ res.status(500).json({ error: err.message }); }
-});
+function ovGoPage(p){
+  const total = Math.ceil(ovPatients.length / OV_PER_PAGE);
+  if(p<1||p>total) return;
+  ovPage = p;
+  renderOverviewPage();
+}
 
-// PATCH /admin/:userId/profile — cập nhật hồ sơ cá nhân
-app.patch("/admin/:userId/profile", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { name, phone, email, avatar } = req.body;
-    const updates = {};
-    if(name?.trim())        updates.ho_ten           = name.trim();
-    if(phone !== undefined) updates.so_dien_thoai    = phone||null;
-    if(email !== undefined) updates.email            = email||null;
-    if(avatar)              updates.anh_dai_dien_url = avatar;
-    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", userId);
-    if(error) throw error;
-    res.json({ ok: true });
-  } catch(err) {
-    console.error("[PATCH /admin/profile]", err.message);
-    res.status(500).json({ error: err.message });
+function renderOverviewPage(){
+  const linksBody = document.getElementById('ov-links-body');
+  if(!ovPatients.length){
+    linksBody.innerHTML='<div class="loading">Chưa có dữ liệu</div>'; return;
   }
-});
 
-app.get("/admin/:userId/me", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { data: user } = await supabase
-      .from("nguoi_dung")
-      .select("id, ho_ten, email, so_dien_thoai, co_so_y_te_id")
-      .eq("id", userId)
-      .maybeSingle();
-    if (!user) return res.status(404).json({ error: "Không tìm thấy" });
+  const totalPages = Math.ceil(ovPatients.length / OV_PER_PAGE);
+  if(ovPage > totalPages) ovPage = 1;
+  const slice = ovPatients.slice((ovPage-1)*OV_PER_PAGE, ovPage*OV_PER_PAGE);
 
-    let hospital = null;
-    if (user.co_so_y_te_id) {
-      const { data: hs } = await supabase
-        .from("co_so_y_te")
-        .select("id, ten_co_so, dia_chi, so_dien_thoai")
-        .eq("id", user.co_so_y_te_id)
-        .maybeSingle();
-      hospital = hs;
+  let html = slice.map(function(p){
+    const dob = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+    const devHtml = p.deviceId
+      ? '<div style="font-family:\'DM Mono\',monospace;font-size:.76rem;font-weight:700;color:var(--navy)">'+esc(p.serial||p.deviceId.slice(0,8).toUpperCase())+'</div>'
+      : '<span style="color:var(--muted);font-size:.74rem;font-style:italic">Chưa có TB</span>';
+
+    const bat = p.battery;
+    const batHtml = bat != null
+      ? (function(){
+          var bc = bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)';
+          return '<div style="display:flex;align-items:center;gap:4px">'
+            +'<div class="bat-bar" style="width:36px"><div class="bat-fill" style="width:'+bat+'%;background:'+bc+'"></div></div>'
+            +'<span style="font-size:.7rem;color:'+bc+'">'+bat+'%</span></div>';
+        })()
+      : '<span style="color:var(--muted);font-size:.74rem">—</span>';
+
+    const onlineBadge = p.online
+      ? '<span class="badge b-ok" style="font-size:.6rem">● Online</span>'
+      : '<span class="badge b-off" style="font-size:.6rem">○ Offline</span>';
+
+    const docHtml = p.doctor
+      ? '<div style="font-size:.8rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'
+        +'<div style="font-size:.66rem;color:var(--muted)">'+esc(p.doctor.phone||p.doctor.email||'')+'</div>'
+      : '<span style="color:var(--muted);font-size:.74rem;font-style:italic">Chưa phân công</span>';
+
+    return '<div style="display:grid;grid-template-columns:1fr 140px 90px 80px 1fr;gap:8px;align-items:center;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background=\'rgba(43,95,142,.03)\'" onmouseout="this.style.background=\'\'">'
+      +'<div style="display:flex;align-items:center;gap:9px">'
+      +'<div style="width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;flex-shrink:0">'
+      +(p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
+      +'</div>'
+      +'<div><div style="font-size:.82rem;font-weight:600;color:var(--text)">'+esc(p.name)+'</div>'
+      +'<div style="font-size:.66rem;color:var(--muted)">'+dob+'</div></div>'
+      +'</div>'
+      +'<div>'+devHtml+'</div>'
+      +'<div>'+batHtml+'</div>'
+      +'<div>'+(p.deviceId?onlineBadge:'<span style="color:var(--muted);font-size:.7rem">—</span>')+'</div>'
+      +'<div>'+docHtml+'</div>'
+      +'</div>';
+  }).join('');
+
+  if(totalPages > 1){
+    const S = "font-family:'DM Mono',monospace;font-size:.74rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px";
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)">'
+      +'<span style="font-size:.72rem;color:var(--muted)">Trang '+ovPage+'/'+totalPages+' — '+ovPatients.length+' bệnh nhân</span>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button onclick="ovGoPage('+(ovPage-1)+')" '+(ovPage<=1?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">← Trước</button>';
+    for(var i=1;i<=totalPages;i++){
+      var a=i===ovPage;
+      html+='<button onclick="ovGoPage('+i+')" style="'+S+';border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
     }
-    res.json({
-      userId:   user.id,
-      name:     user.ho_ten,
-      email:    user.email,
-      phone:    user.so_dien_thoai,
-      hospital: hospital ? {
-        id:      hospital.id,
-        name:    hospital.ten_co_so,
-        address: hospital.dia_chi,
-        phone:   hospital.so_dien_thoai,
-      } : null,
-    });
-  } catch (err) {
-    console.error("[GET /admin/:userId/me]", err.message);
-    res.status(500).json({ error: err.message });
+    html+='<button onclick="ovGoPage('+(ovPage+1)+')" '+(ovPage>=totalPages?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">Tiếp →</button>'
+      +'</div></div>';
   }
-});
 
+  linksBody.innerHTML = html;
+}
 
-// ============================================================
-// AUTH
-// ============================================================
-
-// POST /admin/auth/login
-app.post("/auth/login", loginLimiter, async (req, res) => {
+// ── DEVICES ──
+async function loadDevices(){
+  const body=document.getElementById('dev-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
   try {
-    const { login, password, hospitalId } = req.body;
-    if (!login || !password)
-      return res.status(400).json({ error: "Vui lòng nhập email/SĐT và mật khẩu" });
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices');
+    devCache = r.ok ? (await r.json()).sort(function(a,b){ return (a.serial||'').localeCompare(b.serial||''); }) : [];
+    renderDevices();
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
 
-    const field = login.includes("@") ? "email" : "so_dien_thoai";
-    const { data: users, error } = await supabase
-      .from("nguoi_dung")
-      .select("id, ho_ten, email, so_dien_thoai, mat_khau, co_so_y_te_id, trang_thai_hoat_dong")
-      .eq(field, login.trim())
-      .eq("trang_thai_hoat_dong", true)
-      .limit(1);
-    if (error) throw error;
-    if (!users || users.length === 0)
-      return res.status(401).json({ error: "Tài khoản không tồn tại hoặc đã bị khoá" });
+let devPage = 1;
+const DEV_PER_PAGE = 8;
+let devFiltered = [];
 
-    const user = users[0];
-    if (user.mat_khau !== password)
-      return res.status(401).json({ error: "Mật khẩu không đúng" });
+function filterDevices(q){
+  devPage = 1;
+  devFiltered = q.trim()
+    ? devCache.filter(d=>(d.serial||'').toLowerCase().includes(q.toLowerCase()))
+    : devCache;
+  renderDevicesFromList(devFiltered);
+}
 
-    const { data: pq } = await supabase
-      .from("phan_quyen_nguoi_dung")
-      .select("vai_tro(ten_vai_tro)")
-      .eq("nguoi_dung_id", user.id);
-    const roles = (pq || []).map(p => p.vai_tro?.ten_vai_tro).filter(Boolean);
-    if (!roles.includes("sub_admin"))
-      return res.status(403).json({ error: "Tài khoản không có quyền Sub Admin" });
+function renderDevices(){
+  devFiltered = devCache;
+  renderDevicesFromList(devFiltered);
+}
 
-    if (!hospitalId)
-      return res.status(400).json({ error: "Vui lòng chọn cơ sở y tế" });
-    if (user.co_so_y_te_id !== hospitalId)
-      return res.status(403).json({ error: "Cơ sở y tế không khớp với tài khoản" });
+function renderDevicesFromList(list){
+  const body=document.getElementById('dev-body');
+  if(!list.length){body.innerHTML='<div class="loading">Chưa có thiết bị nào trong đơn vị</div>';return;}
 
-    const { data: hospital } = await supabase
-      .from("co_so_y_te").select("id, ten_co_so").eq("id", hospitalId).maybeSingle();
+  const totalPages=Math.ceil(list.length/DEV_PER_PAGE);
+  if(devPage>totalPages) devPage=1;
+  const slice=list.slice((devPage-1)*DEV_PER_PAGE, devPage*DEV_PER_PAGE);
 
-    // Kiểm tra lần đầu đăng nhập
-    const { data: sessions } = await supabase.from("phien_dang_nhap")
-      .select("id").eq("nguoi_dung_id", user.id).limit(1);
-    const isFirstLogin = !sessions || sessions.length === 0;
+  let html='<div class="page-grid" style="padding:18px">';
+  html+=slice.map(function(dev){
+    const bat=dev.battery!=null?dev.battery:null;
+    const batColor=bat!=null?(bat<10?'var(--danger)':bat<20?'var(--warn)':'var(--green)'):'var(--muted)';
+    const lastOn=dev.lastOnline?new Date(dev.lastOnline).toLocaleString('vi-VN',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'2-digit'}):'—';
+    const cid='dev-card-'+dev.id;
 
-    // Cập nhật lan_dang_nhap_cuoi
-    await supabase.from("nguoi_dung")
-      .update({ lan_dang_nhap_cuoi: new Date().toISOString() }).eq("id", user.id);
+    // Status tag
+    const statusTag=dev.online
+      ?'<span class="card-tag" style="background:#e6f7e6;color:#2d7a2d">● Online</span>'
+      :'<span class="card-tag" style="background:#f0f0f0;color:#888">○ Offline</span>';
 
-    res.json({
-      userId:       user.id,
-      name:         user.ho_ten,
-      email:        user.email,
-      role:         "sub_admin",
-      roles:        ["sub_admin"],
-      hospitalId:   user.co_so_y_te_id,
-      hospitalName: hospital?.ten_co_so || "—",
-      isFirstLogin,
-    });
-  } catch (err) {
-    console.error("[POST /admin/auth/login]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
+    // Battery tag
+    const batTag=bat!=null
+      ?'<span class="card-tag" style="background:var(--bg);color:'+batColor+';border:1px solid '+batColor+'">🔋 '+bat+'%</span>'
+      :'';
 
-// POST /auth/change-password
-app.post("/auth/change-password", async (req, res) => {
-  try {
-    const { userId, newPassword } = req.body;
-    if (!userId || !newPassword) return res.status(400).json({ error: "Thiếu thông tin" });
-    if (newPassword.length < 6) return res.status(400).json({ error: "Mật khẩu phải >= 6 ký tự" });
-    const { error } = await supabase.from("nguoi_dung").update({ mat_khau: newPassword }).eq("id", userId);
-    if (error) throw error;
+    // Patient section
+    const ptSection=dev.assigned
+      ?'<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg);border-radius:9px;border:1px solid var(--border);margin-bottom:10px">'
+        +'<div style="width:30px;height:30px;border-radius:50%;background:var(--mint);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;flex-shrink:0">'
+        +(dev.assigned.patientName||'BN').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()
+        +'</div>'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:.8rem;font-weight:600;color:var(--text)">'+esc(dev.assigned.patientName||'Bệnh nhân')+'</div>'
+        +'<div style="font-size:.63rem;color:var(--muted)">Gán từ: '+(dev.assigned.assignedAt?new Date(dev.assigned.assignedAt).toLocaleDateString('vi-VN'):'—')+'</div>'
+        +'</div>'
+        +'<span style="font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:8px;background:#e8f2fc;color:var(--navy);flex-shrink:0">Đang theo dõi</span>'
+        +'</div>'
+      :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;padding:8px 12px;background:var(--bg);border-radius:9px;border:1px dashed var(--border);margin-bottom:10px">Chưa gán bệnh nhân</div>';
 
-    // Đánh dấu đã đăng nhập (không còn first login)
-    const { data: existing } = await supabase.from("phien_dang_nhap")
-      .select("id").eq("nguoi_dung_id", userId).limit(1);
-    if (!existing?.length) {
-      await supabase.from("phien_dang_nhap").insert({
-        nguoi_dung_id: userId, fcm_token: "web_first_login",
-        ten_thiet_bi: "Web Browser", lan_hoat_dong_cuoi: new Date().toISOString(),
-      });
+    // Buttons — filled label style
+    let btns='<div style="display:flex;gap:8px">';
+    const BS='font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;border:none;border-radius:8px;padding:7px 14px;display:flex;align-items:center;gap:5px;max-width:150px';
+    if(dev.assigned){
+      btns+='<button onclick="event.stopPropagation();openAssignDevice(\''+dev.id+'\',\''+esc(dev.serial)+'\')" style="'+BS+';background:var(--navy);color:#fff">'
+        +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Đổi bệnh nhân</button>';
+      btns+='<button onclick="event.stopPropagation();unassignDevice(\''+dev.id+'\',\''+esc(dev.serial)+'\')" style="'+BS+';background:#fdeaea;color:var(--danger)">'
+        +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Thu hồi</button>';
     } else {
-      await supabase.from("phien_dang_nhap")
-        .update({ lan_hoat_dong_cuoi: new Date().toISOString() }).eq("nguoi_dung_id", userId);
+      btns+='<button onclick="event.stopPropagation();openAssignDevice(\''+dev.id+'\',\''+esc(dev.serial)+'\')" style="'+BS+';background:var(--navy);color:#fff">'
+        +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Gán bệnh nhân</button>';
     }
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("[POST /auth/change-password]", err.message);
-    res.status(500).json({ error: err.message });
+    btns+='</div>';
+
+    return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
+      +'<div class="page-card-head">'
+      +'<div class="card-av" style="border-radius:10px">'
+      +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>'
+      +'</div>'
+      +'<div class="card-info">'
+      +'<div class="card-name" style="font-family:\'DM Mono\',monospace">'+esc(dev.serial)+'</div>'
+      +'<div class="card-sub">Online cuối: '+esc(lastOn)+'</div>'
+      +'</div>'
+      +statusTag+batTag
+      +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+      +'</div>'
+      +'<div class="page-card-body">'
+      +ptSection
+      +btns
+      +'</div>'
+      +'</div>';
+  }).join('');
+  html+='</div>';
+
+  if(totalPages>1){
+    const S="font-family:'DM Mono',monospace;font-size:.74rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px";
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)">'
+      +'<span style="font-size:.72rem;color:var(--muted)">Trang '+devPage+'/'+totalPages+' — '+list.length+' thiết bị</span>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button onclick="devGoPage('+(devPage-1)+')" '+(devPage<=1?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">← Trước</button>';
+    for(var i=1;i<=totalPages;i++){
+      var a=i===devPage;
+      html+='<button onclick="devGoPage('+i+')" style="'+S+';border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
+    }
+    html+='<button onclick="devGoPage('+(devPage+1)+')" '+(devPage>=totalPages?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">Tiếp →</button>'
+      +'</div></div>';
   }
-});
 
-// GET /admin/hospitals
-app.get("/hospitals", async (req, res) => {
+  body.innerHTML=html;
+}
+
+function devGoPage(p){
+  const total=Math.ceil(devFiltered.length/DEV_PER_PAGE);
+  if(p<1||p>total) return;
+  devPage=p;
+  renderDevicesFromList(devFiltered);
+}
+
+function openRegisterDevice(){
+  document.getElementById('dev-serial').value='';
+  document.getElementById('dev-fw').value='';
+  document.getElementById('dev-msg').textContent='';
+  document.getElementById('modal-device').classList.add('open');
+  setTimeout(()=>document.getElementById('dev-serial').focus(),100);
+}
+
+async function registerDevice(){
+  const serial=document.getElementById('dev-serial').value.trim();
+  const fw=document.getElementById('dev-fw').value.trim();
+  const msg=document.getElementById('dev-msg');
+  if(!serial){msg.style.color='var(--danger)';msg.textContent='Vui lòng nhập số serial';return;}
+  const btn=document.getElementById('dev-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang đăng ký...';
   try {
-    const { data, error } = await supabase
-      .from("co_so_y_te").select("id, ten_co_so, dia_chi")
-      .order("ten_co_so");  // Bỏ filter — hiện tất cả cho dropdown login
-    if (error) throw error;
-    res.json(data || []);
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({serial,firmware:fw||null})});
+    const d=await r.json();
+    if(r.ok){
+      msg.style.color='var(--green)';
+      msg.textContent='✅ Đã đăng ký: '+serial;
+      document.getElementById('dev-serial').value='';
+      document.getElementById('dev-fw').value='';
+      loadDevices();
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
 
-// ============================================================
-// TỔNG QUAN
-// ============================================================
+function openAssign(devId, serial){
+  assignDevId=devId;
+  document.getElementById('assign-dev-serial').value=serial;
+  document.getElementById('assign-msg').textContent='';
+  // Đổ danh sách bệnh nhân chưa có thiết bị
+  const sel=document.getElementById('assign-pt-select');
+  sel.innerHTML='<option value="">— Chọn bệnh nhân —</option>'
+    +ptCache.filter(p=>!p.deviceId).map(p=>'<option value="'+p.id+'">'+esc(p.name)+'</option>').join('');
+  document.getElementById('modal-assign').classList.add('open');
+}
 
-app.get("/admin/:userId/overview", async (req, res) => {
+async function confirmAssign(){
+  const ptId=document.getElementById('assign-pt-select').value;
+  const msg=document.getElementById('assign-msg');
+  if(!ptId){msg.style.color='var(--danger)';msg.textContent='Chọn bệnh nhân';return;}
+  msg.style.color='var(--muted)';msg.textContent='Đang gán...';
   try {
-    const { userId } = req.params;
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices/'+assignDevId+'/assign',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patientId:ptId})});
+    const d=await r.json();
+    if(r.ok){
+      closeModal('modal-assign');
+      loadDevices(); loadPatients();
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+}
 
-    const { data: devices } = await supabase
-      .from("thiet_bi_iot")
-      .select("id, so_seri, phan_tram_pin, lan_online_cuoi, trang_thai_hoat_dong")
-      .eq("co_so_y_te_id", hsId);
+async function unassignDevice(devId, serial){
+  if(!confirm('Thu hồi thiết bị '+serial+'? Thiết bị sẽ về kho, ngắt liên kết với bệnh nhân.')) return;
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices/'+devId+'/unassign',{method:'POST'});
+    if(r.ok){ loadDevices(); loadPatients(); loadOverview(); }
+    else alert('⚠️ Không thể thu hồi');
+  } catch(e){ alert('⚠️ '+e.message); }
+}
 
-    const now = Date.now();
-    const devList = (devices || []).map(d => ({
-      id:         d.id,
-      serial:     d.so_seri,
-      battery:    d.phan_tram_pin,
-      online:     d.lan_online_cuoi ? now - new Date(d.lan_online_cuoi).getTime() < 60000 : false,
-      lastOnline: d.lan_online_cuoi,
-    }));
+// ── PATIENTS ──
+async function loadPatients(){
+  const body=document.getElementById('pt-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/patients');
+    ptCache = r.ok ? alphabetSort(await r.json(), 'name') : [];
+    renderPatients();
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
 
-    const devIds = devList.map(d => d.id);
-    let patientCount = 0;
-    if (devIds.length) {
-      const { data: assigns } = await supabase
-        .from("lich_su_gan_thiet_bi").select("nguoi_dung_tb_id")
-        .in("thiet_bi_id", devIds).eq("trang_thai_hoat_dong", true);
-      patientCount = new Set((assigns || []).map(a => a.nguoi_dung_tb_id)).size;
+let ptPage = 1;
+const PT_PER_PAGE = 8;
+let ptFiltered2 = []; // dùng ptFiltered từ search
+
+function renderPatients(){
+  ptFiltered2 = ptCache;
+  const q = document.getElementById('pt-tab-srch')?.value||'';
+  if(q.trim()) ptFiltered2 = ptCache.filter(p=>(p.name||'').toLowerCase().includes(q.toLowerCase()));
+  renderPatientsFromList(ptFiltered2);
+}
+
+function filterPatients(q){
+  ptPage = 1;
+  applyPatientFilter();
+}
+
+function renderPatientsFromList(list){
+  const body = document.getElementById('pt-body');
+  if(!list.length){ body.innerHTML='<div class="loading">Không tìm thấy bệnh nhân nào</div>'; return; }
+
+  const totalPages = Math.ceil(list.length / PT_PER_PAGE);
+  if(ptPage > totalPages) ptPage = 1;
+  const start = (ptPage-1)*PT_PER_PAGE;
+  const slice = list.slice(start, start+PT_PER_PAGE);
+
+  let html = '<div class="page-grid" style="padding:18px">';
+  html += slice.map(function(p){
+    const init = (p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+    const dob  = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+    const gender = p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':'—';
+    const cid  = 'pt-card-'+p.id;
+
+    const devBadge = p.deviceId
+      ?'<span class="card-tag">📱 Có thiết bị</span>'
+      :'<span class="card-tag" style="background:#f0f0f0;color:#888">Chưa có TB</span>';
+
+    // 2 cột — cột trái: SĐT, Email, Ngày sinh, Giới tính | cột phải: Nhóm máu, Dị ứng, Bệnh mãn, Tiền sử
+    function infoCell(icon, label, val){
+      if(!val) return '<div class="pt-info-row"><span class="pt-info-lbl">'+icon+' '+label+'</span><span class="pt-info-val" style="color:var(--muted);font-style:italic">—</span></div>';
+      return '<div class="pt-info-row"><span class="pt-info-lbl">'+icon+' '+label+'</span><span class="pt-info-val">'+esc(val)+'</span></div>';
+    }
+    const dobFmt = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : null;
+    const genderFmt = p.gender==='nam'?'Nam':p.gender==='nu'?'Nữ':p.gender||null;
+    const colLeft  = infoCell('📞','SĐT',p.phone) + infoCell('✉️','Email',p.email) + infoCell('🎂','Ngày sinh',dobFmt) + infoCell('🧬','Giới tính',genderFmt);
+    const colRight = infoCell('🩸','Nhóm máu',p.bloodType) + infoCell('⚠️','Dị ứng',p.allergy) + infoCell('🩺','Bệnh mãn',p.disease) + infoCell('📝','Tiền sử',p.history);
+    const infoRows = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px">'+
+      '<div>'+colLeft+'</div>'+
+      '<div>'+colRight+'</div>'+
+      '</div>';
+
+    const docRow = '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg);border-radius:8px;border:1px solid var(--border);margin-top:10px">'+
+      (p.doctor
+        ?'<div style="width:26px;height:26px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">'+
+          (p.doctor.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase()+
+          '</div>'+
+          '<div style="flex:1;min-width:0"><div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(p.doctor.name)+'</div>'+
+          '<div style="font-size:.63rem;color:var(--muted)">Bác sĩ phụ trách</div></div>'
+        :'<div style="font-size:.74rem;color:var(--muted);font-style:italic;flex:1">Chưa có bác sĩ phụ trách</div>'
+      )+
+      '<button onclick="event.stopPropagation();openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="flex-shrink:0;padding:4px 10px;border:1.5px solid var(--border);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.68rem;font-weight:600;cursor:pointer">'+
+      (p.doctor?'🔄 Đổi':'+ Phân công')+
+      '</button></div>';
+
+    return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'+
+      '<div class="page-card-head">'+
+      '<div class="card-av">'+init+'</div>'+
+      '<div class="card-info">'+
+      '<div class="card-name">'+esc(p.name||'—')+'</div>'+
+      '<div class="card-sub">'+dob+' · '+gender+'</div>'+
+      '</div>'+
+      devBadge+
+      (p.bloodType?'<span style="font-size:.62rem;font-weight:700;background:#e8f2fc;color:var(--navy);padding:3px 8px;border-radius:8px;flex-shrink:0;margin-left:4px">'+esc(p.bloodType)+'</span>':'')+
+      '<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'+
+      '</div>'+
+      '<div class="page-card-body">'+
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px">'+
+      '<div style="flex:1">'+infoRows+'</div>'+
+      '<button onclick="event.stopPropagation();openEditPatient(\''+p.id+'\')" style="flex-shrink:0;display:flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap">'+
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Cập nhật'+
+      '</button>'+
+      '<button onclick="event.stopPropagation();confirmDeletePatient(\''+p.id+'\',\''+esc(p.name)+'\')" style="flex-shrink:0;display:flex;align-items:center;gap:4px;padding:5px 11px;border:1.5px solid var(--danger);border-radius:8px;background:none;color:var(--danger);font-family:\'Sora\',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;white-space:nowrap">'+
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>Xóa'+
+      '</button></div>'+
+      docRow+
+      // Danh sách người nhà
+      '<div style="margin-top:10px">'
+      +'<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px">👨‍👩‍👧 Người nhà</div>'
+      +'<div id="pt-fam-list-'+p.id+'"></div>'
+      +'<button onclick="event.stopPropagation();openAddFamily(\''+p.id+'\',\''+esc(p.name)+'\')" style="margin-top:6px;padding:5px 12px;border:1.5px dashed var(--sky);border-radius:7px;background:none;color:var(--sky);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">+ Thêm người nhà</button>'
+      +'</div>'
+      +'</div></div>';
+  }).join('');
+  html += '</div>';
+
+  if(totalPages > 1){
+    html += buildPtPagination(ptPage, totalPages, list.length);
+  }
+
+  body.innerHTML = html;
+}
+
+function ptGoPage(p){
+  const list = ptFiltered2.length ? ptFiltered2 : ptCache;
+  const total = Math.ceil(list.length / PT_PER_PAGE);
+  if(p<1||p>total) return;
+  ptPage = p;
+  renderPatientsFromList(list);
+}
+
+function buildPtPagination(cur, total, count){
+  const S = 'font-family:\'DM Mono\',monospace;font-size:.74rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px';
+  let h = '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border)">'
+    +'<span style="font-size:.72rem;color:var(--muted)">Trang '+cur+'/'+total+' — '+count+' bệnh nhân</span>'
+    +'<div style="display:flex;gap:6px">'
+    +'<button onclick="ptGoPage('+(cur-1)+')" '+(cur<=1?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">← Trước</button>';
+  for(var i=1;i<=total;i++){
+    var a=i===cur;
+    h+='<button onclick="ptGoPage('+i+')" style="'+S+';border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
+  }
+  h+='<button onclick="ptGoPage('+(cur+1)+')" '+(cur>=total?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">Tiếp →</button>'
+    +'</div></div>';
+  return h;
+}
+
+
+function openAddPatient(){
+  ['pt-name','pt-phone','pt-dob','pt-email','pt-allergy','pt-disease','pt-history',
+   'pt-fam-name','pt-fam-phone','pt-fam-email','pt-fam-pw','pt-fam-existing-id'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('pt-blood').value='';
+  document.getElementById('pt-gender').value='';
+  document.getElementById('pt-fam-rel').value='';
+  // Reset radio về tạo mới
+  const ptRadios = document.querySelectorAll('input[name="pt-fam-mode"]');
+  if(ptRadios.length){ ptRadios[0].checked=true; toggleFamMode('pt','new'); }
+  document.getElementById('pt-fam-new-fields').style.display='block';
+  document.getElementById('pt-fam-ac-drop').style.display='none';
+  document.getElementById('pt-fam-pw').value='123456';
+  document.getElementById('pt-msg').textContent='';
+  document.getElementById('modal-patient').classList.add('open');
+}
+
+async function savePatient(){
+  const name=document.getElementById('pt-name').value.trim();
+  const msg=document.getElementById('pt-msg');
+  if(!name){msg.style.color='var(--danger)';msg.textContent='Vui lòng nhập họ tên';return;}
+  const btn=document.getElementById('pt-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang tạo hồ sơ...';
+
+  const payload={
+    name,
+    phone:    document.getElementById('pt-phone').value.trim()||null,
+    email:    document.getElementById('pt-email').value.trim()||null,
+    dob:      document.getElementById('pt-dob').value||null,
+    gender:   document.getElementById('pt-gender').value||null,
+    bloodType:document.getElementById('pt-blood').value||null,
+    disease:  document.getElementById('pt-disease').value.trim()||null,
+    allergy:  document.getElementById('pt-allergy').value.trim()||null,
+    history:  document.getElementById('pt-history').value.trim()||null,
+  };
+
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/patients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi tạo bệnh nhân');
+
+    const pid = d.patientId;
+
+    // Tạo liên kết người nhà nếu có nhập — lỗi không ảnh hưởng tạo bệnh nhân
+    const famName    = document.getElementById('pt-fam-name').value.trim();
+    const famRel     = document.getElementById('pt-fam-rel').value;
+    const famExistId = document.getElementById('pt-fam-existing-id').value;
+
+    if(famName || famExistId){
+      try {
+        const famPayload = { patientId: pid, relation: famRel||null, isPrimary: true };
+        if(famExistId){
+          famPayload.existingUserId = famExistId;
+        } else {
+          famPayload.name     = famName;
+          famPayload.phone    = document.getElementById('pt-fam-phone').value.trim()||null;
+          famPayload.email    = document.getElementById('pt-fam-email').value.trim()||null;
+          famPayload.password = document.getElementById('pt-fam-pw').value.trim()||'123456';
+        }
+        await fetch(AAPI+'/admin/'+UID+'/families',{
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(famPayload)
+        });
+      } catch(_){} // bỏ qua lỗi người nhà — bệnh nhân vẫn được tạo
     }
 
-    const { data: bsRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_bs").maybeSingle();
-    let doctorCount = 0;
-    if (bsRole) {
-      const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id", bsRole.id);
-      const bsIds = (pq||[]).map(p=>p.nguoi_dung_id);
-      if (bsIds.length) {
-        const { data: docs } = await supabase.from("nguoi_dung").select("id")
-          .in("id",bsIds).eq("co_so_y_te_id",hsId).eq("trang_thai_hoat_dong",true);
-        doctorCount = (docs||[]).length;
-      }
-    }
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo hồ sơ bệnh nhân!';
+    setTimeout(()=>{ closeModal('modal-patient'); loadPatients(); loadOverview(); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
 
-    res.json({
-      hospitalId: hsId,
-      devices: {
-        total:      devList.length,
-        online:     devList.filter(d=>d.online).length,
-        offline:    devList.filter(d=>!d.online).length,
-        lowBattery: devList.filter(d=>d.battery!=null&&d.battery<20).length,
-        list:       devList,
-      },
-      patients: { total: patientCount },
-      doctors:  { total: doctorCount },
-    });
-  } catch (err) {
-    console.error("[GET /admin/overview]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ============================================================
-// THIẾT BỊ
-// ============================================================
-
-app.get("/admin/:userId/devices", async (req, res) => {
+// ── DOCTORS ──
+// ── LIÊN KẾT BÁC SĨ - BỆNH NHÂN ──
+async function loadLinks(){
+  const body = document.getElementById('links-body');
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  document.getElementById('lnk-srch').value = '';
   try {
-    const { userId } = req.params;
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    const { data: devices, error } = await supabase
-      .from("thiet_bi_iot")
-      .select("id, so_seri, phien_ban_firmware, phan_tram_pin, lan_online_cuoi, trang_thai_hoat_dong, ngay_dang_ky")
-      .eq("co_so_y_te_id", hsId).order("ngay_dang_ky", { ascending: false });
-    if (error) throw error;
-
-    const devIds = (devices||[]).map(d=>d.id);
-    let assignMap = {};
-    if (devIds.length) {
-      const { data: assigns } = await supabase.from("lich_su_gan_thiet_bi")
-        .select("thiet_bi_id, nguoi_dung_tb_id, ngay_gan")
-        .in("thiet_bi_id", devIds).eq("trang_thai_hoat_dong", true);
-      const ptIds = [...new Set((assigns||[]).map(a=>a.nguoi_dung_tb_id).filter(Boolean))];
-      let ptMap = {};
-      if (ptIds.length) {
-        const { data: pts } = await supabase.from("nguoi_dung").select("id, ho_ten").in("id",ptIds);
-        (pts||[]).forEach(p=>{ ptMap[p.id]=p.ho_ten; });
-      }
-      (assigns||[]).forEach(a=>{
-        assignMap[a.thiet_bi_id]={ patientId:a.nguoi_dung_tb_id, patientName:ptMap[a.nguoi_dung_tb_id]||"—", assignedAt:a.ngay_gan };
-      });
-    }
-
-    const now = Date.now();
-    res.json((devices||[]).map(d=>({
-      id:           d.id,
-      serial:       d.so_seri,
-      firmware:     d.phien_ban_firmware,
-      battery:      d.phan_tram_pin,
-      online:       d.lan_online_cuoi ? now-new Date(d.lan_online_cuoi).getTime()<60000 : false,
-      lastOnline:   d.lan_online_cuoi,
-      active:       d.trang_thai_hoat_dong,
-      registeredAt: d.ngay_dang_ky,
-      assigned:     assignMap[d.id] || null,
-    })));
-  } catch (err) {
-    console.error("[GET /admin/devices]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/admin/:userId/devices/register", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { serial, firmware } = req.body;
-    if (!serial?.trim()) return res.status(400).json({ error: "Vui lòng nhập số serial" });
-
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    const { data: existing } = await supabase.from("thiet_bi_iot").select("id").eq("so_seri",serial.trim()).maybeSingle();
-    if (existing) return res.status(409).json({ error: `Serial "${serial.trim()}" đã tồn tại` });
-
-    const { data, error } = await supabase.from("thiet_bi_iot").insert({
-      so_seri: serial.trim(), phien_ban_firmware: firmware||null,
-      co_so_y_te_id: hsId, trang_thai_hoat_dong: true, ngay_dang_ky: new Date().toISOString(),
-    }).select("id, so_seri, ngay_dang_ky").single();
-    if (error) throw error;
-
-    res.json({ deviceId: data.id, serial: data.so_seri, registeredAt: data.ngay_dang_ky });
-  } catch (err) {
-    console.error("[POST /admin/devices/register]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/admin/:userId/devices/:deviceId/assign", async (req, res) => {
-  try {
-    const { userId, deviceId } = req.params;
-    const { patientId } = req.body;
-    if (!patientId) return res.status(400).json({ error: "Thiếu patientId" });
-
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    const { data: dev } = await supabase.from("thiet_bi_iot").select("id, co_so_y_te_id").eq("id",deviceId).maybeSingle();
-    if (!dev || dev.co_so_y_te_id !== hsId)
-      return res.status(403).json({ error: "Thiết bị không thuộc đơn vị của bạn" });
-
-    await supabase.from("lich_su_gan_thiet_bi")
-      .update({ trang_thai_hoat_dong: false, ngay_huy_gan: new Date().toISOString() })
-      .eq("thiet_bi_id", deviceId).eq("trang_thai_hoat_dong", true);
-
-    const { error } = await supabase.from("lich_su_gan_thiet_bi").insert({
-      thiet_bi_id: deviceId, nguoi_dung_tb_id: patientId,
-      nguoi_gan: userId, ngay_gan: new Date().toISOString(), trang_thai_hoat_dong: true,
-    });
-    if (error) throw error;
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("[POST /admin/devices/assign]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/admin/:userId/devices/:deviceId/unassign", async (req, res) => {
-  try {
-    const { userId, deviceId } = req.params;
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    const { data: dev } = await supabase.from("thiet_bi_iot").select("id, co_so_y_te_id").eq("id",deviceId).maybeSingle();
-    if (!dev || dev.co_so_y_te_id !== hsId)
-      return res.status(403).json({ error: "Thiết bị không thuộc đơn vị của bạn" });
-
-    await supabase.from("lich_su_gan_thiet_bi")
-      .update({ trang_thai_hoat_dong: false, ngay_huy_gan: new Date().toISOString() })
-      .eq("thiet_bi_id", deviceId).eq("trang_thai_hoat_dong", true);
-
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("[POST /admin/devices/unassign]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/admin/:userId/devices/:deviceId/provision", async (req, res) => {
-  try {
-    const { userId, deviceId } = req.params;
-    const { patientId } = req.body;
-    if (!patientId) return res.status(400).json({ error: "Thiếu patientId" });
-
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    const { data: dev } = await supabase.from("thiet_bi_iot")
-      .select("id, co_so_y_te_id, so_seri").eq("id",deviceId).maybeSingle();
-    if (!dev || dev.co_so_y_te_id !== hsId)
-      return res.status(403).json({ error: "Thiết bị không thuộc đơn vị của bạn" });
-
-    const { data: patient } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten").eq("id",patientId).maybeSingle();
-    if (!patient) return res.status(404).json({ error: "Không tìm thấy bệnh nhân" });
-
-    await supabase.from("lich_su_gan_thiet_bi")
-      .update({ trang_thai_hoat_dong: false, ngay_huy_gan: new Date().toISOString() })
-      .eq("thiet_bi_id", deviceId).eq("trang_thai_hoat_dong", true);
-
-    await supabase.from("lich_su_gan_thiet_bi").insert({
-      thiet_bi_id: deviceId, nguoi_dung_tb_id: patientId,
-      nguoi_gan: userId, ngay_gan: new Date().toISOString(), trang_thai_hoat_dong: true,
-    });
-
-    const DOCTOR_API = process.env.DOCTOR_API_URL || "https://health-monitor-system-twts.onrender.com";
-    res.json({
-      ok: true,
-      deviceSerial:  dev.so_seri,
-      patientId:     patient.id,
-      patientName:   patient.ho_ten,
-      apiEndpoint:   DOCTOR_API,
-      provisionedAt: new Date().toISOString(),
-    });
-  } catch (err) {
-    console.error("[POST /admin/devices/provision]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ============================================================
-// BỆNH NHÂN
-// ============================================================
-
-app.get("/admin/:userId/patients", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    // Lấy role bệnh nhân (cache đơn giản)
-    const { data: tbRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle();
-    if (!tbRole) return res.json([]);
-
-    const { data: pq } = await supabase.from("phan_quyen_nguoi_dung")
-      .select("nguoi_dung_id").eq("vai_tro_id", tbRole.id);
-    const allPtIds = (pq||[]).map(p=>p.nguoi_dung_id);
-    if (!allPtIds.length) return res.json([]);
-
-    const { data: pts } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten, so_dien_thoai, email, ngay_sinh, gioi_tinh")
-      .in("id", allPtIds).eq("co_so_y_te_id", hsId).eq("trang_thai_hoat_dong", true);
-    if (!pts?.length) return res.json([]);
-
-    const ptIds = pts.map(p=>p.id);
-
-    // Chạy song song 3 query độc lập
-    const [
-      { data: profiles },
-      { data: docLinks },
-      { data: devices },
-    ] = await Promise.all([
-      supabase.from("ho_so_benh_nhan")
-        .select("nguoi_dung_tb_id, nhom_mau, benh_man_tinh, di_ung, tien_su_y_te")
-        .in("nguoi_dung_tb_id", ptIds),
-      supabase.from("lien_ket_bac_si")
-        .select("nguoi_dung_tb_id, nguoi_dung_bs_id, nguoi_dung!nguoi_dung_bs_id(ho_ten)")
-        .in("nguoi_dung_tb_id", ptIds).eq("trang_thai_hoat_dong", true),
-      supabase.from("thiet_bi_iot").select("id").eq("co_so_y_te_id", hsId),
+    // Load song song: patients + doctors + link data
+    const [rPt, rDoc] = await Promise.all([
+      fetch(AAPI+'/admin/'+UID+'/patients'),
+      fetch(AAPI+'/admin/'+UID+'/doctors'),
     ]);
+    const patients = rPt.ok ? await rPt.json() : [];
+    docCache = rDoc.ok ? await rDoc.json() : [];
 
-    const profMap = {};
-    (profiles||[]).forEach(p=>{ profMap[p.nguoi_dung_tb_id]=p; });
-    const docMap = {};
-    (docLinks||[]).forEach(l=>{ docMap[l.nguoi_dung_tb_id]={ id:l.nguoi_dung_bs_id, name:l.nguoi_dung?.ho_ten }; });
+    if(!patients.length){ body.innerHTML='<div class="loading">Chưa có bệnh nhân nào</div>'; return; }
 
-    const devIds = (devices||[]).map(d=>d.id);
-    const devMap = {};
-    const devDetailMap = {};
-    if (devIds.length) {
-      const [{ data: assigns }, { data: devDetails }] = await Promise.all([
-        supabase.from("lich_su_gan_thiet_bi")
-          .select("nguoi_dung_tb_id, thiet_bi_id")
-          .in("thiet_bi_id", devIds).eq("trang_thai_hoat_dong", true),
-        supabase.from("thiet_bi_iot")
-          .select("id, so_seri, phan_tram_pin, lan_online_cuoi").in("id", devIds),
-      ]);
-      (assigns||[]).forEach(a=>{ devMap[a.nguoi_dung_tb_id]=a.thiet_bi_id; });
-      const now = Date.now();
-      (devDetails||[]).forEach(d=>{
-        devDetailMap[d.id] = {
-          serial:  d.so_seri,
-          battery: d.phan_tram_pin,
-          online:  d.lan_online_cuoi ? now - new Date(d.lan_online_cuoi).getTime() < 60000 : false,
-        };
-      });
+    body.innerHTML = patients.map(function(p){
+      const init = (p.name||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+      const dob = p.dob ? new Date(p.dob).toLocaleDateString('vi-VN') : '—';
+      const sid = (p.id||'').slice(0,8).toUpperCase();
+
+      // Doctor hiện tại của bệnh nhân này
+      const curDoc = p.doctor;
+      const docHtml = curDoc
+        ? '<div class="lnk-doc-row">'
+          + '<div class="lnk-doc-info">'
+          + '<div class="lnk-doc-av">' + (curDoc.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase() + '</div>'
+          + '<div><div style="font-size:.82rem;font-weight:600;color:var(--text)">' + esc(curDoc.name) + '</div>'
+          + '<div style="font-size:.68rem;color:var(--muted)">' + esc(curDoc.phone||curDoc.email||'Bác sĩ phụ trách') + '</div></div>'
+          + '</div>'
+          + '<span class="badge b-ok">Đang phụ trách</span>'
+          + '</div>'
+        : '<div class="lnk-empty">⚠️ Chưa có bác sĩ phụ trách</div>';
+
+      return '<div class="lnk-acc open" id="lnk-'+p.id+'" data-name="'+(p.name||'').toLowerCase()+'">'
+        + '<div class="lnk-head" onclick="this.closest(\'.lnk-acc\').classList.toggle(\'open\')">'
+        + '<div class="lnk-av">'+init+'</div>'
+        + '<div class="lnk-info">'
+        + '<div class="lnk-name">'+esc(p.name||'—')+'</div>'
+        + '<div class="lnk-sub">BN-'+sid+' · '+dob+(p.disease?' · '+esc(p.disease):'')+'</div>'
+        + '</div>'
+        + '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'
+        + (p.deviceId ? '<span class="badge b-ok" style="font-size:.6rem">📱 Có thiết bị</span>' : '<span class="badge b-off" style="font-size:.6rem">Chưa có TB</span>')
+        + '</div>'
+        + '<svg class="lnk-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+        + '</div>'
+        + '<div class="lnk-body">'
+        + '<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Bác sĩ phụ trách</div>'
+        + docHtml
+        + '<button onclick="openDocAssign(\''+p.id+'\',\''+esc(p.name)+'\')" style="margin-top:10px;display:flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px dashed var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;width:100%;justify-content:center">'
+        + '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+        + (curDoc ? 'Đổi bác sĩ phụ trách' : 'Phân công bác sĩ')
+        + '</button>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+
+function filterLinks(q){
+  const kw = q.toLowerCase().trim();
+  document.querySelectorAll('.lnk-acc').forEach(function(el){
+    el.classList.toggle('hidden', kw!=='' && !(el.dataset.name||'').includes(kw));
+  });
+}
+function expandAllLinks(){ document.querySelectorAll('.lnk-acc:not(.hidden)').forEach(function(el){el.classList.add('open');}); }
+function collapseAllLinks(){ document.querySelectorAll('.lnk-acc').forEach(function(el){el.classList.remove('open');}); }
+
+let docFiltered = [];
+let docPage = 1;
+const DOC_PER_PAGE = 8;
+
+function filterDoctors(q){
+  docPage = 1;
+  applyDoctorFilter();
+}
+
+async function loadDoctors(){
+  const body=document.getElementById('doc-body');
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/doctors');
+    docCache = r.ok ? alphabetSort(await r.json(), 'name') : [];
+    docFiltered=docCache;
+    renderDoctorsFromList(docFiltered);
+  } catch(e){ body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>'; }
+}
+
+function renderDoctorsFromList(list){
+  const body=document.getElementById('doc-body');
+  if(!list.length){body.innerHTML='<div class="loading">Không tìm thấy bác sĩ nào</div>';return;}
+  const totalPages=Math.ceil(list.length/DOC_PER_PAGE);
+  if(docPage>totalPages) docPage=1;
+  const slice=list.slice((docPage-1)*DOC_PER_PAGE,docPage*DOC_PER_PAGE);
+
+  let html='<div class="page-grid" style="padding:18px">';
+  html+=slice.map(function(d){
+    const init=(d.name||'BS').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
+    const cid='doc-card-'+d.id;
+    return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
+      +'<div class="page-card-head">'
+      +'<div class="card-av">'+init+'</div>'
+      +'<div class="card-info">'
+      +'<div class="card-name">'+esc(d.name)+'</div>'
+      +'<div class="card-sub">Bác sĩ phụ trách</div>'
+      +'</div>'
+      +'<span class="card-tag">'+d.patientCount+' bệnh nhân</span>'
+      +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+      +'</div>'
+      +'<div class="page-card-body">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin-bottom:10px">'
+      +'<div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">🪪 ID</span><span class="pt-info-val" style="font-family:\'DM Mono\',monospace;font-size:.68rem">'+d.id.slice(0,8).toUpperCase()+'</span></div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(d.phone||'—')+'</span></div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val" style="word-break:break-all;font-size:.7rem">'+esc(d.email||'—')+'</span></div>'
+      +'</div>'
+      +'<div>'
+      +(d.dob?'<div class="pt-info-row"><span class="pt-info-lbl">🎂 Ngày sinh</span><span class="pt-info-val">'+new Date(d.dob).toLocaleDateString('vi-VN')+'</span></div>':'<div class="pt-info-row"><span class="pt-info-lbl">🎂 Ngày sinh</span><span class="pt-info-val" style="color:var(--muted)">—</span></div>')
+      +(d.gender?'<div class="pt-info-row"><span class="pt-info-lbl">🧬 Giới tính</span><span class="pt-info-val">'+(d.gender==='nam'?'Nam':d.gender==='nu'?'Nữ':esc(d.gender))+'</span></div>':'<div class="pt-info-row"><span class="pt-info-lbl">🧬 Giới tính</span><span class="pt-info-val" style="color:var(--muted)">—</span></div>')
+      +'<div class="pt-info-row"><span class="pt-info-lbl">👥 Bệnh nhân</span><span class="pt-info-val">'+d.patientCount+' người</span></div>'
+      +'</div>'
+      +'</div>'
+      +'<button onclick="event.stopPropagation();openEditDoctor(\''+d.id+'\',\''+esc(d.name)+'\',\''+esc(d.phone||'')+'\',\''+esc(d.email||'')+'\',\''+esc(d.dob||'')+'\',\''+esc(d.gender||'')+'\')" style="width:100%;padding:7px;border:1.5px solid var(--border);border-radius:8px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.74rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">'
+      +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Chỉnh sửa thông tin'
+      +'</button>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  html+='</div>';
+
+  if(totalPages>1){
+    const S="font-family:'DM Mono',monospace;font-size:.74rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px";
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)">'
+      +'<span style="font-size:.72rem;color:var(--muted)">Trang '+docPage+'/'+totalPages+' — '+list.length+' bác sĩ</span>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button onclick="docGoPage('+(docPage-1)+')" '+(docPage<=1?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">← Trước</button>';
+    for(var i=1;i<=totalPages;i++){
+      var a=i===docPage;
+      html+='<button onclick="docGoPage('+i+')" style="'+S+';border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
     }
-
-    res.json(pts.map(p=>{
-      const dId   = devMap[p.id]||null;
-      const dInfo = dId ? devDetailMap[dId] : null;
-      return {
-        id:p.id, name:p.ho_ten, phone:p.so_dien_thoai, email:p.email,
-        dob:p.ngay_sinh, gender:p.gioi_tinh,
-        bloodType: profMap[p.id]?.nhom_mau,
-        disease:   profMap[p.id]?.benh_man_tinh,
-        allergy:   profMap[p.id]?.di_ung,
-        history:   profMap[p.id]?.tien_su_y_te,
-        deviceId:  dId,
-        serial:    dInfo?.serial  || null,
-        battery:   dInfo?.battery ?? null,
-        online:    dInfo?.online  || false,
-        doctor:    docMap[p.id]||null,
-      };
-    }));
-  } catch (err) {
-    console.error("[GET /admin/patients]", err.message);
-    res.status(500).json({ error: err.message });
+    html+='<button onclick="docGoPage('+(docPage+1)+')" '+(docPage>=totalPages?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">Tiếp →</button>'
+      +'</div></div>';
   }
-});
+  body.innerHTML=html;
+}
 
-// DELETE /admin/:userId/patients/:patientId — xóa bệnh nhân
-app.delete("/admin/:userId/patients/:patientId", async (req, res) => {
+function docGoPage(p){
+  const total=Math.ceil(docFiltered.length/DOC_PER_PAGE);
+  if(p<1||p>total) return;
+  docPage=p;
+  renderDoctorsFromList(docFiltered);
+}
+
+// ── DOCTOR ASSIGN ──
+function openDocAssign(ptId, ptName){
+  assignDocPtId=ptId;
+  document.getElementById('da-pt-name').value=ptName;
+  document.getElementById('da-msg').textContent='';
+  const sel=document.getElementById('da-doc-select');
+  sel.innerHTML='<option value="">— Chọn bác sĩ —</option>'
+    +docCache.map(d=>'<option value="'+d.id+'">'+esc(d.name)+' ('+d.patientCount+' BN)</option>').join('');
+  document.getElementById('modal-doc-assign').classList.add('open');
+}
+
+async function confirmDocAssign(){
+  const docId=document.getElementById('da-doc-select').value;
+  const msg=document.getElementById('da-msg');
+  if(!docId){msg.style.color='var(--danger)';msg.textContent='Chọn bác sĩ';return;}
+  msg.style.color='var(--muted)';msg.textContent='Đang phân công...';
   try {
-    const { patientId } = req.params;
-    // Xóa hồ sơ bệnh án
-    await supabase.from("ho_so_benh_nhan").delete().eq("nguoi_dung_tb_id", patientId);
-    // Xóa liên kết người nhà
-    await supabase.from("lien_ket_nguoi_nha").delete().eq("nguoi_dung_tb_id", patientId);
-    // Xóa liên kết bác sĩ
-    await supabase.from("lien_ket_bac_si").delete().eq("nguoi_dung_tb_id", patientId);
-    // Vô hiệu hóa tài khoản (không xóa hẳn để giữ lịch sử)
-    await supabase.from("nguoi_dung").update({trang_thai_hoat_dong: false}).eq("id", patientId);
-    res.json({ ok: true });
-  } catch(err) {
-    console.error("[DELETE /admin/patients]", err.message);
-    res.status(500).json({ error: err.message });
+    const r=await fetch(AAPI+'/admin/'+UID+'/assign-doctor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patientId:assignDocPtId,doctorId:docId})});
+    const d=await r.json();
+    if(r.ok){ closeModal('modal-doc-assign'); loadPatients(); loadLinks(); }
+    else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+}
+
+// ── UTILS ──
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+
+// INIT
+loadInfo();
+loadOverview();
+initRealtime();
+// Preload data
+fetch(AAPI+'/admin/'+UID+'/patients').then(r=>r.ok?r.json():[]).then(d=>{ptCache=d;}).catch(()=>{});
+fetch(AAPI+'/admin/'+UID+'/doctors').then(r=>r.ok?r.json():[]).then(d=>{docCache=d;}).catch(()=>{});
+
+
+
+// ── PROVISION (Web Serial API — ESP32) ──
+let provDevId=null, provDevSerial='', provPatientId=null, provConfig=null;
+
+// Gán bệnh nhân vào thiết bị — không cần USB
+function openAssignDevice(devId, serial){
+  const sel = document.createElement('div');
+  // Dùng lại modal provision nhưng chỉ hiện bước 1
+  provDevId = devId; provDevSerial = serial;
+  document.getElementById('prov-serial').textContent = serial;
+  document.getElementById('prov-msg1').textContent = '';
+  document.getElementById('prov-step1').style.display = 'block';
+  document.getElementById('prov-step2').style.display = 'none';
+  document.getElementById('prov-config-box').style.display = 'none';
+
+  // Thay nút "Tiếp theo" thành "Gán ngay"
+  const btn = document.getElementById('prov-next-btn');
+  if(btn){
+    btn.textContent = '✅ Gán bệnh nhân';
+    btn.onclick = assignDeviceDirect;
   }
-});
 
-// PATCH /admin/:userId/patients/:patientId — cập nhật thông tin bệnh nhân
-app.patch("/admin/:userId/patients/:patientId", async (req, res) => {
+  const ptSel = document.getElementById('prov-pt-select');
+  ptSel.innerHTML = '<option value="">— Chọn bệnh nhân —</option>'
+    + ptCache.map(function(p){
+      const taken = p.deviceId && p.deviceId !== devId;
+      return '<option value="'+p.id+'"'+(taken?' disabled':'')+'>'
+        +esc(p.name)+(taken?' (đã có thiết bị)':'')+'</option>';
+    }).join('');
+  const dev = devCache.find(function(d){return d.id===devId;});
+  if(dev && dev.assigned && dev.assigned.patientId) ptSel.value = dev.assigned.patientId;
+  document.getElementById('modal-provision').classList.add('open');
+}
+
+async function assignDeviceDirect(){
+  const ptId = document.getElementById('prov-pt-select').value;
+  const msg  = document.getElementById('prov-msg1');
+  if(!ptId){msg.style.color='var(--danger)';msg.textContent='Vui lòng chọn bệnh nhân';return;}
+  msg.style.color='var(--muted)'; msg.textContent='Đang gán...';
   try {
-    const { patientId } = req.params;
-    const { name, phone, email, dob, gender } = req.body;
-    const updates = {};
-    if(name?.trim())       updates.ho_ten        = name.trim();
-    if(phone !== undefined) updates.so_dien_thoai = phone || null;
-    if(email !== undefined) updates.email         = email || null;
-    if(dob !== undefined)   updates.ngay_sinh     = dob   || null;
-    if(gender !== undefined)updates.gioi_tinh     = gender|| null;
-    if(!Object.keys(updates).length)
-      return res.status(400).json({ error: "Không có thông tin để cập nhật" });
-    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", patientId);
-    if(error) throw error;
-    res.json({ ok: true });
-  } catch(err) {
-    console.error("[PATCH /admin/patients]", err.message);
-    res.status(500).json({ error: err.message });
+    const r = await fetch(AAPI+'/admin/'+UID+'/devices/'+provDevId+'/assign',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({patientId:ptId})
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã gán thành công';
+    setTimeout(function(){ closeModal('modal-provision'); loadDevices(); loadPatients(); loadOverview(); }, 1000);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+}
+
+function openProvision(devId, serial, currentPtName){
+  provDevId=devId; provDevSerial=serial;
+  document.getElementById('prov-serial').textContent=serial;
+  document.getElementById('prov-msg1').textContent='';
+  document.getElementById('prov-step1').style.display='block';
+  document.getElementById('prov-step2').style.display='none';
+  document.getElementById('prov-config-box').style.display='none';
+  const sel=document.getElementById('prov-pt-select');
+  sel.innerHTML='<option value="">— Chọn bệnh nhân —</option>'
+    +ptCache.map(function(p){
+      const taken = p.deviceId && p.deviceId!==devId;
+      return '<option value="'+p.id+'"'+(taken?' disabled':'')+'>'
+        +esc(p.name)+(taken?' (đã có thiết bị)':'')+'</option>';
+    }).join('');
+  // Pre-select current patient if already assigned
+  const dev=devCache.find(function(d){return d.id===devId;});
+  if(dev&&dev.assigned&&dev.assigned.patientId) sel.value=dev.assigned.patientId;
+  document.getElementById('modal-provision').classList.add('open');
+}
+
+async function provisionStep2(){
+  const ptId=document.getElementById('prov-pt-select').value;
+  const msg=document.getElementById('prov-msg1');
+  if(!ptId){msg.style.color='var(--danger)';msg.textContent='Vui lòng chọn bệnh nhân';return;}
+  provPatientId=ptId;
+  msg.style.color='var(--muted)';msg.textContent='Đang xử lý...';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/devices/'+provDevId+'/provision',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({patientId:ptId})
+    });
+    const d=await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi server');
+    provConfig=d;
+    // Move to step 2
+    document.getElementById('prov-step1').style.display='none';
+    document.getElementById('prov-step2').style.display='block';
+    setSerialStatus('waiting');
+    document.getElementById('prov-config-box').style.display='block';
+    document.getElementById('prov-config-content').innerHTML=
+      'Bệnh nhân: <strong>'+esc(d.patientName)+'</strong><br>'
+      +'Patient ID: <span style="opacity:.7">'+esc(d.patientId)+'</span><br>'
+      +'API URL: <span style="opacity:.7">'+esc(d.apiEndpoint)+'</span><br>'
+      +'Serial: <strong>'+esc(d.deviceSerial)+'</strong>';
+    loadDevices(); loadPatients(); loadOverview();
+    msg.textContent='';
+  } catch(e){ msg.style.color='var(--danger)';msg.textContent='⚠️ '+esc(e.message); }
+}
+
+function provBackStep1(){
+  document.getElementById('prov-step1').style.display='block';
+  document.getElementById('prov-step2').style.display='none';
+}
+
+function setSerialStatus(state, extra){
+  const icon=document.getElementById('usb-status-icon');
+  const title=document.getElementById('usb-status-title');
+  const sub=document.getElementById('usb-status-sub');
+  const btn=document.getElementById('prov-usb-btn');
+  const msg=document.getElementById('prov-msg2');
+  msg.textContent='';
+  if(state==='waiting'){
+    icon.textContent='🔌';
+    title.textContent='Cắm cáp USB-C vào thiết bị';
+    sub.textContent='Cắm cáp USB-C từ máy tính vào thiết bị ESP32, sau đó nhấn "Kết nối Serial"';
+    btn.textContent='🔌 Kết nối Serial';
+    btn.disabled=false; btn.onclick=connectSerial;
+  } else if(state==='connecting'){
+    icon.textContent='⏳';
+    title.textContent='Đang kết nối...';
+    sub.textContent='Chọn cổng COM của thiết bị trong cửa sổ trình duyệt';
+    btn.disabled=true;
+  } else if(state==='sending'){
+    icon.textContent='📡';
+    title.textContent='Đang truyền cấu hình...';
+    sub.textContent='Vui lòng giữ nguyên cáp kết nối';
+    btn.disabled=true;
+  } else if(state==='done'){
+    icon.textContent='🎉';
+    title.textContent='Cấu hình thành công!';
+    sub.textContent='Thiết bị đã nhận cấu hình và sẵn sàng hoạt động. Có thể rút cáp.';
+    btn.textContent='✅ Đóng';
+    btn.disabled=false;
+    btn.onclick=function(){ closeModal('modal-provision'); };
+  } else if(state==='nosupport'){
+    icon.textContent='ℹ️';
+    title.textContent='Trình duyệt không hỗ trợ Web Serial';
+    sub.textContent='Cần Chrome/Edge 89+ và kết nối HTTPS. Cấu hình đã lưu server — thiết bị tự đồng bộ khi online.';
+    btn.textContent='✅ Hoàn tất (không cần USB)';
+    btn.disabled=false;
+    btn.onclick=function(){ closeModal('modal-provision'); };
+    msg.style.color='var(--muted)';
+    msg.textContent='✅ Cấu hình đã lưu trên server thành công.';
+  } else if(state==='error'){
+    icon.textContent='⚠️';
+    title.textContent='Lỗi kết nối';
+    sub.textContent=extra||'Kiểm tra lại cáp và thử lại';
+    btn.textContent='🔄 Thử lại';
+    btn.disabled=false; btn.onclick=connectSerial;
   }
-});
+}
 
-app.post("/admin/:userId/patients", async (req, res) => {
+async function connectSerial(){
+  const msg=document.getElementById('prov-msg2');
+  // Check Web Serial API support
+  if(!('serial' in navigator)){
+    setSerialStatus('nosupport');
+    return;
+  }
+  setSerialStatus('connecting');
+  let port=null;
   try {
-    const { userId } = req.params;
-    const { name, phone, email, dob, gender, bloodType, disease, allergy, history, emergencyName, emergencyPhone } = req.body;
-    if (!name?.trim()) return res.status(400).json({ error: "Vui lòng nhập họ tên" });
+    // Request Serial port — user picks from list
+    port = await navigator.serial.requestPort({
+      filters: [
+        {usbVendorId: 0x10C4}, // Silicon Labs CP210x (ESP32 DevKit)
+        {usbVendorId: 0x1A86}, // CH340 (ESP32 clone boards)
+        {usbVendorId: 0x0403}, // FTDI FT232
+        {usbVendorId: 0x303A}, // Espressif native USB (ESP32-S2/S3)
+      ]
+    });
+    await port.open({ baudRate: 115200 });
+    setSerialStatus('sending');
 
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
+    // Build JSON payload — ESP32 firmware sẽ đọc dòng này qua Serial
+    const payload = JSON.stringify({
+      cmd: 'PROVISION',
+      patient_id: provConfig.patientId,
+      patient_name: provConfig.patientName,
+      api_url: provConfig.apiEndpoint,
+      device_serial: provConfig.deviceSerial,
+      ts: Date.now()
+    }) + '\n';
 
-    const { data: newUser, error: userErr } = await supabase.from("nguoi_dung").insert({
-      ho_ten:name.trim(), so_dien_thoai:phone||null, email:email||null,
-      ngay_sinh:dob||null, gioi_tinh:gender||null, trang_thai_hoat_dong:true,
-      co_so_y_te_id:hsId, mat_khau: "123456",
-    }).select("id").single();
-    if (userErr) throw userErr;
+    // Write to serial port
+    const writer = port.writable.getWriter();
+    const encoder = new TextEncoder();
+    await writer.write(encoder.encode(payload));
 
-    const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle();
-    if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:newUser.id, vai_tro_id:role.id });
-
-    await supabase.from("ho_so_benh_nhan").insert({
-      nguoi_dung_tb_id:newUser.id, nhom_mau:bloodType||null,
-      benh_man_tinh:disease||null, di_ung:allergy||null, tien_su_y_te:history||null,
-      nguoi_lien_he_khan_ten:emergencyName||null, nguoi_lien_he_khan_sdt:emergencyPhone||null,
+    // Wait for ACK from device (max 5 seconds)
+    const reader = port.readable.getReader();
+    let ack = '';
+    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout — thiết bị không phản hồi')), 5000));
+    const readAck = new Promise(async (res,rej)=>{
+      try {
+        while(true){
+          const {value,done} = await reader.read();
+          if(done) break;
+          ack += new TextDecoder().decode(value);
+          if(ack.includes('OK') || ack.includes('PROV_OK')) { res(); break; }
+          if(ack.includes('ERR')) { rej(new Error('Thiết bị báo lỗi: '+ack.trim())); break; }
+        }
+      } catch(e){ rej(e); }
     });
 
-    res.json({ patientId:newUser.id, name:name.trim() });
-  } catch (err) {
-    console.error("[POST /admin/patients]", err.message);
-    res.status(500).json({ error: err.message });
+    try {
+      await Promise.race([readAck, timeout]);
+      reader.releaseLock(); writer.releaseLock();
+    } catch(timeoutErr){
+      reader.releaseLock(); writer.releaseLock();
+      // Timeout không nhất thiết là lỗi — ESP32 có thể đang reboot
+      msg.style.color='var(--muted)';
+      msg.textContent='⚠️ Không nhận được ACK từ thiết bị — cấu hình vẫn đã được gửi đi.';
+    }
+
+    await port.close();
+    setSerialStatus('done');
+
+  } catch(e){
+    if(port) try{ await port.close(); }catch(_){}
+    if(e.name==='NotFoundError' || e.message.includes('No port selected')){
+      setSerialStatus('waiting');
+      return;
+    }
+    setSerialStatus('error', e.message);
+    msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message);
   }
-});
+}
 
-// ============================================================
-// NGƯỜI NHÀ
-// ============================================================
-
-// GET /admin/:userId/medical-record/:patientId
-app.get("/admin/:userId/medical-record/:patientId", async (req, res) => {
+// ── HỒ SƠ BỆNH ÁN ──
+async function loadRecord(pid){
+  const el = document.getElementById('record-'+pid);
+  if(!el || el.dataset.loaded) return;
   try {
-    const { patientId } = req.params;
-    const { data, error } = await supabase
-      .from("ho_so_benh_nhan").select("*")
-      .eq("nguoi_dung_tb_id", patientId).maybeSingle();
-    if(error) throw error;
-    res.json(data || null);
-  } catch(err) {
-    res.status(500).json({ error: err.message });
+    const r = await fetch(AAPI+'/admin/'+UID+'/medical-record/'+pid);
+    const d = r.ok ? await r.json() : null;
+    el.dataset.loaded = '1';
+    if(!d){
+      el.innerHTML='<span style="color:var(--muted);font-style:italic">Chưa có hồ sơ bệnh án</span>';
+      return;
+    }
+    el.style.fontStyle='normal';
+    el.innerHTML=[
+      d.nhom_mau       ? '<span>🩸 Nhóm máu: <strong>'+esc(d.nhom_mau)+'</strong></span>' : '',
+      d.chieu_cao_cm   ? '<span>📏 Chiều cao: <strong>'+d.chieu_cao_cm+' cm</strong></span>' : '',
+      d.can_nang_kg    ? '<span>⚖️ Cân nặng: <strong>'+d.can_nang_kg+' kg</strong></span>' : '',
+      d.benh_man_tinh  ? '<span>🩺 Bệnh mãn: <strong>'+esc(d.benh_man_tinh)+'</strong></span>' : '',
+      d.di_ung         ? '<span>⚠️ Dị ứng: <strong>'+esc(d.di_ung)+'</strong></span>' : '',
+      d.tien_su_y_te   ? '<span>📝 Tiền sử: <strong>'+esc(d.tien_su_y_te)+'</strong></span>' : '',
+    ].filter(Boolean).join('<span style="color:var(--border);margin:0 6px">·</span>')
+     || '<span style="color:var(--muted);font-style:italic">Chưa có thông tin</span>';
+  } catch(_){
+    el.innerHTML='<span style="color:var(--danger)">⚠️ Không thể tải</span>';
   }
-});
+}
 
-// PATCH /admin/:userId/medical-record/:patientId
-app.patch("/admin/:userId/medical-record/:patientId", async (req, res) => {
+let _editRecordPid = null;
+async function openEditRecord(pid){
+  _editRecordPid = pid;
+  document.getElementById('er-msg').textContent='';
+  // Load hiện tại
+  const r = await fetch(AAPI+'/admin/'+UID+'/medical-record/'+pid).catch(()=>null);
+  const d = r&&r.ok ? await r.json() : null;
+  document.getElementById('er-blood').value    = d?.nhom_mau      || '';
+  document.getElementById('er-height').value   = d?.chieu_cao_cm  || '';
+  document.getElementById('er-weight').value   = d?.can_nang_kg   || '';
+  document.getElementById('er-disease').value  = d?.benh_man_tinh || '';
+  document.getElementById('er-allergy').value  = d?.di_ung        || '';
+  document.getElementById('er-history').value  = d?.tien_su_y_te  || '';
+  document.getElementById('modal-edit-record').classList.add('open');
+}
+
+async function saveEditRecord(){
+  if(!_editRecordPid) return;
+  const msg = document.getElementById('er-msg');
+  const btn = document.getElementById('er-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
   try {
-    const { patientId } = req.params;
-    const fields = req.body;
-    const { data: existing } = await supabase.from("ho_so_benh_nhan")
-      .select("nguoi_dung_tb_id").eq("nguoi_dung_tb_id", patientId).maybeSingle();
-    let result;
-    if(existing){
-      const { data, error } = await supabase.from("ho_so_benh_nhan")
-        .update(fields).eq("nguoi_dung_tb_id", patientId).select("*").maybeSingle();
-      if(error) throw error; result = data;
+    const r = await fetch(AAPI+'/admin/'+UID+'/medical-record/'+_editRecordPid,{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        nhom_mau:       document.getElementById('er-blood').value.trim()||null,
+        chieu_cao_cm:   parseFloat(document.getElementById('er-height').value)||null,
+        can_nang_kg:    parseFloat(document.getElementById('er-weight').value)||null,
+        benh_man_tinh:  document.getElementById('er-disease').value.trim()||null,
+        di_ung:         document.getElementById('er-allergy').value.trim()||null,
+        tien_su_y_te:   document.getElementById('er-history').value.trim()||null,
+      })
+    });
+    if(r.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Đã lưu thành công';
+      // Xóa cache để load lại
+      const el = document.getElementById('record-'+_editRecordPid);
+      if(el) { delete el.dataset.loaded; }
+      loadRecord(_editRecordPid);
+      setTimeout(()=>closeModal('modal-edit-record'),1200);
     } else {
-      const { data, error } = await supabase.from("ho_so_benh_nhan")
-        .insert({...fields, nguoi_dung_tb_id: patientId}).select("*").maybeSingle();
-      if(error) throw error; result = data;
+      const d=await r.json();
+      msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi');
     }
-    res.json(result);
-  } catch(err) {
-    res.status(500).json({ error: err.message });
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
+
+// ── HỒ SƠ CÁ NHÂN ──
+let _profileAvatarFile = null;
+
+function updateSidebarAvatar(src){
+  const av = document.getElementById('sb-av');
+  if(!av) return;
+  if(src){ av.innerHTML='<img src="'+src+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>'; }
+  else {
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    av.textContent = (sess.name||'SA').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
   }
-});
+}
 
-// POST /admin/:userId/families/create-user — tạo tài khoản người nhà độc lập
-app.post("/admin/:userId/families/create-user", async (req, res) => {
+function previewAvatar(input){
+  const file = input.files[0];
+  if(!file) return;
+  if(file.size > 5*1024*1024){ alert('Ảnh tối đa 5MB'); return; }
+  _profileAvatarFile = file;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    const img = document.getElementById('profile-av-img');
+    img.src = e.target.result; img.style.display='block';
+    document.getElementById('profile-av-initials').style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadAvatarSA(file, userId){
+  const _sbSA = window._sb || supabase.createClient(
+    'https://czgberdpnfultxkljhko.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
+  );
+  window._sb = _sbSA;
+  const ext  = file.name.split('.').pop().toLowerCase()||'jpg';
+  const path = userId+'.'+ext;
+  // Xóa tất cả file cũ của user trước khi upload mới
+  const allExts = ['jpg','jpeg','png','webp','gif'];
+  await _sbSA.storage.from('avatars').remove(allExts.map(e => userId+'.'+e));
+  const { error } = await _sbSA.storage.from('avatars').upload(path, file, {
+    upsert: true, contentType: file.type,
+  });
+  if(error) throw new Error('Upload thất bại: '+error.message);
+  const { data } = _sbSA.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl + '?t=' + Date.now();
+}
+
+async function openProfile(){
+  const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+  document.getElementById('pf-msg').textContent = '';
+  _profileAvatarFile = null;
   try {
-    const { userId } = req.params;
-    const { name, phone, email, password, gender, dob } = req.body;
-    if(!name?.trim()) return res.status(400).json({ error: "Thiếu họ tên" });
-    const hsId = await getAdminHospital(userId);
-    const { data: newUser, error } = await supabase.from("nguoi_dung").insert({
-      ho_ten: name.trim(), so_dien_thoai: phone||null, email: email||null,
-      mat_khau: password||"123456", trang_thai_hoat_dong: true,
-      co_so_y_te_id: hsId||null,
-      gioi_tinh: gender||null,
-      ngay_sinh: dob||null,
-    }).select("id").single();
-    if(error) throw error;
-    const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
-    if(role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:newUser.id, vai_tro_id:role.id });
-    await logAction(userId,"CREATE_FAMILY","nguoi_dung",newUser.id,{name},getIp(req));
-    res.json({ ok: true, userId: newUser.id });
-  } catch(err) {
-    console.error("[POST /families/create-user]", err.message);
-    res.status(500).json({ error: err.message });
+    const r = await fetch(AAPI+'/admin/'+UID+'/profile');
+    const d = r.ok ? await r.json() : {};
+    document.getElementById('pf-name').value  = d.name||sess.name||'';
+    document.getElementById('pf-phone').value = d.phone||sess.phone||'';
+    document.getElementById('pf-email').value = d.email||sess.email||'';
+    const av = d.avatar||sess.avatar;
+    const initials = (d.name||sess.name||'SA').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+    document.getElementById('profile-av-initials').textContent = initials;
+    const img = document.getElementById('profile-av-img');
+    if(av){ img.src=av; img.style.display='block'; document.getElementById('profile-av-initials').style.display='none'; }
+    else  { img.style.display='none'; document.getElementById('profile-av-initials').style.display=''; }
+  } catch(_){
+    document.getElementById('pf-name').value  = sess.name||'';
+    document.getElementById('pf-phone').value = sess.phone||'';
+    document.getElementById('pf-email').value = sess.email||'';
   }
-});
+  document.getElementById('modal-profile').classList.add('open');
+}
 
-// GET /admin/:userId/patients/:patientId/families — người nhà của 1 bệnh nhân
-app.get("/admin/:userId/patients/:patientId/families", async (req, res) => {
+async function saveProfile(){
+  const name = document.getElementById('pf-name').value.trim();
+  const msg  = document.getElementById('pf-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  const btn = document.getElementById('pf-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
   try {
-    const { patientId } = req.params;
-    const { data: links } = await supabase.from("lien_ket_nguoi_nha")
-      .select("id, nguoi_dung_lq_id, moi_quan_he, la_nguoi_giam_sat_chinh")
-      .eq("nguoi_dung_tb_id", patientId)
-      .eq("trang_thai_hoat_dong", true);
-    if(!links?.length) return res.json([]);
-
-    const lqIds = links.map(l => l.nguoi_dung_lq_id);
-    const { data: users } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten, so_dien_thoai, email").in("id", lqIds);
-    const uMap = {}; (users||[]).forEach(u => uMap[u.id] = u);
-
-    res.json(links.map(l => ({
-      linkId:    l.id,
-      userId:    l.nguoi_dung_lq_id,
-      name:      uMap[l.nguoi_dung_lq_id]?.ho_ten || '—',
-      phone:     uMap[l.nguoi_dung_lq_id]?.so_dien_thoai || null,
-      email:     uMap[l.nguoi_dung_lq_id]?.email || null,
-      relation:  l.moi_quan_he,
-      isPrimary: l.la_nguoi_giam_sat_chinh,
-    })));
-  } catch(err) {
-    console.error("[GET /patients/families]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /admin/:userId/families — danh sách người nhà theo CSYT
-app.get("/admin/:userId/families", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền" });
-
-    // Lấy role user_lq và user_tb
-    const [{ data: nhaRole }, { data: tbRole }] = await Promise.all([
-      supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle(),
-      supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle(),
-    ]);
-    console.log('[families] hsId:', hsId, '| nhaRole:', nhaRole, '| tbRole:', tbRole);
-
-    // Lấy tất cả người nhà thuộc CSYT (kể cả chưa gán bệnh nhân)
-    let allFamilyUsers = [];
-    if (nhaRole) {
-      const { data: pqNha } = await supabase.from("phan_quyen_nguoi_dung")
-        .select("nguoi_dung_id").eq("vai_tro_id", nhaRole.id);
-      const nhaIds = (pqNha||[]).map(p=>p.nguoi_dung_id);
-      console.log('[families] nhaIds count:', nhaIds.length);
-      if (nhaIds.length) {
-        const { data: nhaUsers } = await supabase.from("nguoi_dung")
-          .select("id, ho_ten, so_dien_thoai, email, gioi_tinh, ngay_sinh, anh_dai_dien_url")
-          .in("id", nhaIds)
-          .or(`co_so_y_te_id.eq.${hsId},co_so_y_te_id.is.null`)
-          .eq("trang_thai_hoat_dong", true);
-        console.log('[families] allFamilyUsers count:', (nhaUsers||[]).length);
-        allFamilyUsers = nhaUsers || [];
-      }
+    let avatarUrl = null;
+    if(_profileAvatarFile){
+      msg.textContent='Đang upload ảnh...';
+      avatarUrl = await uploadAvatarSA(_profileAvatarFile, UID);
     }
-
-    // Lấy bệnh nhân thuộc CSYT để map tên
-    const ptUserMap = {};
-    if (tbRole) {
-      const { data: pqTb } = await supabase.from("phan_quyen_nguoi_dung")
-        .select("nguoi_dung_id").eq("vai_tro_id", tbRole.id);
-      const ptIds = (pqTb||[]).map(p=>p.nguoi_dung_id);
-      if (ptIds.length) {
-        const { data: ptUsers } = await supabase.from("nguoi_dung")
-          .select("id, ho_ten").in("id", ptIds).eq("co_so_y_te_id", hsId).eq("trang_thai_hoat_dong", true);
-        (ptUsers||[]).forEach(u => ptUserMap[u.id] = u.ho_ten);
-      }
-    }
-
-    // Lấy tất cả liên kết người nhà trong CSYT
-    const ptIds = Object.keys(ptUserMap);
-    let links = [];
-    if (ptIds.length) {
-      const { data: linkData } = await supabase.from("lien_ket_nguoi_nha")
-        .select("id, nguoi_dung_tb_id, nguoi_dung_lq_id, moi_quan_he, la_nguoi_giam_sat_chinh")
-        .in("nguoi_dung_tb_id", ptIds)
-        .eq("trang_thai_hoat_dong", true);
-      links = linkData || [];
-    }
-
-    // Map linkId, patientId, relation theo userId người nhà
-    const linkMap = {}; // userId → [{linkId, patientId, patientName, relation, isPrimary}]
-    links.forEach(l => {
-      if (!linkMap[l.nguoi_dung_lq_id]) linkMap[l.nguoi_dung_lq_id] = [];
-      linkMap[l.nguoi_dung_lq_id].push({
-        linkId:      l.id,
-        patientId:   l.nguoi_dung_tb_id,
-        patientName: ptUserMap[l.nguoi_dung_tb_id] || '—',
-        relation:    l.moi_quan_he,
-        isPrimary:   l.la_nguoi_giam_sat_chinh,
-      });
+    const body = {
+      name, phone: document.getElementById('pf-phone').value.trim()||null,
+      email: document.getElementById('pf-email').value.trim()||null,
+    };
+    if(avatarUrl) body.avatar = avatarUrl;
+    msg.textContent='Đang lưu thông tin...';
+    const r = await fetch(AAPI+'/admin/'+UID+'/profile', {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
     });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    const sess = JSON.parse(localStorage.getItem('hm_session')||'{}');
+    sess.name=name; sess.phone=body.phone; sess.email=body.email;
+    if(avatarUrl) sess.avatar=avatarUrl;
+    localStorage.setItem('hm_session', JSON.stringify(sess));
+    document.getElementById('sb-name').textContent=name;
+    updateSidebarAvatar(sess.avatar||null);
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật hồ sơ';
+    setTimeout(()=>closeModal('modal-profile'),1500);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
 
-    // Trả về tất cả người nhà, kể cả chưa gán bệnh nhân
-    const result = allFamilyUsers.map(u => {
-      const userLinks = linkMap[u.id] || [];
-      const firstLink = userLinks[0] || {};
-      return {
-        linkId:      firstLink.linkId      || null,
-        userId:      u.id,
-        userName:    u.ho_ten,
-        phone:       u.so_dien_thoai,
-        email:       u.email,
-        gender:      u.gioi_tinh,
-        dob:         u.ngay_sinh,
-        avatar:      u.anh_dai_dien_url,
-        patientId:   firstLink.patientId   || null,
-        patientName: firstLink.patientName || 'Chưa gán bệnh nhân',
-        relation:    firstLink.relation    || null,
-        isPrimary:   firstLink.isPrimary   || false,
-        allLinks:    userLinks,
-      };
-    });
+// ── TÌM KIẾM BỆNH NHÂN ──
+let ptFiltered = [];
 
-    res.json(result);
-  } catch(err) {
-    console.error("[GET /admin/families]", err.message);
-    res.status(500).json({ error: err.message });
+function filterPatients(q){
+  ptPage = 1;
+  if(!q.trim()){ ptFiltered = ptCache; }
+  else {
+    const lq = q.toLowerCase();
+    ptFiltered = ptCache.filter(p => (p.name||'').toLowerCase().includes(lq));
   }
+  renderPatientsFromList(ptFiltered);
+}
+
+// ── NGƯỜI NHÀ ──
+
+// Load danh sách người nhà
+async function loadFamilies(){
+  const body = document.getElementById('families-body');
+  if(!body){ console.error('families-body not found!'); return; }
+  body.innerHTML = '<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    console.log('[families] fetching', AAPI+'/admin/'+UID+'/families');
+    const r = await fetch(AAPI+'/admin/'+UID+'/families');
+    const data = r.ok ? await r.json() : [];
+    console.log('[families] got', data.length, 'records');
+    familiesCache = alphabetSort(data, 'userName');
+    familiesFiltered = familiesCache;
+    renderFamilies(familiesFiltered);
+  } catch(e){
+    console.error('[families] error:', e);
+    body.innerHTML='<div class="loading">⚠️ '+esc(e.message)+'</div>';
+  }
+}
+
+
+const REL_LABEL = {vo_chong:'Vợ/Chồng',con:'Con',cha_me:'Cha/Mẹ',anh_chi_em:'Anh/Chị/Em',than_nhan:'Thân nhân',nguoi_giam_ho:'Người giám hộ'};
+
+let famPage = 1;
+const FAM_PER_PAGE = 8;
+
+function renderFamilies(list){
+  const body = document.getElementById('families-body');
+  if(!list.length){
+    body.innerHTML='<div class="loading">Chưa có người nhà nào</div>'; return;
+  }
+
+  const GENDER = {nam:'Nam', nu:'Nữ', khac:'Khác'};
+  const totalPages = Math.ceil(list.length / FAM_PER_PAGE);
+  if(famPage > totalPages) famPage = 1;
+  const slice = list.slice((famPage-1)*FAM_PER_PAGE, famPage*FAM_PER_PAGE);
+
+  let html = '<div class="page-grid">';
+  html += slice.map(function(f){
+    const init = (f.userName||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+    const cid  = 'fam-card-'+(f.userId||f.linkId||Math.random().toString(36).slice(2));
+    const dob  = f.dob ? new Date(f.dob).toLocaleDateString('vi-VN') : '—';
+    const gender = GENDER[f.gender]||f.gender||'—';
+
+    // Avatar
+    const avHtml = f.avatar
+      ? '<div class="card-av" style="background:none;border:2px solid var(--border)"><img src="'+esc(f.avatar)+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/></div>'
+      : '<div class="card-av">'+init+'</div>';
+
+    // Danh sách bệnh nhân liên kết
+    const links = f.allLinks||[];
+    const linksHtml = links.length
+      ? links.map(function(l){
+          const rel = REL_LABEL[l.relation]||l.relation||'—';
+          return '<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--bg);border-radius:8px;margin-bottom:4px">'
+            +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'
+            +'<span style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(l.patientName)+'</span>'
+            +'<span style="font-size:.66rem;color:var(--muted)">· '+esc(rel)+'</span>'
+            +(l.isPrimary?'<span class="card-tag" style="font-size:.58rem;padding:1px 6px;margin-left:4px">Giám sát chính</span>':'')
+            +'<div style="margin-left:auto;display:flex;gap:5px">'
+            +'<button onclick="event.stopPropagation();openEditLink(\''+l.linkId+'\',\''+esc(l.patientName)+'\',\''+esc(l.relation||'')+'\','+l.isPrimary+')" style="padding:2px 8px;border:1px solid var(--navy);border-radius:5px;background:none;color:var(--navy);font-size:.62rem;font-weight:600;cursor:pointer">✎</button>'
+            +'<button onclick="event.stopPropagation();confirmDeleteFamily(\''+l.linkId+'\',\''+esc(f.userName)+'\')" style="padding:2px 8px;border:1px solid var(--danger);border-radius:5px;background:none;color:var(--danger);font-size:.62rem;font-weight:600;cursor:pointer">✕</button>'
+            +'</div>'
+            +'</div>';
+        }).join('')
+      : '<div style="font-size:.72rem;color:var(--muted);font-style:italic;padding:6px 0">Chưa được gán bệnh nhân nào</div>';
+
+    // Nút thêm liên kết mới
+    const addLinkBtn = '<button onclick="event.stopPropagation();openAddLink(\''+f.userId+'\',\''+esc(f.userName)+'\')" style="margin-top:6px;display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px dashed var(--navy);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">'
+      +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Thêm liên kết bệnh nhân'
+      +'</button>';
+
+    return '<div class="page-card expandable" id="'+cid+'" onclick="toggleCard(\''+cid+'\')">'
+      +'<div class="page-card-head">'
+      +avHtml
+      +'<div class="card-info">'
+      +'<div class="card-name">'+esc(f.userName)+'</div>'
+      +'<div class="card-sub">'+(links.length ? links.length+' bệnh nhân' : 'Chưa gán')+'</div>'
+      +'</div>'
+      +(f.isPrimary?'<span class="card-tag">Giám sát chính</span>':'')
+      +'<svg class="card-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>'
+      +'</div>'
+      +'<div class="page-card-body">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 20px;margin-bottom:14px">'
+      +'<div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">📞 SĐT</span><span class="pt-info-val">'+esc(f.phone||'—')+'</span></div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">✉️ Email</span><span class="pt-info-val" style="font-size:.7rem;word-break:break-all">'+esc(f.email||'—')+'</span></div>'
+      +'</div>'
+      +'<div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">⚥ Giới tính</span><span class="pt-info-val">'+gender+'</span></div>'
+      +'<div class="pt-info-row"><span class="pt-info-lbl">🎂 Ngày sinh</span><span class="pt-info-val">'+dob+'</span></div>'
+      +'</div>'
+      +'</div>'
+      +'<div style="margin-bottom:10px">'
+      +'<div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">🔗 Liên kết bệnh nhân</div>'
+      +linksHtml
+      +addLinkBtn
+      +'</div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<button onclick="event.stopPropagation();openEditFamily(\''+f.linkId+'\',\''+f.userId+'\',\''+esc(f.userName)+'\',\''+esc(f.phone||'')+'\',\''+esc(f.email||'')+'\',\''+esc(f.relation||'')+'\','+f.isPrimary+',\''+esc(f.gender||'')+'\',\''+esc(f.dob||'')+'\')" style="padding:5px 14px;border:1.5px solid var(--navy);border-radius:7px;background:none;color:var(--navy);font-family:\'Sora\',sans-serif;font-size:.7rem;font-weight:600;cursor:pointer">✎ Sửa</button>'
+      +'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  html += '</div>';
+
+  if(totalPages > 1){
+    const S = "font-family:'DM Mono',monospace;font-size:.74rem;font-weight:600;cursor:pointer;border-radius:7px;padding:5px";
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)">'
+      +'<span style="font-size:.72rem;color:var(--muted)">Trang '+famPage+'/'+totalPages+' — '+list.length+' người nhà</span>'
+      +'<div style="display:flex;gap:6px">'
+      +'<button onclick="famGoPage('+(famPage-1)+')" '+(famPage<=1?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">← Trước</button>';
+    for(var i=1;i<=totalPages;i++){
+      var a=i===famPage;
+      html+='<button onclick="famGoPage('+i+')" style="'+S+';border:1.5px solid '+(a?'var(--navy)':'var(--border)')+';background:'+(a?'var(--navy)':'var(--card)')+';color:'+(a?'#fff':'var(--muted)')+'">'+i+'</button>';
+    }
+    html+='<button onclick="famGoPage('+(famPage+1)+')" '+(famPage>=totalPages?'disabled':'')+' style="'+S+';border:1.5px solid var(--border);background:var(--card);color:var(--muted)">Tiếp →</button>'
+      +'</div></div>';
+  }
+
+  body.innerHTML = html;
+}
+
+function famGoPage(p){
+  const total = Math.ceil(familiesFiltered.length / FAM_PER_PAGE);
+  if(p<1||p>total) return;
+  famPage = p;
+  renderFamilies(familiesFiltered);
+}
+
+function filterFamilies(q){
+  famPage = 1;
+  applyFamilyFilter();
+}
+
+// Mở modal thêm người nhà từ tab bệnh nhân
+function openAddFamily(pid, pname){
+  _afSelectedUserId = null;
+  // Reset radio về tạo mới
+  const radios = document.querySelectorAll('input[name="af-fam-mode"]');
+  if(radios.length){ radios[0].checked=true; toggleFamMode('af','new'); }
+  document.getElementById('af-patient-id').value   = pid;
+  document.getElementById('af-patient-name').textContent = pname;
+  document.getElementById('af-name').value  = '';
+  document.getElementById('af-phone').value = '';
+  document.getElementById('af-email').value = '';
+  document.getElementById('af-pw').value    = '123456';
+  document.getElementById('af-rel').value   = '';
+  document.getElementById('af-primary').checked = false;
+  document.getElementById('af-msg').textContent = '';
+  document.getElementById('af-ac-drop').style.display = 'none';
+  document.getElementById('af-new-fields').style.display = 'block';
+  document.getElementById('modal-add-family').classList.add('open');
+}
+
+// Autocomplete tìm người dùng theo tên
+let _acTimer = null;
+async function acSearchFamily(q){
+  const drop = document.getElementById('af-ac-drop');
+  clearTimeout(_acTimer);
+  if(!q || q.length < 2){ drop.style.display='none'; return; }
+  _acTimer = setTimeout(async function(){
+    try {
+      const r = await fetch(AAPI+'/admin/'+UID+'/search-users?q='+encodeURIComponent(q));
+      if(!r.ok) return;
+      const users = await r.json();
+      if(!users.length){ drop.style.display='none'; return; }
+      drop.innerHTML = users.map(function(u){
+        return '<div class="ac-item"'
+          +' onmousedown="acSelect(\''+esc(u.name)+'\',\''+esc(u.phone||'')+'\',\''+esc(u.email||'')+'\',\''+u.id+'\')">'
+          +'<div class="ac-name">'+esc(u.name)+'</div>'
+          +'<div class="ac-sub">'+(u.phone||'')+(u.phone&&u.email?' · ':'')+esc(u.email||'')+'</div>'
+          +'</div>';
+      }).join('');
+      drop.style.display = 'block';
+    } catch(_){}
+  }, 300);
+}
+
+// Không dùng hover fill/clear nữa — tránh layout flicker
+
+// Khi click chọn gợi ý
+function acSelect(name, phone, email, uid){
+  _afSelectedUserId = uid;
+  document.getElementById('af-name').value  = name;
+  document.getElementById('af-phone').value = phone;
+  document.getElementById('af-email').value = email;
+  document.getElementById('af-ac-drop').style.display = 'none';
+  // Nếu đang ở mode existing → giữ disable
+  const mode = document.querySelector('input[name="af-fam-mode"]:checked')?.value;
+  if(mode === 'existing'){
+    ['af-phone','af-email','af-pw'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el){ el.disabled=true; el.style.opacity='0.5'; }
+    });
+  }
+}
+
+// Ẩn dropdown khi click ra ngoài
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.ac-wrap'))
+    document.querySelectorAll('.ac-dropdown').forEach(d=>d.style.display='none');
 });
 
-// POST /admin/:userId/families — thêm người nhà (tạo mới hoặc gán có sẵn)
-app.post("/admin/:userId/families", async (req, res) => {
+async function saveAddFamily(){
+  const pid  = document.getElementById('af-patient-id').value;
+  const name = document.getElementById('af-name').value.trim();
+  const rel  = document.getElementById('af-rel').value;
+  const msg  = document.getElementById('af-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  if(!rel){  msg.style.color='var(--danger)'; msg.textContent='Vui lòng chọn quan hệ'; return; }
+
+  const btn = document.getElementById('af-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang xử lý...';
   try {
-    const { userId } = req.params;
-    const { patientId, name, phone, email, relation, isPrimary, password, existingUserId } = req.body;
-    if (!patientId) return res.status(400).json({ error: "Thiếu patientId" });
+    const payload = {
+      patientId:  pid,
+      relation:   rel,
+      isPrimary:  document.getElementById('af-primary').checked,
+    };
 
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền" });
-
-    let lqId;
-
-    if (existingUserId) {
+    if(_afSelectedUserId){
       // TH2: gán tài khoản có sẵn
-      lqId = existingUserId;
+      payload.existingUserId = _afSelectedUserId;
     } else {
       // TH1: tạo tài khoản mới
-      if (!name?.trim()) return res.status(400).json({ error: "Thiếu họ tên" });
-      const { data: newUser, error: userErr } = await supabase.from("nguoi_dung").insert({
-        ho_ten: name.trim(), so_dien_thoai: phone||null, email: email||null,
-        mat_khau: password||"123456", trang_thai_hoat_dong: true,
-        co_so_y_te_id: hsId,
-      }).select("id").single();
-      if (userErr) throw userErr;
-      lqId = newUser.id;
-      const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_lq").maybeSingle();
-      if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:lqId, vai_tro_id:role.id });
+      payload.name     = name;
+      payload.phone    = document.getElementById('af-phone').value.trim()||null;
+      payload.email    = document.getElementById('af-email').value.trim()||null;
+      payload.password = document.getElementById('af-pw').value.trim()||'123456';
     }
 
-    // Kiểm tra xem đã có liên kết cũ chưa (kể cả đã bị soft-delete)
-    const { data: existing } = await supabase.from("lien_ket_nguoi_nha")
-      .select("id")
-      .eq("nguoi_dung_tb_id", patientId)
-      .eq("nguoi_dung_lq_id", lqId)
-      .maybeSingle();
-
-    if (existing) {
-      // Có rồi → update lại (kích hoạt lại)
-      const { error: updErr } = await supabase.from("lien_ket_nguoi_nha")
-        .update({
-          moi_quan_he: relation||null,
-          la_nguoi_giam_sat_chinh: isPrimary||false,
-          trang_thai_hoat_dong: true,
-          ngay_lien_ket: new Date().toISOString(),
-        })
-        .eq("id", existing.id);
-      if (updErr) throw updErr;
-    } else {
-      // Chưa có → insert mới
-      const { error: linkErr } = await supabase.from("lien_ket_nguoi_nha").insert({
-        nguoi_dung_tb_id: patientId, nguoi_dung_lq_id: lqId,
-        moi_quan_he: relation||null, la_nguoi_giam_sat_chinh: isPrimary||false,
-        trang_thai_hoat_dong: true, ngay_lien_ket: new Date().toISOString(),
-      });
-      if (linkErr) throw linkErr;
-    }
-    res.json({ ok: true, userId: lqId });
-  } catch (err) {
-    console.error("[POST /admin/families]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// PATCH /admin/:userId/families/user/:famUserId — sửa thông tin người nhà (không qua linkId)
-app.patch("/admin/:userId/families/user/:famUserId", async (req, res) => {
-  try {
-    const { name, phone, email, gender, dob, password } = req.body;
-    const updates = {};
-    if(name?.trim())       updates.ho_ten           = name.trim();
-    if(phone !== undefined) updates.so_dien_thoai   = phone||null;
-    if(email !== undefined) updates.email           = email||null;
-    if(gender !== undefined) updates.gioi_tinh      = gender||null;
-    if(dob !== undefined)   updates.ngay_sinh       = dob||null;
-    if(password?.length >= 6) updates.mat_khau      = password;
-    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", req.params.famUserId);
-    if(error) throw error;
-    res.json({ ok: true });
-  } catch(err){ res.status(500).json({ error: err.message }); }
-});
-
-// PATCH /admin/:userId/families/:linkId — cập nhật thông tin người nhà
-app.patch("/admin/:userId/families/:linkId", async (req, res) => {
-  try {
-    const { linkId } = req.params;
-    const { relation, name, phone, email, password, isPrimary, gender, dob } = req.body;
-
-    // Cập nhật link (quan hệ + giám sát chính)
-    const linkUpd = {};
-    if(relation !== undefined)  linkUpd.moi_quan_he = relation;
-    if(isPrimary !== undefined) linkUpd.la_nguoi_giam_sat_chinh = isPrimary;
-    if(Object.keys(linkUpd).length)
-      await supabase.from("lien_ket_nguoi_nha").update(linkUpd).eq("id", linkId);
-
-    // Lấy userId từ link
-    const { data: link } = await supabase.from("lien_ket_nguoi_nha")
-      .select("nguoi_dung_lq_id").eq("id", linkId).single();
-    if (link) {
-      const updates = {};
-      if (name?.trim())             updates.ho_ten          = name.trim();
-      if (phone !== undefined)      updates.so_dien_thoai   = phone||null;
-      if (email !== undefined)      updates.email           = email||null;
-      if (gender !== undefined)     updates.gioi_tinh       = gender||null;
-      if (dob !== undefined)        updates.ngay_sinh       = dob||null;
-      if (password?.trim() && password.length>=6) updates.mat_khau = password.trim();
-      if (Object.keys(updates).length)
-        await supabase.from("nguoi_dung").update(updates).eq("id", link.nguoi_dung_lq_id);
-    }
-    await logAction(req.params.userId,"UPDATE_FAMILY","lien_ket_nguoi_nha",req.params.linkId||req.params.famUserId,req.body,getIp(req));
-    res.json({ ok: true });
-  } catch(err) {
-    console.error("[PATCH /admin/families]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// DELETE /admin/:userId/families/:linkId — xóa liên kết
-app.delete("/admin/:userId/families/:linkId", async (req, res) => {
-  try {
-    const { linkId } = req.params;
-    const { error } = await supabase.from("lien_ket_nguoi_nha")
-      .delete()
-      .eq("id", linkId);
-    if (error) throw error;
-    res.json({ ok: true });
-  } catch(err) {
-    console.error("[DELETE /admin/families]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /admin/:userId/search-users?q= — tìm user theo tên (autocomplete)
-app.get("/admin/:userId/search-users", async (req, res) => {
-  try {
-    const q = (req.query.q||'').trim();
-    if (!q || q.length < 2) return res.json([]);
-    const { data } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten, so_dien_thoai, email")
-      .ilike("ho_ten", `%${q}%`)
-      .eq("trang_thai_hoat_dong", true)
-      .limit(10);
-    res.json((data||[]).map(u=>({ id:u.id, name:u.ho_ten, phone:u.so_dien_thoai, email:u.email })));
-  } catch(err) {
-    console.error("[GET /admin/search-users]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ============================================================
-// BÁC SĨ
-// ============================================================
-
-app.get("/admin/:userId/doctors", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    const { data: bsRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_bs").maybeSingle();
-    if (!bsRole) return res.json([]);
-
-    const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id",bsRole.id);
-    const bsIds = (pq||[]).map(p=>p.nguoi_dung_id);
-    if (!bsIds.length) return res.json([]);
-
-    const { data: doctors } = await supabase.from("nguoi_dung")
-      .select("id, ho_ten, so_dien_thoai, email, ngay_sinh, gioi_tinh")
-      .in("id",bsIds).eq("co_so_y_te_id",hsId).eq("trang_thai_hoat_dong",true);
-
-    const { data: links } = await supabase.from("lien_ket_bac_si")
-      .select("nguoi_dung_bs_id").in("nguoi_dung_bs_id",bsIds).eq("trang_thai_hoat_dong",true);
-    const countMap = {};
-    (links||[]).forEach(l=>{ countMap[l.nguoi_dung_bs_id]=(countMap[l.nguoi_dung_bs_id]||0)+1; });
-
-    res.json((doctors||[]).map(d=>({
-      id:d.id, name:d.ho_ten, phone:d.so_dien_thoai,
-      email:d.email, patientCount:countMap[d.id]||0,
-      dob:d.ngay_sinh||null, gender:d.gioi_tinh||null,
-    })));
-  } catch (err) {
-    console.error("[GET /admin/doctors]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// PATCH /admin/:userId/doctors/:doctorId — cập nhật thông tin bác sĩ
-app.patch("/admin/:userId/doctors/:doctorId", async (req, res) => {
-  try {
-    const { doctorId } = req.params;
-    const { name, phone, email, password, dob, gender } = req.body;
-    const updates = {};
-    if(name?.trim())        updates.ho_ten         = name.trim();
-    if(phone !== undefined) updates.so_dien_thoai  = phone || null;
-    if(email?.trim())       updates.email          = email.trim().toLowerCase();
-    if(dob !== undefined)   updates.ngay_sinh      = dob || null;
-    if(gender !== undefined)updates.gioi_tinh      = gender || null;
-    if(password?.trim() && password.length >= 6) updates.mat_khau = password.trim();
-
-    if(!Object.keys(updates).length)
-      return res.status(400).json({ error: "Không có thông tin nào để cập nhật" });
-
-    const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", doctorId);
-    if(error) throw error;
-    res.json({ ok: true });
-  } catch(err) {
-    console.error("[PATCH /admin/doctors]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/admin/:userId/doctors", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { name, phone, email, password, dob, gender } = req.body;
-    if (!name?.trim()) return res.status(400).json({ error: "Vui lòng nhập họ tên" });
-
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    if (email) {
-      const { data: existing } = await supabase.from("nguoi_dung").select("id")
-        .eq("email", email.trim().toLowerCase()).maybeSingle();
-      if (existing) return res.status(409).json({ error: "Email đã tồn tại trong hệ thống" });
-    }
-
-    const { data: newUser, error: userErr } = await supabase.from("nguoi_dung").insert({
-      ho_ten:name.trim(), so_dien_thoai:phone||null,
-      email:email?email.trim().toLowerCase():null,
-      mat_khau:password||"123456",
-      ngay_sinh:dob||null, gioi_tinh:gender||null,
-      co_so_y_te_id:hsId, trang_thai_hoat_dong:true,
-    }).select("id").single();
-    if (userErr) throw userErr;
-
-    const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_bs").maybeSingle();
-    if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:newUser.id, vai_tro_id:role.id });
-
-    res.json({ doctorId:newUser.id, name:name.trim() });
-  } catch (err) {
-    console.error("[POST /admin/doctors]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/admin/:userId/assign-doctor", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { patientId, doctorId } = req.body;
-    if (!patientId || !doctorId) return res.status(400).json({ error: "Thiếu thông tin" });
-
-    const hsId = await getAdminHospital(userId);
-    if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
-
-    const { data: doc } = await supabase.from("nguoi_dung").select("id, co_so_y_te_id").eq("id",doctorId).maybeSingle();
-    if (!doc || doc.co_so_y_te_id !== hsId)
-      return res.status(403).json({ error: "Bác sĩ không thuộc đơn vị của bạn" });
-
-    await supabase.from("lien_ket_bac_si")
-      .update({ trang_thai_hoat_dong:false })
-      .eq("nguoi_dung_tb_id",patientId).eq("trang_thai_hoat_dong",true);
-
-    const { error } = await supabase.from("lien_ket_bac_si").insert({
-      nguoi_dung_tb_id:patientId, nguoi_dung_bs_id:doctorId,
-      trang_thai_hoat_dong:true, ngay_phan_cong:new Date().toISOString(),
+    const r = await fetch(AAPI+'/admin/'+UID+'/families', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
     });
-    if (error) throw error;
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã thêm người nhà thành công';
+    setTimeout(()=>{
+      closeModal('modal-add-family');
+      // Reload danh sách người nhà của bệnh nhân trong card
+      const el = document.getElementById('pt-fam-list-'+pid);
+      if(el){ delete el.dataset.loaded; loadPatientFamilies(pid); }
+      // Reload tab người nhà nếu đang mở
+      if(document.getElementById('view-families').style.display!=='none') loadFamilies();
+    }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
 
-    res.json({ ok:true });
-  } catch (err) {
-    console.error("[POST /admin/assign-doctor]", err.message);
-    res.status(500).json({ error: err.message });
+function openEditFamily(linkId, userId, name, phone, email, rel, isPrimary, gender, dob){
+  document.getElementById('ef-link-id').value   = linkId||'';
+  document.getElementById('ef-user-id').value   = userId;
+  document.getElementById('ef-name').value      = name;
+  document.getElementById('ef-phone').value     = phone;
+  document.getElementById('ef-email').value     = email||'';
+  document.getElementById('ef-gender').value    = gender||'';
+  document.getElementById('ef-dob').value       = dob ? dob.slice(0,10) : '';
+  document.getElementById('ef-msg').textContent = '';
+
+  const hasLink = linkId && linkId !== 'null' && linkId !== 'undefined';
+  document.getElementById('ef-link-section').style.display = hasLink ? '' : 'none';
+  document.getElementById('ef-no-link-note').style.display = hasLink ? 'none' : '';
+  if(hasLink){
+    document.getElementById('ef-rel').value       = rel||'';
+    document.getElementById('ef-primary').checked = (isPrimary===true||isPrimary==='true');
   }
+  document.getElementById('modal-edit-family').classList.add('open');
+}
+
+async function saveEditFamily(){
+  const linkId = document.getElementById('ef-link-id').value;
+  const userId = document.getElementById('ef-user-id').value;
+  const msg    = document.getElementById('ef-msg');
+  const btn    = document.getElementById('ef-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const hasLink = linkId && linkId !== 'null' && linkId !== 'undefined';
+    const body = {
+      name:     document.getElementById('ef-name').value.trim()||null,
+      phone:    document.getElementById('ef-phone').value.trim()||null,
+      email:    document.getElementById('ef-email').value.trim()||null,
+      gender:   document.getElementById('ef-gender').value||null,
+      dob:      document.getElementById('ef-dob').value||null,
+    };
+    if(hasLink){
+      body.relation  = document.getElementById('ef-rel').value;
+      body.isPrimary = document.getElementById('ef-primary').checked;
+    }
+    const r = await fetch(AAPI+'/admin/'+UID+'/families/'+(hasLink?linkId:'user/'+userId), {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật';
+    setTimeout(()=>{
+      closeModal('modal-edit-family'); loadFamilies();
+      document.querySelectorAll('[id^="pt-fam-list-"]').forEach(function(el){
+        delete el.dataset.loaded;
+        const pid=el.id.replace('pt-fam-list-','');
+        if(document.getElementById('pt-card-'+pid)?.classList.contains('open')) loadPatientFamilies(pid);
+      });
+    }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+async function confirmDeleteFamily(linkId, name){
+  if(!confirm('Xóa liên kết của '+name+'?\nTài khoản vẫn được giữ lại, chỉ xóa liên kết với bệnh nhân.')) return;
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/families/'+linkId, {method:'DELETE'});
+    if(!r.ok) throw new Error((await r.json()).error||'Lỗi');
+    loadFamilies();
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ── XÓA BỆNH NHÂN ──
+async function confirmDeletePatient(pid, name){
+  const confirmed = confirm(
+    '⚠️ XÓA BỆNH NHÂN: ' + name + '\n\n' +
+    'Cảnh báo: Thao tác này sẽ XÓA VĨNH VIỄN toàn bộ dữ liệu bao gồm:\n' +
+    '  • Dữ liệu sinh tồn (nhịp tim, SpO2)\n' +
+    '  • Cảnh báo sức khoẻ\n' +
+    '  • Hồ sơ bệnh án\n' +
+    '  • Liên kết người nhà & thiết bị\n\n' +
+    'Nhấn OK để xác nhận. Không thể hoàn tác!'
+  );
+  if(!confirmed) return;
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/patients/'+pid, {method:'DELETE'});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi xóa bệnh nhân');
+    loadPatients();
+    loadOverview();
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ── CẬP NHẬT THÔNG TIN BỆNH NHÂN ──
+async function openEditPatient(pid){
+  const p = ptCache.find(x=>x.id===pid);
+  if(!p) return;
+  document.getElementById('ep-id').value      = pid;
+  document.getElementById('ep-name').value    = p.name   || '';
+  document.getElementById('ep-phone').value   = p.phone  || '';
+  document.getElementById('ep-email').value   = p.email  || '';
+  document.getElementById('ep-dob').value     = p.dob ? p.dob.slice(0,10) : '';
+  document.getElementById('ep-gender').value  = p.gender || '';
+  document.getElementById('ep-blood').value   = p.bloodType || '';
+  document.getElementById('ep-allergy').value = p.allergy  || '';
+  document.getElementById('ep-disease').value = p.disease  || '';
+  document.getElementById('ep-history').value = p.history  || '';
+  document.getElementById('ep-msg').textContent = '';
+  document.getElementById('modal-edit-patient').classList.add('open');
+}
+
+async function saveEditPatient(){
+  const pid  = document.getElementById('ep-id').value;
+  const name = document.getElementById('ep-name').value.trim();
+  const msg  = document.getElementById('ep-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  const btn = document.getElementById('ep-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    // Cập nhật thông tin cơ bản (nguoi_dung)
+    const r1 = await fetch(AAPI+'/admin/'+UID+'/patients/'+pid, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        name:   name,
+        phone:  document.getElementById('ep-phone').value.trim()||null,
+        email:  document.getElementById('ep-email').value.trim()||null,
+        dob:    document.getElementById('ep-dob').value||null,
+        gender: document.getElementById('ep-gender').value||null,
+      })
+    });
+    // Cập nhật hồ sơ bệnh án (ho_so_benh_nhan)
+    const r2 = await fetch(AAPI+'/admin/'+UID+'/medical-record/'+pid, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        nhom_mau:      document.getElementById('ep-blood').value.trim()||null,
+        di_ung:        document.getElementById('ep-allergy').value.trim()||null,
+        benh_man_tinh: document.getElementById('ep-disease').value.trim()||null,
+        tien_su_y_te:  document.getElementById('ep-history').value.trim()||null,
+      })
+    });
+    if(r1.ok || r2.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật thành công';
+      setTimeout(()=>{ closeModal('modal-edit-patient'); loadPatients(); }, 1200);
+    } else {
+      const d = await r1.json().catch(()=>({}));
+      msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi cập nhật');
+    }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
+
+// ── SỬA / XÓA NGƯỜI NHÀ TRONG CARD BỆNH NHÂN ──
+function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimary){
+  document.getElementById('ef-link-id').value   = linkId;
+  document.getElementById('ef-user-id').value   = userId;
+  document.getElementById('ef-name').value      = name;
+  document.getElementById('ef-phone').value     = phone;
+  document.getElementById('ef-email').value     = email;
+  document.getElementById('ef-rel').value       = relation;
+  document.getElementById('ef-primary').checked = (isPrimary === true || isPrimary === 'true');
+  document.getElementById('ef-msg').textContent = '';
+  document.getElementById('modal-edit-family').classList.add('open');
+}
+
+async function confirmDeletePtFamily(linkId, name, pid){
+  if(!confirm('Xóa liên kết của ' + name + '?\nTài khoản vẫn được giữ lại, chỉ xóa liên kết.')) return;
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/families/'+linkId, {method:'DELETE'});
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    // Reload danh sách người nhà trong card bệnh nhân
+    const el = document.getElementById('pt-fam-list-'+pid);
+    if(el){
+      el.dataset.forceReload = '1';
+      delete el.dataset.loaded;
+      loadPatientFamilies(pid);
+    }
+    // Nếu đang mở tab Người nhà → reload luôn
+    if(document.getElementById('view-families')?.style.display !== 'none'){
+      loadFamilies();
+    }
+  } catch(e){ alert('⚠️ '+e.message); }
+}
+
+// ── TẠO NGƯỜI NHÀ MỚI (độc lập) ──
+function openCreateFamily(){
+  ['cf-name','cf-phone','cf-email','cf-dob'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('cf-pw').value = '123456';
+  document.getElementById('cf-gender').value = '';
+  document.getElementById('cf-msg').textContent = '';
+  document.getElementById('cf-primary').checked = false;
+  document.getElementById('cf-rel').value = '';
+  // Load danh sách bệnh nhân vào dropdown
+  const sel = document.getElementById('cf-patient-id');
+  sel.innerHTML = '<option value="">— Không gán ngay —</option>'
+    + alphabetSort(ptCache,'name').map(function(p){
+        return '<option value="'+p.id+'">'+esc(p.name)+'</option>';
+      }).join('');
+  sel.onchange = function(){
+    document.getElementById('cf-link-section').style.display = this.value ? '' : 'none';
+  };
+  document.getElementById('cf-link-section').style.display = 'none';
+  document.getElementById('modal-create-family').classList.add('open');
+}
+
+async function saveCreateFamily(){
+  const name = document.getElementById('cf-name').value.trim();
+  const msg  = document.getElementById('cf-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  const btn = document.getElementById('cf-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang xử lý...';
+  try {
+    const patientId = document.getElementById('cf-patient-id').value;
+    const body = {
+      name,
+      phone:    document.getElementById('cf-phone').value.trim()||null,
+      email:    document.getElementById('cf-email').value.trim()||null,
+      gender:   document.getElementById('cf-gender').value||null,
+      dob:      document.getElementById('cf-dob').value||null,
+      password: document.getElementById('cf-pw').value.trim()||'123456',
+    };
+    if(patientId){
+      // Tạo + gán bệnh nhân cùng lúc qua POST /families
+      const r = await fetch(AAPI+'/admin/'+UID+'/families', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          ...body,
+          patientId,
+          relation:  document.getElementById('cf-rel').value||null,
+          isPrimary: document.getElementById('cf-primary').checked,
+        })
+      });
+      const d = await r.json();
+      if(!r.ok) throw new Error(d.error||'Lỗi');
+    } else {
+      // Tạo độc lập không gán
+      const r = await fetch(AAPI+'/admin/'+UID+'/families/create-user', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(body)
+      });
+      const d = await r.json();
+      if(!r.ok) throw new Error(d.error||'Lỗi');
+    }
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo tài khoản người nhà';
+    setTimeout(()=>{ closeModal('modal-create-family'); loadFamilies(); }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+// ── BỘ LỌC CHUNG ──
+const filterState = {
+  pt:  { blood:'', gender:'', device:'', family:'', doctor:'' },
+  dev: { status:'', patient:'', bat: 100 },
+  doc: { patient:'' },
+  fam: { primary:'' },
+};
+
+function toggleFilter(prefix){
+  const panel = document.getElementById(prefix+'-filter-panel');
+  const btn   = document.getElementById(prefix+'-filter-btn');
+  const open  = panel.classList.toggle('open');
+  btn.classList.toggle('active', open);
+  if(!panel.querySelector('.filter-chip.on'))
+    panel.querySelectorAll('.filter-chips').forEach(function(group){
+      if(!group.querySelector('.filter-chip.on'))
+        group.querySelector('.filter-chip').classList.add('on');
+    });
+}
+
+function selectChip(el, prefix, key){
+  el.closest('.filter-chips').querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  filterState[prefix][key] = el.dataset.val;
+  applyFilter(prefix);
+}
+
+function resetFilter(prefix){
+  if(prefix==='pt')  filterState.pt  = {blood:'',gender:'',device:'',family:'',doctor:''};
+  if(prefix==='dev') filterState.dev = {status:'',patient:'',bat:100};
+  if(prefix==='doc') filterState.doc = {patient:''};
+  if(prefix==='fam') filterState.fam = {primary:''};
+  const panel = document.getElementById(prefix+'-filter-panel');
+  panel.querySelectorAll('.filter-chips').forEach(function(group){
+    group.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('on'));
+    group.querySelector('.filter-chip').classList.add('on');
+  });
+  const bat = document.getElementById('dev-filter-bat');
+  if(bat){ bat.value=100; document.getElementById('dev-bat-label').textContent='100%'; }
+  updateBadge(prefix, 0);
+  applyFilter(prefix);
+}
+
+function countActiveFilters(prefix){
+  const s = filterState[prefix];
+  if(prefix==='pt')  return [s.blood,s.gender,s.device,s.family,s.doctor].filter(Boolean).length;
+  if(prefix==='dev') return [s.status,s.patient].filter(Boolean).length+(s.bat<100?1:0);
+  if(prefix==='doc') return [s.patient].filter(Boolean).length;
+  if(prefix==='fam') return [s.primary].filter(Boolean).length;
+  return 0;
+}
+
+function updateBadge(prefix, count){
+  const badge = document.getElementById(prefix+'-filter-badge');
+  if(!badge) return;
+  badge.textContent = count;
+  badge.classList.toggle('show', count>0);
+  document.getElementById(prefix+'-filter-btn')?.classList.toggle('active', count>0);
+}
+
+function applyFilter(prefix){
+  updateBadge(prefix, countActiveFilters(prefix));
+  if(prefix==='pt')  applyPatientFilter();
+  if(prefix==='dev') applyDeviceFilter();
+  if(prefix==='doc') applyDoctorFilter();
+  if(prefix==='fam') applyFamilyFilter();
+}
+
+async function applyPatientFilter(){
+  const s = filterState.pt;
+  const q = document.getElementById('pt-tab-srch')?.value.toLowerCase()||'';
+  let list = ptCache.filter(function(p){
+    if(q && !(p.name||'').toLowerCase().includes(q)) return false;
+    if(s.blood  && (p.bloodType||'')!==s.blood) return false;
+    if(s.gender && (p.gender||'')!==s.gender) return false;
+    if(s.device==='yes' && !p.deviceId) return false;
+    if(s.device==='no'  &&  p.deviceId) return false;
+    if(s.doctor==='yes' && !p.doctor)   return false;
+    if(s.doctor==='no'  &&  p.doctor)   return false;
+    return true;
+  });
+  if(s.family){
+    // Fetch danh sách liên kết nếu cache chưa có
+    if(!familiesCache.length){
+      try {
+        const r = await fetch(AAPI+'/admin/'+UID+'/families');
+        familiesCache = r.ok ? await r.json() : [];
+        familiesFiltered = familiesCache;
+      } catch(_){}
+    }
+    const hasFam = new Set(familiesCache.map(function(f){ return f.patientId; }));
+    list = list.filter(function(p){
+      return s.family==='yes' ? hasFam.has(p.id) : !hasFam.has(p.id);
+    });
+  }
+  ptFiltered2 = list; ptPage=1; renderPatientsFromList(ptFiltered2);
+}
+
+function applyDeviceFilter(){
+  const s = filterState.dev;
+  devFiltered = devCache.filter(function(d){
+    if(s.status==='online'  && !d.online)  return false;
+    if(s.status==='offline' &&  d.online)  return false;
+    if(s.patient==='yes' && !d.assigned) return false;
+    if(s.patient==='no'  &&  d.assigned) return false;
+    if(s.bat<100 && d.battery!=null && d.battery > s.bat) return false;
+    return true;
+  });
+  devPage=1; renderDevicesFromList(devFiltered);
+}
+
+function applyDoctorFilter(){
+  const s = filterState.doc;
+  const q = document.getElementById('doc-tab-srch')?.value.toLowerCase()||'';
+  docFiltered = docCache.filter(function(d){
+    if(q && !(d.name||'').toLowerCase().includes(q)) return false;
+    if(s.patient==='yes' && d.patientCount===0) return false;
+    if(s.patient==='no'  && d.patientCount>0)   return false;
+    return true;
+  });
+  docPage=1; renderDoctorsFromList(docFiltered);
+}
+
+function applyFamilyFilter(){
+  const s = filterState.fam;
+  const q = document.getElementById('fam-tab-srch')?.value.toLowerCase()||'';
+  familiesFiltered = familiesCache.filter(function(f){
+    if(q && !(f.userName||'').toLowerCase().includes(q) && !(f.patientName||'').toLowerCase().includes(q)) return false;
+    if(s.primary==='yes' && !f.isPrimary)  return false;
+    if(s.primary==='no'  &&  f.isPrimary)  return false;
+    return true;
+  });
+  famPage=1; renderFamilies(familiesFiltered);
+}
+
+// Gán sự kiện chip
+document.addEventListener('DOMContentLoaded', function(){
+  [['pt-filter-blood','pt','blood'],['pt-filter-gender','pt','gender'],
+   ['pt-filter-device','pt','device'],['pt-filter-family','pt','family'],
+   ['pt-filter-doctor','pt','doctor'],
+   ['dev-filter-status','dev','status'],['dev-filter-patient','dev','patient'],
+   ['doc-filter-patient','doc','patient'],
+   ['fam-filter-primary','fam','primary'],
+  ].forEach(function(cfg){
+    var el=document.getElementById(cfg[0]); if(!el) return;
+    el.querySelectorAll('.filter-chip').forEach(function(chip){
+      chip.addEventListener('click',function(){ selectChip(chip,cfg[1],cfg[2]); });
+    });
+  });
 });
 
-// ============================================================
-// START
-// ============================================================
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`🏥 HealthMonitor Admin API v1.0 — port ${PORT}`);
-  console.log("Routes:");
-  console.log("  POST /admin/auth/login");
-  console.log("  POST /admin/auth/change-password");
-  console.log("  GET  /admin/hospitals");
-  console.log("  GET  /admin/overview/:userId");
-  console.log("  GET  /admin/devices/:userId");
-  console.log("  POST /admin/devices/register/:userId");
-  console.log("  POST /admin/devices/assign/:userId/:deviceId");
-  console.log("  POST /admin/devices/unassign/:userId/:deviceId");
-  console.log("  POST /admin/devices/provision/:userId/:deviceId");
-  console.log("  GET  /admin/patients/:userId");
-  console.log("  POST /admin/patients/:userId");
-  console.log("  POST /admin/families/:userId");
-  console.log("  GET  /admin/doctors/:userId");
-  console.log("  POST /admin/doctors/:userId");
-  console.log("  POST /admin/assign-doctor/:userId");
-});
+function openEditDoctor(id, name, phone, email, dob, gender){
+  document.getElementById('edit-doc-id').value     = id;
+  document.getElementById('edit-doc-name').value   = name;
+  document.getElementById('edit-doc-phone').value  = phone;
+  document.getElementById('edit-doc-email').value  = email;
+  document.getElementById('edit-doc-dob').value    = dob||'';
+  document.getElementById('edit-doc-gender').value = gender||'';
+  document.getElementById('edit-doc-msg').textContent = '';
+  document.getElementById('modal-edit-doctor').classList.add('open');
+}
+
+async function saveEditDoctor(){
+  const id   = document.getElementById('edit-doc-id').value;
+  const name = document.getElementById('edit-doc-name').value.trim();
+  const msg  = document.getElementById('edit-doc-msg');
+  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+
+  const btn = document.getElementById('edit-doc-save-btn');
+  btn.disabled = true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const body = {
+      name,
+      phone: document.getElementById('edit-doc-phone').value.trim() || null,
+      email: document.getElementById('edit-doc-email').value.trim() || null,
+      dob:   document.getElementById('edit-doc-dob').value || null,
+      gender:document.getElementById('edit-doc-gender').value || null,
+    };
+
+    const r = await fetch(AAPI+'/admin/'+UID+'/doctors/'+id, {
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if(r.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật thành công';
+      setTimeout(()=>{ closeModal('modal-edit-doctor'); loadDoctors(); }, 1200);
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled = false;
+}
+
+// Autocomplete người nhà trong form tiếp nhận bệnh nhân
+// ── VALIDATE SỐ ĐIỆN THOẠI ──
+function validatePhone(el){
+  // Chỉ giữ số
+  let v = el.value.replace(/[^0-9]/g,'');
+  // Giới hạn 10 ký tự
+  if(v.length > 10) v = v.slice(0, 10);
+  el.value = v;
+  // Kiểm tra bắt đầu bằng 0
+  if(v.length > 0 && v[0] !== '0'){
+    el.style.borderColor = 'var(--danger)';
+    el.title = 'Số điện thoại phải bắt đầu bằng 0';
+  } else if(v.length > 0 && v.length < 10){
+    el.style.borderColor = 'var(--warn)';
+    el.title = 'Số điện thoại phải đủ 10 chữ số';
+  } else {
+    el.style.borderColor = '';
+    el.title = '';
+  }
+}
+
+// ── QUẢN LÝ LIÊN KẾT NGƯỜI NHÀ - BỆNH NHÂN ──
+function openAddLink(userId, userName){
+  document.getElementById('al-user-id').value = userId;
+  document.getElementById('al-user-name').textContent = userName;
+  document.getElementById('al-rel').value = '';
+  document.getElementById('al-primary').checked = false;
+  document.getElementById('al-msg').textContent = '';
+  // Load danh sách bệnh nhân
+  const sel = document.getElementById('al-patient-id');
+  sel.innerHTML = '<option value="">— Chọn bệnh nhân —</option>'
+    + alphabetSort(ptCache,'name').map(function(p){
+        return '<option value="'+p.id+'">'+esc(p.name)+'</option>';
+      }).join('');
+  document.getElementById('modal-add-link').classList.add('open');
+}
+
+async function saveAddLink(){
+  const userId    = document.getElementById('al-user-id').value;
+  const patientId = document.getElementById('al-patient-id').value;
+  const msg       = document.getElementById('al-msg');
+  if(!patientId){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng chọn bệnh nhân'; return; }
+  const btn = document.getElementById('al-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/families',{
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        patientId,
+        existingUserId: userId,
+        relation:  document.getElementById('al-rel').value||null,
+        isPrimary: document.getElementById('al-primary').checked,
+      })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã thêm liên kết';
+    setTimeout(()=>{ closeModal('modal-add-link'); loadFamilies(); }, 1000);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+function openEditLink(linkId, patientName, rel, isPrimary){
+  document.getElementById('el-link-id').value = linkId;
+  document.getElementById('el-patient-name').textContent = patientName;
+  document.getElementById('el-rel').value = rel||'';
+  document.getElementById('el-primary').checked = (isPrimary===true||isPrimary==='true');
+  document.getElementById('el-msg').textContent = '';
+  document.getElementById('modal-edit-link').classList.add('open');
+}
+
+async function saveEditLink(){
+  const linkId  = document.getElementById('el-link-id').value;
+  const msg     = document.getElementById('el-msg');
+  const btn     = document.getElementById('el-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    const r = await fetch(AAPI+'/admin/'+UID+'/families/'+linkId,{
+      method:'PATCH', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        relation:  document.getElementById('el-rel').value||null,
+        isPrimary: document.getElementById('el-primary').checked,
+      })
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật';
+    setTimeout(()=>{ closeModal('modal-edit-link'); loadFamilies(); }, 1000);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
+}
+
+// ── TOGGLE FAM MODE (radio button) ──
+function toggleFamMode(prefix, mode){
+  const isExisting = mode === 'existing';
+  // Disable/enable các field ngoài tên
+  [prefix+'-fam-phone', prefix+'-fam-email', prefix+'-fam-pw',
+   prefix+'-phone',     prefix+'-email',     prefix+'-pw'].forEach(function(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.disabled = isExisting;
+    el.style.opacity = isExisting ? '0.5' : '1';
+    el.style.cursor  = isExisting ? 'not-allowed' : '';
+    el.style.background = isExisting ? 'var(--bg)' : '';
+  });
+  // Hint text
+  const hint = document.getElementById(prefix+'-fam-name-hint') || document.getElementById(prefix+'-name-hint');
+  if(hint) hint.textContent = isExisting
+    ? ' — nhập tên để tìm tài khoản có sẵn'
+    : ' — nhập để tìm hoặc tạo mới';
+  // Reset existing id nếu chuyển sang tạo mới
+  if(!isExisting){
+    const exEl = document.getElementById(prefix+'-fam-existing-id') || document.getElementById(prefix+'-existing-id');
+    if(exEl){ exEl.value = ''; }
+    // Xóa các field khi chuyển sang tạo mới
+    [prefix+'-fam-phone',prefix+'-fam-email',prefix+'-phone',prefix+'-email'].forEach(function(id){
+      const el=document.getElementById(id); if(el) el.value='';
+    });
+  }
+}
+
+let _acPtFamTimer = null;
+async function acSearchPtFamily(q){
+  const drop = document.getElementById('pt-fam-ac-drop');
+  clearTimeout(_acPtFamTimer);
+  if(!q||q.length<2){ drop.style.display='none'; return; }
+  _acPtFamTimer = setTimeout(async function(){
+    try {
+      const r = await fetch(AAPI+'/admin/'+UID+'/search-users?q='+encodeURIComponent(q));
+      if(!r.ok) return;
+      const users = await r.json();
+      if(!users.length){ drop.style.display='none'; return; }
+      drop.innerHTML = users.map(function(u){
+        return '<div class="ac-item"'
+          +' onmousedown="acSelectPtFam(\''+esc(u.name)+'\',\''+esc(u.phone||'')+'\',\''+esc(u.email||'')+'\',\''+u.id+'\')">'
+          +'<div class="ac-name">'+esc(u.name)+'</div>'
+          +'<div class="ac-sub">'+(u.phone||'')+(u.phone&&u.email?' · ':'')+esc(u.email||'')+'</div>'
+          +'</div>';
+      }).join('');
+      drop.style.display='block';
+    } catch(_){}
+  }, 300);
+}
+// Không dùng hover fill/clear — tránh layout flicker
+function acSelectPtFam(name,phone,email,uid){
+  document.getElementById('pt-fam-name').value  = name;
+  document.getElementById('pt-fam-phone').value = phone;
+  document.getElementById('pt-fam-email').value = email;
+  document.getElementById('pt-fam-existing-id').value = uid;
+  document.getElementById('pt-fam-ac-drop').style.display='none';
+  // Nếu đang ở mode existing → giữ disable, chỉ hiện thông tin
+  const mode = document.querySelector('input[name="pt-fam-mode"]:checked')?.value;
+  if(mode === 'existing'){
+    ['pt-fam-phone','pt-fam-email','pt-fam-pw'].forEach(function(id){
+      const el=document.getElementById(id);
+      if(el){ el.disabled=true; el.style.opacity='0.5'; }
+    });
+  }
+}
+function openAddDoctor(){
+  ['doc-name','doc-phone','doc-email','doc-dob'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  document.getElementById('doc-gender').value='';
+  document.getElementById('doc-pw').value='123456';
+  document.getElementById('doc-msg').textContent='';
+  document.getElementById('modal-doctor').classList.add('open');
+}
+
+async function saveDoctor(){
+  const name=document.getElementById('doc-name').value.trim();
+  const msg=document.getElementById('doc-msg');
+  if(!name){msg.style.color='var(--danger)';msg.textContent='Vui lòng nhập họ tên';return;}
+  const btn=document.getElementById('doc-save-btn');
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang tạo tài khoản...';
+  try {
+    const r=await fetch(AAPI+'/admin/'+UID+'/doctors',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        name:name,
+        phone:document.getElementById('doc-phone').value.trim()||null,
+        email:document.getElementById('doc-email').value.trim()||null,
+        dob:document.getElementById('doc-dob').value||null,
+        gender:document.getElementById('doc-gender').value||null,
+        password:document.getElementById('doc-pw').value.trim()||'123456',
+      })
+    });
+    const d=await r.json();
+    if(r.ok){
+      msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo: '+esc(name);
+      setTimeout(function(){ closeModal('modal-doctor'); loadDoctors(); }, 1200);
+    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+  btn.disabled=false;
+}
+</script>
+
+
+<!-- MODAL: PROVISION (Web Serial) -->
+<div class="modal-bg" id="modal-provision" onclick="if(event.target===this)closeModal('modal-provision')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-provision')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">🔗 Gán bệnh nhân cho thiết bị</div>
+    <div id="prov-step1">
+      <div style="background:var(--bg);border-radius:10px;padding:12px 14px;margin-bottom:14px;border:1px solid var(--border);display:flex;align-items:center;gap:12px">
+        <div style="font-size:1.2rem">📱</div>
+        <div>
+          <div style="font-size:.6rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Thiết bị</div>
+          <div id="prov-serial" style="font-family:'DM Mono',monospace;font-size:.9rem;font-weight:700;color:var(--navy)">—</div>
+        </div>
+      </div>
+      <div class="field"><label>Gán cho bệnh nhân *</label>
+        <select id="prov-pt-select"><option value="">— Chọn bệnh nhân —</option></select>
+      </div>
+      <div class="modal-msg" id="prov-msg1"></div>
+      <div class="modal-footer">
+        <button class="btn-cancel" onclick="closeModal('modal-provision')">Hủy</button>
+        <button id="prov-next-btn" class="btn-save" onclick="assignDeviceDirect()">✅ Gán bệnh nhân</button>
+      </div>
+    </div>
+    <div id="prov-step2" style="display:none"></div>
+    <div id="prov-config-box" style="display:none"></div>
+  </div>
+</div>
+
+<!-- MODAL: TẠO BÁC SĨ -->
+<div class="modal-bg" id="modal-doctor" onclick="if(event.target===this)closeModal('modal-doctor')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-doctor')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👨‍⚕️ Tạo tài khoản bác sĩ</div>
+    <div class="field"><label>Họ tên *</label><input id="doc-name" type="text" placeholder="BS. Nguyễn Văn A"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="doc-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+      <div class="field"><label>Email (để đăng nhập)</label><input id="doc-email" type="email" placeholder="bs@hospital.vn"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Ngày sinh</label><input id="doc-dob" type="date"/></div>
+      <div class="field"><label>Giới tính</label>
+        <select id="doc-gender">
+          <option value="">— Chọn —</option>
+          <option value="nam">Nam</option>
+          <option value="nu">Nữ</option>
+          <option value="khac">Khác</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Mật khẩu tạm — bác sĩ tự đổi sau</label><input id="doc-pw" type="text" value="123456"/></div>
+    <div style="background:var(--bg);border-radius:8px;padding:10px 12px;font-size:.7rem;color:var(--muted);margin-bottom:4px">
+      💡 Bác sĩ đăng nhập bằng email + mật khẩu tạm, sau đó đổi mật khẩu trong Cài đặt.
+    </div>
+    <div class="modal-msg" id="doc-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-doctor')">Hủy</button>
+      <button class="btn-save" id="doc-save-btn" onclick="saveDoctor()">✅ Tạo tài khoản</button>
+    </div>
+  </div>
+</div>
+<!-- MODAL: TẠO NGƯỜI NHÀ MỚI -->
+<div class="modal-bg" id="modal-create-family" onclick="if(event.target===this)closeModal('modal-create-family')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-create-family')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👨‍👩‍👧 Tạo tài khoản người nhà mới</div>
+    <!-- Thông tin cơ bản -->
+    <div class="field"><label>Họ tên *</label><input id="cf-name" type="text" placeholder="Nguyễn Thị B"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="cf-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+      <div class="field"><label>Email (đăng nhập app)</label><input id="cf-email" type="email" placeholder="email@gmail.com"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Giới tính</label>
+        <select id="cf-gender">
+          <option value="">— Chọn —</option>
+          <option value="nam">Nam</option>
+          <option value="nu">Nữ</option>
+          <option value="khac">Khác</option>
+        </select>
+      </div>
+      <div class="field"><label>Ngày sinh</label><input id="cf-dob" type="date"/></div>
+    </div>
+    <div class="field"><label>Mật khẩu app</label><input id="cf-pw" type="text" value="123456"/></div>
+    <!-- Tùy chọn gán bệnh nhân -->
+    <div class="divider" style="margin:12px 0 10px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);display:flex;align-items:center;gap:8px">
+      <span>🔗 Gán bệnh nhân (tùy chọn)</span>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+    <div class="field"><label>Chọn bệnh nhân</label>
+      <select id="cf-patient-id">
+        <option value="">— Không gán ngay —</option>
+      </select>
+    </div>
+    <div id="cf-link-section" style="display:none">
+      <div class="field"><label>Quan hệ</label>
+        <select id="cf-rel">
+          <option value="">— Chọn —</option>
+          <option value="vo_chong">Vợ/Chồng</option><option value="con">Con</option>
+          <option value="cha_me">Cha/Mẹ</option><option value="anh_chi_em">Anh/Chị/Em</option>
+          <option value="than_nhan">Thân nhân khác</option><option value="nguoi_giam_ho">Người giám hộ</option>
+        </select>
+      </div>
+      <div style="margin:6px 0 10px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="cf-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
+          Là người giám sát chính
+        </label>
+      </div>
+    </div>
+    <div class="modal-msg" id="cf-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-create-family')">Hủy</button>
+      <button class="btn-save" id="cf-save-btn" onclick="saveCreateFamily()">✅ Tạo tài khoản</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: THÊM NGƯỜI NHÀ -->
+<div class="modal-bg" id="modal-add-family" onclick="if(event.target===this)closeModal('modal-add-family')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-add-family')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">👨‍👩‍👧 Thêm người nhà / người liên quan</div>
+    <input type="hidden" id="af-patient-id"/>
+    <div style="background:var(--bg);border-radius:9px;padding:10px 12px;font-size:.76rem;color:var(--muted);margin-bottom:14px;border:1px solid var(--border)">
+      Bệnh nhân: <strong id="af-patient-name" style="color:var(--navy)">—</strong>
+    </div>
+
+    <!-- Quan hệ -->
+    <div class="field"><label>Quan hệ với bệnh nhân *</label>
+      <select id="af-rel">
+        <option value="">— Chọn quan hệ —</option>
+        <option value="vo_chong">Vợ/Chồng</option>
+        <option value="con">Con</option>
+        <option value="cha_me">Cha/Mẹ</option>
+        <option value="anh_chi_em">Anh/Chị/Em</option>
+        <option value="than_nhan">Thân nhân khác</option>
+        <option value="nguoi_giam_ho">Người giám hộ</option>
+      </select>
+    </div>
+
+    <!-- Tìm / nhập tên — có autocomplete -->
+    <div class="divider">Thông tin người nhà</div>
+    <!-- Radio chọn trạng thái -->
+    <div style="display:flex;gap:16px;margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="af-fam-mode" value="new" checked onchange="toggleFamMode('af','new')"
+          style="accent-color:var(--navy);width:15px;height:15px"/>
+        Tạo tài khoản mới
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="af-fam-mode" value="existing" onchange="toggleFamMode('af','existing')"
+          style="accent-color:var(--navy);width:15px;height:15px"/>
+        Đã có tài khoản
+      </label>
+    </div>
+    <div class="field">
+      <label>Họ tên *
+        <span id="af-name-hint" style="font-weight:400;color:var(--muted);font-size:.62rem"> — Nhập để tìm tài khoản có sẵn hoặc tạo mới</span>
+      </label>
+      <div class="ac-wrap">
+        <input id="af-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
+          oninput="acSearchFamily(this.value)" onfocus="acSearchFamily(this.value)"/>
+        <div class="ac-dropdown" id="af-ac-drop"></div>
+      </div>
+    </div>
+
+    <!-- Phần tạo mới — hiện khi chưa chọn tài khoản có sẵn -->
+    <div id="af-new-fields">
+      <div class="field-row c2">
+        <div class="field"><label>Số điện thoại</label><input id="af-phone" type="text" placeholder="0912..." maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+        <div class="field"><label>Email (đăng nhập app)</label><input id="af-email" type="email" placeholder="email@gmail.com"/></div>
+      </div>
+      <div class="field"><label>Mật khẩu app (mặc định: 123456)</label><input id="af-pw" type="text" value="123456"/></div>
+    </div>
+
+    <div class="field-row" style="margin-top:8px">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="af-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
+        Là người giám sát chính
+      </label>
+    </div>
+
+    <div class="modal-msg" id="af-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-add-family')">Hủy</button>
+      <button class="btn-save" id="af-save-btn" onclick="saveAddFamily()">✅ Thêm người nhà</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: SỬA NGƯỜI NHÀ -->
+<div class="modal-bg" id="modal-edit-family" onclick="if(event.target===this)closeModal('modal-edit-family')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-family')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Sửa thông tin người nhà</div>
+    <input type="hidden" id="ef-link-id"/>
+    <input type="hidden" id="ef-user-id"/>
+    <div class="field"><label>Họ tên</label><input id="ef-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="ef-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+      <div class="field"><label>Email</label><input id="ef-email" type="email"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Giới tính</label>
+        <select id="ef-gender">
+          <option value="">— Chọn —</option>
+          <option value="nam">Nam</option>
+          <option value="nu">Nữ</option>
+          <option value="khac">Khác</option>
+        </select>
+      </div>
+      <div class="field"><label>Ngày sinh</label><input id="ef-dob" type="date"/></div>
+    </div>
+    <!-- Chỉ hiện khi đã có liên kết bệnh nhân -->
+    <div id="ef-link-section">
+      <div class="field"><label>Quan hệ</label>
+        <select id="ef-rel">
+          <option value="vo_chong">Vợ/Chồng</option><option value="con">Con</option>
+          <option value="cha_me">Cha/Mẹ</option><option value="anh_chi_em">Anh/Chị/Em</option>
+          <option value="than_nhan">Thân nhân khác</option><option value="nguoi_giam_ho">Người giám hộ</option>
+        </select>
+      </div>
+      <div style="margin-top:8px;margin-bottom:8px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="ef-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
+          Là người giám sát chính
+        </label>
+      </div>
+    </div>
+    <!-- Hiện khi chưa gán bệnh nhân -->
+    <div id="ef-no-link-note" style="display:none;padding:8px 12px;background:#f4f6f9;border-radius:8px;font-size:.74rem;color:var(--muted);margin-bottom:8px">
+      ℹ️ Chưa gán bệnh nhân — quan hệ sẽ được thiết lập tại tab Bệnh nhân
+    </div>
+    <div class="modal-msg" id="ef-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-family')">Hủy</button>
+      <button class="btn-save" id="ef-save-btn" onclick="saveEditFamily()">💾 Lưu</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CẬP NHẬT THÔNG TIN BỆNH NHÂN -->
+<div class="modal-bg" id="modal-edit-patient" onclick="if(event.target===this)closeModal('modal-edit-patient')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-edit-patient')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Cập nhật thông tin bệnh nhân</div>
+    <input type="hidden" id="ep-id"/>
+    <div class="field"><label>Họ tên *</label><input id="ep-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="ep-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+      <div class="field"><label>Email</label><input id="ep-email" type="email"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Ngày sinh</label><input id="ep-dob" type="date"/></div>
+      <div class="field"><label>Giới tính</label>
+        <select id="ep-gender"><option value="">— Chọn —</option><option value="nam">Nam</option><option value="nu">Nữ</option><option value="khac">Khác</option></select>
+      </div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Nhóm máu</label>
+        <select id="ep-blood"><option value="">—</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+      </div>
+      <div class="field"><label>Dị ứng</label><input id="ep-allergy" type="text" placeholder="Penicillin, ..."/></div>
+    </div>
+    <div class="field"><label>Bệnh mãn tính</label><input id="ep-disease" type="text" placeholder="Tiểu đường, huyết áp..."/></div>
+    <div class="field"><label>Tiền sử y tế</label><textarea id="ep-history" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Sora',sans-serif;font-size:.8rem;background:var(--bg);color:var(--text);outline:none;resize:vertical"></textarea></div>
+    <div class="modal-msg" id="ep-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-patient')">Hủy</button>
+      <button class="btn-save" id="ep-save-btn" onclick="saveEditPatient()">💾 Lưu thông tin</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CẬP NHẬT HỒ SƠ BỆNH ÁN -->
+<div class="modal-bg" id="modal-edit-record" onclick="if(event.target===this)closeModal('modal-edit-record')">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('modal-edit-record')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">📋 Cập nhật hồ sơ bệnh án</div>
+    <div class="field-row c2">
+      <div class="field"><label>Nhóm máu</label>
+        <select id="er-blood">
+          <option value="">— Chọn —</option>
+          <option value="A+">A+</option><option value="A-">A-</option>
+          <option value="B+">B+</option><option value="B-">B-</option>
+          <option value="AB+">AB+</option><option value="AB-">AB-</option>
+          <option value="O+">O+</option><option value="O-">O-</option>
+        </select>
+      </div>
+      <div class="field"><label>Chiều cao (cm)</label><input id="er-height" type="number" placeholder="170"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Cân nặng (kg)</label><input id="er-weight" type="number" placeholder="65"/></div>
+      <div class="field"><label>Dị ứng</label><input id="er-allergy" type="text" placeholder="Penicillin, ..."/></div>
+    </div>
+    <div class="field"><label>Bệnh mãn tính</label><input id="er-disease" type="text" placeholder="Cao huyết áp, tiểu đường, ..."/></div>
+    <div class="field"><label>Tiền sử y tế</label><textarea id="er-history" rows="3" style="width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:9px;font-family:'Sora',sans-serif;font-size:.8rem;background:var(--bg);color:var(--text);outline:none;resize:vertical" placeholder="Phẫu thuật, bệnh lý cũ, ..."></textarea></div>
+    <div class="modal-msg" id="er-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-record')">Hủy</button>
+      <button class="btn-save" id="er-save-btn" onclick="saveEditRecord()">💾 Lưu hồ sơ</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: CHỈNH SỬA BÁC SĨ -->
+<div class="modal-bg" id="modal-edit-doctor" onclick="if(event.target===this)closeModal('modal-edit-doctor')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-doctor')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Chỉnh sửa thông tin bác sĩ</div>
+    <input type="hidden" id="edit-doc-id"/>
+    <div class="field"><label>Họ tên *</label><input id="edit-doc-name" type="text"/></div>
+    <div class="field-row c2">
+      <div class="field"><label>Số điện thoại</label><input id="edit-doc-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+      <div class="field"><label>Email</label><input id="edit-doc-email" type="email"/></div>
+    </div>
+    <div class="field-row c2">
+      <div class="field"><label>Ngày sinh</label><input id="edit-doc-dob" type="date"/></div>
+      <div class="field"><label>Giới tính</label>
+        <select id="edit-doc-gender">
+          <option value="">— Chọn —</option>
+          <option value="nam">Nam</option>
+          <option value="nu">Nữ</option>
+          <option value="khac">Khác</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-msg" id="edit-doc-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-doctor')">Hủy</button>
+      <button class="btn-save" id="edit-doc-save-btn" onclick="saveEditDoctor()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
