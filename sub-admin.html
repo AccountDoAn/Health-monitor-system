@@ -143,6 +143,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .sa-fb{padding:4px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;}
 .sa-fb.on{background:var(--navy);border-color:var(--navy);color:#fff;}
 .sa-fb:hover:not(.on){background:var(--bg);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 .sb-av{width:32px;height:32px;border-radius:50%;background:var(--sky);color:var(--navy);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;overflow:hidden;}
 .sb-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
 .profile-av{width:80px;height:80px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:800;margin:0 auto 12px;overflow:hidden;cursor:pointer;position:relative;}
@@ -250,6 +251,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 <div class="main">
   <div class="topbar">
     <div class="topbar-title" id="page-title">Dashboard</div>
+    <div id="sa-realtime-badge" style="display:none;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#27ae60;background:#e6f7e6;padding:3px 10px;border-radius:8px;border:1px solid #b7e4c7">
+      <span style="width:7px;height:7px;border-radius:50%;background:#27ae60;display:inline-block;animation:pulse 1.5s infinite"></span>Realtime
+    </div>
     <div class="topbar-hs" id="hs-name">—</div>
     <div class="last-upd" id="last-upd" style="font-size:.65rem;color:var(--muted);font-family:'DM Mono',monospace">—</div>
   </div>
@@ -276,9 +280,6 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">🔗 Liên kết Bệnh nhân — Thiết bị — Bác sĩ</div>
-        <button class="btn-outline" onclick="loadOverview()" style="display:flex;align-items:center;gap:5px">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Làm mới
-        </button>
       </div>
       <!-- Table header -->
       <div style="display:grid;grid-template-columns:1fr 140px 90px 80px 1fr;gap:8px;padding:10px 18px;background:var(--bg);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)">
@@ -799,6 +800,12 @@ const AAPI = 'https://health-monitor-subadmin.onrender.com';
 const SESS = JSON.parse(localStorage.getItem('hm_session')||'{}');
 const UID = SESS.userId;
 
+// Khởi tạo Supabase client ngay lập tức
+window._sb = supabase.createClient(
+  'https://czgberdpnfultxkljhko.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
+);
+
 // Kiểm tra session hết hạn
 (function checkSessionExpiry(){
   if(!SESS.userId){ window.location.replace('index.html'); return; }
@@ -1028,15 +1035,89 @@ function alphabetSort(arr, nameKey){
   });
 }
 
+// ── SUPABASE REALTIME CHO SUB-ADMIN ──
+function setupSubAdminRealtime(){
+  if(!window._sb) return;
+
+  const RELOAD_DEBOUNCE = 2000; // tránh reload liên tục
+  const debounceMap = {};
+
+  function debounceReload(key, fn){
+    clearTimeout(debounceMap[key]);
+    debounceMap[key] = setTimeout(fn, RELOAD_DEBOUNCE);
+  }
+
+  function currentView(){
+    return document.querySelector('.content[style*="block"]')?.id || '';
+  }
+
+  // Bệnh nhân & hồ sơ bệnh nhân
+  _sb.channel('sa-patients')
+    .on('postgres_changes',{event:'*',schema:'public',table:'nguoi_dung'},function(payload){
+      debounceReload('patients', function(){
+        loadPatients();
+        if(currentView()==='view-overview') loadOverview();
+      });
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'ho_so_benh_nhan'},function(){
+      debounceReload('patients', function(){ loadPatients(); });
+    })
+    .subscribe();
+
+  // Thiết bị
+  _sb.channel('sa-devices')
+    .on('postgres_changes',{event:'*',schema:'public',table:'thiet_bi_iot'},function(){
+      debounceReload('devices', function(){
+        loadDevices();
+        if(currentView()==='view-overview') loadOverview();
+      });
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'lich_su_gan_thiet_bi'},function(){
+      debounceReload('devices', function(){
+        loadDevices();
+        loadPatients();
+        if(currentView()==='view-overview') loadOverview();
+      });
+    })
+    .subscribe();
+
+  // Người nhà
+  _sb.channel('sa-families')
+    .on('postgres_changes',{event:'*',schema:'public',table:'lien_ket_nguoi_nha'},function(){
+      debounceReload('families', function(){
+        familiesCache=[];
+        if(currentView()==='view-families') loadFamilies();
+      });
+    })
+    .subscribe();
+
+  // Bác sĩ & liên kết bác sĩ
+  _sb.channel('sa-doctors')
+    .on('postgres_changes',{event:'*',schema:'public',table:'lien_ket_bac_si'},function(){
+      debounceReload('doctors', function(){
+        loadDoctors();
+        loadPatients();
+        if(currentView()==='view-overview') loadOverview();
+      });
+    })
+    .subscribe();
+
+  // Badge realtime
+  showRealtimeBadge();
+}
+
+function showRealtimeBadge(){
+  const badge = document.getElementById('sa-realtime-badge');
+  if(badge) badge.style.display='flex';
+}
+
+// Khởi động realtime sau khi _sb sẵn sàng
+function initRealtime(){
+  setupSubAdminRealtime();
+}
+
 // ── LOAD ADMIN INFO ──
 async function loadInfo(){
-  // Khởi tạo Supabase client cho storage
-  if(!window._sb && window.supabase){
-    window._sb = supabase.createClient(
-      'https://czgberdpnfultxkljhko.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN6Z2JlcmRwbmZ1bHR4a2xqaGtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3OTY3MTEsImV4cCI6MjA5MDM3MjcxMX0.H9pv62PGbIJqJNK72yGEGB1Y9yw7HPEvk82zdxlgVYg'
-    );
-  }
   try {
     const r = await fetch(AAPI+'/admin/'+UID+'/me');
     if(r.ok){
@@ -1754,6 +1835,7 @@ function closeModal(id){ document.getElementById(id).classList.remove('open'); }
 // INIT
 loadInfo();
 loadOverview();
+initRealtime();
 // Preload data
 fetch(AAPI+'/admin/'+UID+'/patients').then(r=>r.ok?r.json():[]).then(d=>{ptCache=d;}).catch(()=>{});
 fetch(AAPI+'/admin/'+UID+'/doctors').then(r=>r.ok?r.json():[]).then(d=>{docCache=d;}).catch(()=>{});
