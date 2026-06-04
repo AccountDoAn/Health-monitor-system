@@ -1134,8 +1134,11 @@ app.post("/admin/:userId/assign-doctor", async (req, res) => {
       .eq("nguoi_dung_tb_id",patientId).eq("trang_thai_hoat_dong",true);
 
     const { error } = await supabase.from("lien_ket_bac_si").insert({
-      nguoi_dung_tb_id:patientId, nguoi_dung_bs_id:doctorId,
-      trang_thai_hoat_dong:true, ngay_phan_cong:new Date().toISOString(),
+      nguoi_dung_tb_id:  patientId,
+      nguoi_dung_bs_id:  doctorId,
+      nguoi_phan_cong:   userId,
+      trang_thai_hoat_dong: true,
+      ngay_phan_cong:    new Date().toISOString(),
     });
     if (error) throw error;
 
