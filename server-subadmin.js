@@ -85,22 +85,29 @@ async function logAction(userId, action, targetType, targetId, detail, ip){
 // ============================================================
 // HELPER — xác minh sub_admin + lấy co_so_y_te_id
 // ============================================================
-async function getAdminHospital(userId) {
-  const { data: user } = await supabase
-    .from("nguoi_dung")
-    .select("co_so_y_te_id, trang_thai_hoat_dong")
-    .eq("id", userId)
-    .maybeSingle();
-  if (!user || !user.trang_thai_hoat_dong) return null;
+// Cache CSYT của sub-admin — tránh query lại mỗi request
+const _hsCache = new Map();
 
-  const { data: pq } = await supabase
-    .from("phan_quyen_nguoi_dung")
-    .select("vai_tro(ten_vai_tro)")
-    .eq("nguoi_dung_id", userId);
-  const roles = (pq || []).map(p => p.vai_tro?.ten_vai_tro).filter(Boolean);
+async function getAdminHospital(userId) {
+  if(_hsCache.has(userId)) return _hsCache.get(userId);
+
+  const [{ data: user }, { data: pq }] = await Promise.all([
+    supabase.from("nguoi_dung")
+      .select("co_so_y_te_id, trang_thai_hoat_dong")
+      .eq("id", userId).maybeSingle(),
+    supabase.from("phan_quyen_nguoi_dung")
+      .select("vai_tro(ten_vai_tro)")
+      .eq("nguoi_dung_id", userId),
+  ]);
+  if (!user || !user.trang_thai_hoat_dong) return null;
+  const roles = (pq||[]).map(p=>p.vai_tro?.ten_vai_tro).filter(Boolean);
   if (!roles.includes("sub_admin")) return null;
 
-  return user.co_so_y_te_id || null;
+  const hsId = user.co_so_y_te_id || null;
+  _hsCache.set(userId, hsId);
+  // Xóa cache sau 5 phút
+  setTimeout(()=>_hsCache.delete(userId), 5 * 60 * 1000);
+  return hsId;
 }
 
 // GET /admin/:userId/me — thông tin sub-admin + CSYT
@@ -519,52 +526,54 @@ app.get("/admin/:userId/patients", async (req, res) => {
     const hsId = await getAdminHospital(userId);
     if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
 
-    // Lấy role bệnh nhân
+    // Lấy role bệnh nhân (cache đơn giản)
     const { data: tbRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle();
     if (!tbRole) return res.json([]);
 
-    // Lấy tất cả bệnh nhân thuộc CSYT
     const { data: pq } = await supabase.from("phan_quyen_nguoi_dung")
       .select("nguoi_dung_id").eq("vai_tro_id", tbRole.id);
     const allPtIds = (pq||[]).map(p=>p.nguoi_dung_id);
     if (!allPtIds.length) return res.json([]);
 
-    // Filter theo CSYT
     const { data: pts } = await supabase.from("nguoi_dung")
       .select("id, ho_ten, so_dien_thoai, email, ngay_sinh, gioi_tinh")
-      .in("id", allPtIds)
-      .eq("co_so_y_te_id", hsId)
-      .eq("trang_thai_hoat_dong", true);
+      .in("id", allPtIds).eq("co_so_y_te_id", hsId).eq("trang_thai_hoat_dong", true);
     if (!pts?.length) return res.json([]);
 
     const ptIds = pts.map(p=>p.id);
 
-    // Hồ sơ bệnh án
-    const { data: profiles } = await supabase.from("ho_so_benh_nhan")
-      .select("nguoi_dung_tb_id, nhom_mau, benh_man_tinh, di_ung, tien_su_y_te").in("nguoi_dung_tb_id",ptIds);
+    // Chạy song song 3 query độc lập
+    const [
+      { data: profiles },
+      { data: docLinks },
+      { data: devices },
+    ] = await Promise.all([
+      supabase.from("ho_so_benh_nhan")
+        .select("nguoi_dung_tb_id, nhom_mau, benh_man_tinh, di_ung, tien_su_y_te")
+        .in("nguoi_dung_tb_id", ptIds),
+      supabase.from("lien_ket_bac_si")
+        .select("nguoi_dung_tb_id, nguoi_dung_bs_id, nguoi_dung!nguoi_dung_bs_id(ho_ten)")
+        .in("nguoi_dung_tb_id", ptIds).eq("trang_thai_hoat_dong", true),
+      supabase.from("thiet_bi_iot").select("id").eq("co_so_y_te_id", hsId),
+    ]);
+
     const profMap = {};
     (profiles||[]).forEach(p=>{ profMap[p.nguoi_dung_tb_id]=p; });
-
-    // Bác sĩ phụ trách
-    const { data: docLinks } = await supabase.from("lien_ket_bac_si")
-      .select("nguoi_dung_tb_id, nguoi_dung_bs_id, nguoi_dung!nguoi_dung_bs_id(ho_ten)")
-      .in("nguoi_dung_tb_id",ptIds).eq("trang_thai_hoat_dong",true);
     const docMap = {};
     (docLinks||[]).forEach(l=>{ docMap[l.nguoi_dung_tb_id]={ id:l.nguoi_dung_bs_id, name:l.nguoi_dung?.ho_ten }; });
 
-    // Thiết bị đang gắn
-    const { data: devices } = await supabase.from("thiet_bi_iot").select("id").eq("co_so_y_te_id",hsId);
     const devIds = (devices||[]).map(d=>d.id);
     const devMap = {};
     const devDetailMap = {};
     if (devIds.length) {
-      const { data: assigns } = await supabase.from("lich_su_gan_thiet_bi")
-        .select("nguoi_dung_tb_id, thiet_bi_id")
-        .in("thiet_bi_id", devIds).eq("trang_thai_hoat_dong", true);
+      const [{ data: assigns }, { data: devDetails }] = await Promise.all([
+        supabase.from("lich_su_gan_thiet_bi")
+          .select("nguoi_dung_tb_id, thiet_bi_id")
+          .in("thiet_bi_id", devIds).eq("trang_thai_hoat_dong", true),
+        supabase.from("thiet_bi_iot")
+          .select("id, so_seri, phan_tram_pin, lan_online_cuoi").in("id", devIds),
+      ]);
       (assigns||[]).forEach(a=>{ devMap[a.nguoi_dung_tb_id]=a.thiet_bi_id; });
-
-      const { data: devDetails } = await supabase.from("thiet_bi_iot")
-        .select("id, so_seri, phan_tram_pin, lan_online_cuoi").in("id", devIds);
       const now = Date.now();
       (devDetails||[]).forEach(d=>{
         devDetailMap[d.id] = {
@@ -576,7 +585,7 @@ app.get("/admin/:userId/patients", async (req, res) => {
     }
 
     res.json(pts.map(p=>{
-      const dId  = devMap[p.id]||null;
+      const dId   = devMap[p.id]||null;
       const dInfo = dId ? devDetailMap[dId] : null;
       return {
         id:p.id, name:p.ho_ten, phone:p.so_dien_thoai, email:p.email,
