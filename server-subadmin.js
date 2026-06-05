@@ -619,6 +619,7 @@ app.delete("/admin/:userId/patients/:patientId", async (req, res) => {
     await supabase.from("lien_ket_bac_si").delete().eq("nguoi_dung_tb_id", patientId);
     // Vô hiệu hóa tài khoản (không xóa hẳn để giữ lịch sử)
     await supabase.from("nguoi_dung").update({trang_thai_hoat_dong: false}).eq("id", patientId);
+    await logAction(req.params.userId,'DELETE_PATIENT','nguoi_dung',patientId,{},getIp(req));
     res.json({ ok: true });
   } catch(err) {
     console.error("[DELETE /admin/patients]", err.message);
@@ -641,6 +642,7 @@ app.patch("/admin/:userId/patients/:patientId", async (req, res) => {
       return res.status(400).json({ error: "Không có thông tin để cập nhật" });
     const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", patientId);
     if(error) throw error;
+    await logAction(req.params.userId,'UPDATE_PATIENT','nguoi_dung',patientId,updates,getIp(req));
     res.json({ ok: true });
   } catch(err) {
     console.error("[PATCH /admin/patients]", err.message);
@@ -673,6 +675,7 @@ app.post("/admin/:userId/patients", async (req, res) => {
       nguoi_lien_he_khan_ten:emergencyName||null, nguoi_lien_he_khan_sdt:emergencyPhone||null,
     });
 
+    await logAction(userId,'CREATE_PATIENT','nguoi_dung',newUser.id,{name:name.trim()},getIp(req));
     res.json({ patientId:newUser.id, name:name.trim() });
   } catch (err) {
     console.error("[POST /admin/patients]", err.message);
@@ -991,11 +994,12 @@ app.patch("/admin/:userId/families/:linkId", async (req, res) => {
 // DELETE /admin/:userId/families/:linkId — xóa liên kết
 app.delete("/admin/:userId/families/:linkId", async (req, res) => {
   try {
-    const { linkId } = req.params;
+    const { userId, linkId } = req.params;
     const { error } = await supabase.from("lien_ket_nguoi_nha")
       .delete()
       .eq("id", linkId);
     if (error) throw error;
+    await logAction(userId,'DELETE_FAMILY','lien_ket_nguoi_nha',linkId,{},getIp(req));
     res.json({ ok: true });
   } catch(err) {
     console.error("[DELETE /admin/families]", err.message);
@@ -1075,6 +1079,7 @@ app.patch("/admin/:userId/doctors/:doctorId", async (req, res) => {
 
     const { error } = await supabase.from("nguoi_dung").update(updates).eq("id", doctorId);
     if(error) throw error;
+    await logAction(req.params.userId,'UPDATE_DOCTOR','nguoi_dung',doctorId,updates,getIp(req));
     res.json({ ok: true });
   } catch(err) {
     console.error("[PATCH /admin/doctors]", err.message);
