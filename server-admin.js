@@ -1,6 +1,24 @@
 const express = require("express");
 const cors    = require("cors");
 const rateLimit = require('express-rate-limit');
+const crypto    = require('crypto');
+
+const FRONTEND_URL = 'https://accountdoan.github.io/Health-monitor-system';
+
+async function sendEmail({ to, subject, html }){
+  const apiKey = process.env.BREVO_API_KEY;
+  if(!apiKey) throw new Error('Thiếu BREVO_API_KEY');
+  const res = await fetch('https://api.brevo.com/v3/smtp/email',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','api-key':apiKey},
+    body: JSON.stringify({
+      sender:{ name:'Health Monitor', email:'no-reply@healthmonitor.vn' },
+      to:[{ email:to }], subject, htmlContent:html,
+    })
+  });
+  if(!res.ok) throw new Error('Brevo error '+res.status);
+  return await res.json();
+}
 
 // Rate limit cho login - tối đa 10 lần/15 phút/IP
 const loginLimiter = rateLimit({
@@ -186,6 +204,69 @@ app.get("/dashboard", async (req, res) => {
 // ============================================================
 // CƠ SỞ Y TẾ
 // ============================================================
+
+// POST /auth/forgot-password
+app.post("/auth/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+    if(!email) return res.status(400).json({ error:"Vui lòng nhập email" });
+    const { data: users } = await supabase.from("nguoi_dung")
+      .select("id, ho_ten, email, trang_thai_hoat_dong")
+      .eq("email", email.trim().toLowerCase())
+      .eq("trang_thai_hoat_dong", true).limit(1);
+    if(!users?.length) return res.json({ message:"Nếu email tồn tại, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu." });
+    const user  = users[0];
+    const token = crypto.randomBytes(32).toString("hex");
+    const hetHan = new Date(Date.now() + 60*60*1000);
+    await supabase.from("reset_password_token").delete().eq("nguoi_dung_id",user.id).eq("da_su_dung",false);
+    await supabase.from("reset_password_token").insert({ nguoi_dung_id:user.id, token, het_han:hetHan.toISOString(), da_su_dung:false });
+    const resetLink = `${FRONTEND_URL}/reset-password.html?token=${token}`;
+    await sendEmail({ to:user.email, subject:"🔐 Đặt lại mật khẩu — Health Monitor", html:`
+      <div style="font-family:'Segoe UI',sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;background:#f0f7f4;border-radius:16px">
+        <div style="background:#fff;border-radius:12px;padding:28px 24px;border:1px solid #d0e8da">
+          <h2 style="color:#2b5f8e;margin:0 0 8px">Đặt lại mật khẩu</h2>
+          <p>Xin chào <strong>${user.ho_ten}</strong>,</p>
+          <p>Nhấn vào nút bên dưới để đặt lại mật khẩu. Link có hiệu lực trong <strong>1 giờ</strong>.</p>
+          <div style="text-align:center;margin:24px 0">
+            <a href="${resetLink}" style="background:#2b5f8e;color:#fff;padding:13px 32px;border-radius:10px;text-decoration:none;font-weight:700">✅ Đặt lại mật khẩu</a>
+          </div>
+          <p style="font-size:.8rem;color:#6b8f7a">Nếu bạn không yêu cầu, hãy bỏ qua email này.</p>
+        </div>
+      </div>` });
+    res.json({ message:"Nếu email tồn tại, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu." });
+  } catch(err){
+    console.error("[POST /auth/forgot-password]", err.message);
+    res.status(500).json({ error:err.message });
+  }
+});
+
+// GET /auth/verify-reset-token/:token
+app.get("/auth/verify-reset-token/:token", async (req, res) => {
+  try {
+    const { data } = await supabase.from("reset_password_token")
+      .select("id, nguoi_dung_id, het_han, da_su_dung")
+      .eq("token", req.params.token).maybeSingle();
+    if(!data || data.da_su_dung || new Date(data.het_han) < new Date())
+      return res.status(400).json({ valid:false, error:"Token không hợp lệ hoặc đã hết hạn" });
+    res.json({ valid:true, userId:data.nguoi_dung_id });
+  } catch(err){ res.status(500).json({ error:err.message }); }
+});
+
+// POST /auth/reset-password
+app.post("/auth/reset-password", async (req, res) => {
+  try {
+    const { token, password } = req.body;
+    if(!token||!password||password.length<6) return res.status(400).json({ error:"Thông tin không hợp lệ" });
+    const { data } = await supabase.from("reset_password_token")
+      .select("id, nguoi_dung_id, het_han, da_su_dung")
+      .eq("token", token).maybeSingle();
+    if(!data||data.da_su_dung||new Date(data.het_han)<new Date())
+      return res.status(400).json({ error:"Token không hợp lệ hoặc đã hết hạn" });
+    await supabase.from("nguoi_dung").update({ mat_khau:password }).eq("id", data.nguoi_dung_id);
+    await supabase.from("reset_password_token").update({ da_su_dung:true }).eq("id", data.id);
+    res.json({ ok:true });
+  } catch(err){ res.status(500).json({ error:err.message }); }
+});
 
 // GET /hospitals — danh sách tất cả CSYT
 app.get("/hospitals", async (req, res) => {
