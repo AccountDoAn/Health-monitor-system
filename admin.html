@@ -1890,7 +1890,6 @@ async function loadLogs(){
         +'<span>🗂 <strong style="color:var(--text)">'+esc(tableLabel)+'</strong>'
         +(l.targetId?'<span style="font-family:\'DM Mono\',monospace;font-size:.65rem;margin-left:6px;color:var(--muted)">'+esc(l.targetId.slice(0,8).toUpperCase())+'</span>':'')
         +'</span>'
-        +(l.ip?'<span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--muted)">🌐 <span style="font-family:\'DM Mono\',monospace">'+esc(l.ip)+'</span></span>':'<span style="color:var(--muted)">🌐 —</span>')
         +'</div>'
         +detailHtml
         +'</div>'
