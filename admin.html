@@ -1903,37 +1903,69 @@ async function loadLogs(){
         day:'2-digit',month:'2-digit',year:'numeric',
         hour:'2-digit',minute:'2-digit',second:'2-digit'
       }) : '—';
-      const tableLabel = TABLE_LABEL[l.targetType]||l.targetType||'—';
       const initials = (l.userName||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
 
-      // Parse detail nếu có
-      let detailHtml = '';
-      if(l.detail){
-        try {
-          const d = typeof l.detail==='string' ? JSON.parse(l.detail) : l.detail;
-          const keys = Object.keys(d).filter(k=>k!=='mat_khau'&&k!=='password').slice(0,4);
-          if(keys.length) detailHtml = '<div style="margin-top:5px;display:flex;flex-wrap:wrap;gap:4px">'
-            +keys.map(function(k){
-              return '<span style="font-size:.62rem;padding:2px 7px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--muted)">'
-                +esc(k)+': <strong style="color:var(--text)">'+esc(String(d[k]).slice(0,30))+'</strong></span>';
-            }).join('')+'</div>';
-        } catch(_){}
+      // Parse du_lieu_bo_sung
+      let detail = null;
+      try { detail = l.detail ? (typeof l.detail==='string' ? JSON.parse(l.detail) : l.detail) : null; } catch(_){}
+
+      // Xác định nhãn hành động thông minh hơn dựa vào loai_doi_tuong + du_lieu_bo_sung
+      function getSmartLabel(){
+        const base = ACTION_LABEL[l.action]||l.action;
+        // Nếu đã có action cụ thể từ logAction() thì dùng luôn
+        if(l.action !== 'CREATE' && l.action !== 'UPDATE' && l.action !== 'DELETE') return base;
+        // Với trigger tự động, đọc thêm context từ loai_doi_tuong
+        if(l.targetType === 'nguoi_dung'){
+          const hoTen = detail?.ho_ten || detail?.after?.ho_ten || '';
+          if(l.action==='CREATE') return 'Tạo tài khoản'+(hoTen?' — '+hoTen:'');
+          if(l.action==='UPDATE') return 'Cập nhật tài khoản'+(hoTen?' — '+hoTen:'');
+          if(l.action==='DELETE') return 'Xóa tài khoản'+(hoTen?' — '+hoTen:'');
+        }
+        if(l.targetType === 'co_so_y_te'){
+          const ten = detail?.ten_co_so || detail?.after?.ten_co_so || '';
+          if(l.action==='CREATE') return 'Tạo cơ sở y tế'+(ten?' — '+ten:'');
+          if(l.action==='UPDATE') return 'Cập nhật CSYT'+(ten?' — '+ten:'');
+        }
+        if(l.targetType === 'lien_ket_bac_si'){
+          if(l.action==='CREATE') return 'Tạo liên kết bác sĩ — bệnh nhân';
+          if(l.action==='DELETE') return 'Xóa liên kết bác sĩ — bệnh nhân';
+        }
+        if(l.targetType === 'lien_ket_nguoi_nha'){
+          if(l.action==='CREATE') return 'Tạo liên kết người nhà — bệnh nhân';
+          if(l.action==='UPDATE') return 'Cập nhật liên kết người nhà';
+          if(l.action==='DELETE') return 'Xóa liên kết người nhà — bệnh nhân';
+        }
+        if(l.targetType === 'lich_su_gan_thiet_bi'){
+          if(l.action==='CREATE') return 'Gán thiết bị cho bệnh nhân';
+          if(l.action==='UPDATE') return 'Cập nhật lịch sử gán thiết bị';
+        }
+        if(l.targetType === 'ho_so_benh_nhan'){
+          if(l.action==='CREATE') return 'Tạo hồ sơ bệnh nhân';
+          if(l.action==='UPDATE') return 'Cập nhật hồ sơ bệnh nhân';
+        }
+        if(l.targetType === 'thiet_bi_iot'){
+          const serial = detail?.so_seri || detail?.after?.so_seri || '';
+          if(l.action==='CREATE') return 'Thêm thiết bị'+(serial?' — '+serial:'');
+          if(l.action==='UPDATE') return 'Cập nhật thiết bị'+(serial?' — '+serial:'');
+        }
+        return base;
       }
+
+      const smartLabel = getSmartLabel();
+      const tableLabel = TABLE_LABEL[l.targetType]||l.targetType||'—';
 
       return '<div class="log-item">'
         +'<div class="log-dot '+ac+'">'+initials+'</div>'
         +'<div style="flex:1;min-width:0">'
         +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-        +'<span class="log-action-badge '+ac+'">'+esc(ACTION_LABEL[l.action]||l.action)+'</span>'
-        +'<span style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(l.userName)+'</span>'
-        +'<span style="font-size:.66rem;color:var(--muted)">'+esc(l.userEmail)+'</span>'
+        +'<span class="log-action-badge '+ac+'">'+esc(smartLabel)+'</span>'
+        +'<span style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(l.userName||'Hệ thống')+'</span>'
+        +(l.userEmail?'<span style="font-size:.66rem;color:var(--muted)">'+esc(l.userEmail)+'</span>':'')
         +'</div>'
-        +'<div style="margin-top:4px;font-size:.65rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
-        +'<span>🗂 <strong style="color:var(--text)">'+esc(tableLabel)+'</strong>'
-        +(l.targetId?'<span style="font-family:\'DM Mono\',monospace;font-size:.65rem;margin-left:6px;color:var(--muted)">'+esc(l.targetId.slice(0,8).toUpperCase())+'</span>':'')
-        +'</span>'
+        +'<div style="margin-top:4px;font-size:.65rem;color:var(--muted)">'
+        +'🗂 <strong style="color:var(--text)">'+esc(tableLabel)+'</strong>'
+        +(l.targetId?'<span style="font-family:\'DM Mono\',monospace;font-size:.65rem;margin-left:6px">'+esc(l.targetId.slice(0,8).toUpperCase())+'</span>':'')
         +'</div>'
-        +detailHtml
         +'</div>'
         +'<div style="font-size:.65rem;color:var(--muted);white-space:nowrap;text-align:right;flex-shrink:0">'+time+'</div>'
         +'</div>';
