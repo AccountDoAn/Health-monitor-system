@@ -862,23 +862,36 @@ async function doForgotPassword(){
   btn.disabled = true;
   btn.innerHTML = `<div class="btn-spinner"></div> Đang gửi...`;
 
-  try{
-    const res = await fetch(`${API}/auth/forgot-password`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ email }),
-    });
-    const data = await res.json();
+  // Thử cả 3 server — server nào tìm được email sẽ gửi
+  const APIS = [
+    'https://health-monitor-system-doctor.onrender.com',
+    'https://health-monitor-subadmin.onrender.com',
+    'https://health-monitor-admin.onrender.com',
+  ];
 
-    if(!res.ok){
-      showBanner('forgot-error', data.error || 'Không thể gửi email');
-    } else {
-      // Ẩn form, hiện thông báo thành công
-      document.getElementById('forgot-email-field').style.display = 'none';
-      btn.style.display = 'none';
-      const successBanner = document.getElementById('forgot-success');
-      successBanner.classList.add('show');
-      document.getElementById('forgot-success-msg').textContent =
-        'Email đã được gửi! Vui lòng kiểm tra hộp thư (kể cả thư mục Spam). Link có hiệu lực trong 1 giờ.';
+  try{
+    let success = false;
+    for(const api of APIS){
+      try {
+        const res = await fetch(`${api}/auth/forgot-password`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ email }),
+        });
+        const data = await res.json();
+        if(res.ok){
+          document.getElementById('forgot-email-field').style.display = 'none';
+          btn.style.display = 'none';
+          const successBanner = document.getElementById('forgot-success');
+          successBanner.classList.add('show');
+          document.getElementById('forgot-success-msg').textContent =
+            'Email đã được gửi! Vui lòng kiểm tra hộp thư (kể cả thư mục Spam). Link có hiệu lực trong 1 giờ.';
+          success = true;
+          break;
+        }
+      } catch(_){}
+    }
+    if(!success){
+      showBanner('forgot-error', 'Không tìm thấy tài khoản với email này');
     }
   }catch(e){
     showBanner('forgot-error', 'Không thể kết nối tới máy chủ');
