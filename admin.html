@@ -442,10 +442,31 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Hành động</span>
           <select id="log-flt-action" onchange="loadLogs()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)">
             <option value="">Tất cả</option>
-            <option value="CREATE">🟢 Tạo mới</option>
-            <option value="UPDATE">🟡 Cập nhật</option>
-            <option value="DELETE">🔴 Xóa</option>
-            <option value="LOGIN">🔵 Đăng nhập</option>
+            <optgroup label="Hệ thống">
+              <option value="LOGIN">🔵 Đăng nhập</option>
+              <option value="CREATE">🟢 Tạo mới (trigger)</option>
+              <option value="UPDATE">🟡 Cập nhật (trigger)</option>
+              <option value="DELETE">🔴 Xóa (trigger)</option>
+            </optgroup>
+            <optgroup label="Bệnh nhân">
+              <option value="CREATE_PATIENT">🟢 Tiếp nhận bệnh nhân</option>
+              <option value="UPDATE_PATIENT">🟡 Cập nhật bệnh nhân</option>
+              <option value="DELETE_PATIENT">🔴 Xóa bệnh nhân</option>
+            </optgroup>
+            <optgroup label="Bác sĩ & Người nhà">
+              <option value="CREATE_DOCTOR">🟢 Tạo bác sĩ</option>
+              <option value="UPDATE_DOCTOR">🟡 Cập nhật bác sĩ</option>
+              <option value="CREATE_FAMILY">🟢 Tạo người nhà</option>
+              <option value="UPDATE_FAMILY">🟡 Cập nhật người nhà</option>
+              <option value="DELETE_FAMILY">🔴 Xóa liên kết người nhà</option>
+              <option value="ASSIGN_DOCTOR">🟡 Phân công bác sĩ</option>
+            </optgroup>
+            <optgroup label="Thiết bị & CSYT">
+              <option value="ASSIGN_DEVICE">🟡 Gán thiết bị</option>
+              <option value="CREATE_HOSPITAL">🟢 Tạo CSYT</option>
+              <option value="UPDATE_HOSPITAL">🟡 Cập nhật CSYT</option>
+              <option value="CREATE_SUBADMIN">🟢 Tạo Sub Admin</option>
+            </optgroup>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:4px">
@@ -1815,8 +1836,29 @@ const TABLE_LABEL = {
   lich_su_gan_thiet_bi:'Gán thiết bị', co_so_y_te:'Cơ sở y tế',
   ho_so_benh_nhan:'Hồ sơ bệnh nhân',
 };
-const ACTION_LABEL = {CREATE:'Tạo mới',UPDATE:'Cập nhật',DELETE:'Xóa',LOGIN:'Đăng nhập'};
-const ACTION_CLASS = {CREATE:'CREATE',UPDATE:'UPDATE',DELETE:'DELETE',LOGIN:'LOGIN'};
+const ACTION_LABEL = {
+  // Admin
+  CREATE:'Tạo mới', UPDATE:'Cập nhật', DELETE:'Xóa',
+  LOGIN:'Đăng nhập',
+  CREATE_HOSPITAL:'Tạo cơ sở y tế', UPDATE_HOSPITAL:'Cập nhật CSYT',
+  CREATE_SUBADMIN:'Tạo tài khoản Sub Admin', UPDATE_SUBADMIN:'Cập nhật Sub Admin', DELETE_SUBADMIN:'Xóa Sub Admin',
+  UPDATE_DEVICE:'Cập nhật thiết bị', DELETE_DEVICE:'Xóa thiết bị',
+  // Sub-admin
+  CREATE_PATIENT:'Tiếp nhận bệnh nhân mới', UPDATE_PATIENT:'Cập nhật bệnh nhân', DELETE_PATIENT:'Xóa bệnh nhân',
+  CREATE_DOCTOR:'Tạo tài khoản bác sĩ', UPDATE_DOCTOR:'Cập nhật bác sĩ',
+  CREATE_FAMILY:'Tạo tài khoản người nhà', UPDATE_FAMILY:'Cập nhật người nhà', DELETE_FAMILY:'Xóa liên kết người nhà',
+  ASSIGN_DOCTOR:'Phân công bác sĩ', ASSIGN_DEVICE:'Gán thiết bị',
+};
+const ACTION_CLASS = {
+  CREATE:'CREATE', UPDATE:'UPDATE', DELETE:'DELETE', LOGIN:'LOGIN',
+  CREATE_HOSPITAL:'CREATE', UPDATE_HOSPITAL:'UPDATE',
+  CREATE_SUBADMIN:'CREATE', UPDATE_SUBADMIN:'UPDATE', DELETE_SUBADMIN:'DELETE',
+  UPDATE_DEVICE:'UPDATE', DELETE_DEVICE:'DELETE',
+  CREATE_PATIENT:'CREATE', UPDATE_PATIENT:'UPDATE', DELETE_PATIENT:'DELETE',
+  CREATE_DOCTOR:'CREATE', UPDATE_DOCTOR:'UPDATE',
+  CREATE_FAMILY:'CREATE', UPDATE_FAMILY:'UPDATE', DELETE_FAMILY:'DELETE',
+  ASSIGN_DOCTOR:'UPDATE', ASSIGN_DEVICE:'UPDATE',
+};
 
 function resetLogFilter(){
   ['log-flt-action','log-flt-target','log-flt-from','log-flt-to'].forEach(function(id){
