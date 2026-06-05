@@ -534,6 +534,59 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
   </div>
 </div>
 
+<!-- MODAL: SỬA LIÊN KẾT NGƯỜI NHÀ (từ tab bệnh nhân) -->
+<div class="modal-bg" id="modal-edit-pt-family" onclick="if(event.target===this)closeModal('modal-edit-pt-family')">
+  <div class="modal modal-sm">
+    <button class="modal-x" onclick="closeModal('modal-edit-pt-family')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    <div class="modal-ttl">✏️ Sửa liên kết người nhà</div>
+    <input type="hidden" id="epf-old-link-id"/>
+    <input type="hidden" id="epf-patient-id"/>
+    <input type="hidden" id="epf-fam-existing-id"/>
+    <div style="display:flex;gap:16px;margin-bottom:12px">
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="epf-mode" value="existing" checked onchange="toggleEpfMode('existing')" style="accent-color:var(--navy);width:15px;height:15px"/>Đã có tài khoản
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:.78rem;font-weight:600">
+        <input type="radio" name="epf-mode" value="new" onchange="toggleEpfMode('new')" style="accent-color:var(--navy);width:15px;height:15px"/>Tạo tài khoản mới
+      </label>
+    </div>
+    <div class="field">
+      <label>Họ tên người nhà *</label>
+      <div class="ac-wrap">
+        <input id="epf-fam-name" type="text" placeholder="Nhập tên để tìm..." autocomplete="off"
+          oninput="acSearchEpf(this.value)" onfocus="acSearchEpf(this.value)"/>
+        <div class="ac-dropdown" id="epf-ac-drop"></div>
+      </div>
+    </div>
+    <div id="epf-new-fields" style="display:none">
+      <div class="field-row c2">
+        <div class="field"><label>SĐT</label><input id="epf-phone" type="text" maxlength="10" oninput="validatePhone(this)" onkeypress="return /[0-9]/.test(event.key)"/></div>
+        <div class="field"><label>Email</label><input id="epf-email" type="email"/></div>
+      </div>
+      <div class="field"><label>Mật khẩu app</label><input id="epf-pw" type="text" value="123456"/></div>
+    </div>
+    <div class="field"><label>Quan hệ</label>
+      <select id="epf-rel">
+        <option value="">— Chọn —</option>
+        <option value="vo_chong">Vợ/Chồng</option><option value="con">Con</option>
+        <option value="cha_me">Cha/Mẹ</option><option value="anh_chi_em">Anh/Chị/Em</option>
+        <option value="than_nhan">Thân nhân khác</option><option value="nguoi_giam_ho">Người giám hộ</option>
+      </select>
+    </div>
+    <div style="margin:8px 0">
+      <label style="display:flex;align-items:center;gap:8px;font-size:.76rem;font-weight:600;cursor:pointer">
+        <input type="checkbox" id="epf-primary" style="accent-color:var(--navy);width:14px;height:14px"/>
+        Là người giám sát chính
+      </label>
+    </div>
+    <div class="modal-msg" id="epf-msg"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('modal-edit-pt-family')">Hủy</button>
+      <button class="btn-save" id="epf-save-btn" onclick="saveEditPtFamily()">💾 Lưu thay đổi</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: THÊM LIÊN KẾT BỆNH NHÂN CHO NGƯỜI NHÀ -->
 <div class="modal-bg" id="modal-add-link" onclick="if(event.target===this)closeModal('modal-add-link')">
   <div class="modal modal-sm">
@@ -2665,15 +2718,31 @@ async function saveEditPatient(){
 
 // ── SỬA / XÓA NGƯỜI NHÀ TRONG CARD BỆNH NHÂN ──
 function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimary){
-  document.getElementById('ef-link-id').value   = linkId;
-  document.getElementById('ef-user-id').value   = userId;
-  document.getElementById('ef-name').value      = name;
-  document.getElementById('ef-phone').value     = phone;
-  document.getElementById('ef-email').value     = email;
-  document.getElementById('ef-rel').value       = relation;
-  document.getElementById('ef-primary').checked = (isPrimary === true || isPrimary === 'true');
-  document.getElementById('ef-msg').textContent = '';
-  document.getElementById('modal-edit-family').classList.add('open');
+  // Lưu linkId hiện tại để xóa sau
+  document.getElementById('epf-old-link-id').value = linkId;
+  document.getElementById('epf-patient-id').value  = ''; // sẽ lấy từ context
+  document.getElementById('epf-rel').value          = relation||'';
+  document.getElementById('epf-primary').checked    = (isPrimary===true||isPrimary==='true');
+  document.getElementById('epf-msg').textContent    = '';
+
+  // Tìm patientId từ card đang mở
+  const openCard = document.querySelector('.page-card.open');
+  if(openCard){
+    const pid = openCard.id.replace('pt-card-','');
+    document.getElementById('epf-patient-id').value = pid;
+  }
+
+  // Autocomplete người nhà — dùng familiesCache
+  const nameInput = document.getElementById('epf-fam-name');
+  nameInput.value = name;
+  document.getElementById('epf-fam-existing-id').value = userId;
+  document.getElementById('epf-new-fields').style.display = 'none';
+
+  // Load radio về "Đã có tài khoản"
+  document.querySelector('input[name="epf-mode"][value="existing"]').checked = true;
+  toggleEpfMode('existing');
+
+  document.getElementById('modal-edit-pt-family').classList.add('open');
 }
 
 async function confirmDeletePtFamily(linkId, name, pid){
@@ -2972,6 +3041,90 @@ function validatePhone(el){
     el.style.borderColor = '';
     el.title = '';
   }
+}
+
+// ── SỬA LIÊN KẾT NGƯỜI NHÀ TỪ TAB BỆNH NHÂN ──
+function toggleEpfMode(mode){
+  const isNew = mode === 'new';
+  document.getElementById('epf-new-fields').style.display = isNew ? '' : 'none';
+  document.getElementById('epf-fam-name').value = '';
+  document.getElementById('epf-fam-existing-id').value = '';
+  document.getElementById('epf-ac-drop').style.display = 'none';
+}
+
+let _acEpfTimer = null;
+function acSearchEpf(q){
+  clearTimeout(_acEpfTimer);
+  const drop = document.getElementById('epf-ac-drop');
+  const mode = document.querySelector('input[name="epf-mode"]:checked')?.value;
+  if(mode === 'new' || !q.trim()){ drop.style.display='none'; return; }
+  _acEpfTimer = setTimeout(function(){
+    const lq = q.toLowerCase();
+    const matches = familiesCache.filter(function(f){
+      return (f.userName||'').toLowerCase().includes(lq);
+    }).slice(0,6);
+    if(!matches.length){ drop.style.display='none'; return; }
+    drop.innerHTML = matches.map(function(f){
+      return '<div class="ac-item" onmousedown="acSelectEpf(\''+f.userId+'\',\''+esc(f.userName)+'\')">'+esc(f.userName)+(f.phone?' · '+f.phone:'')+'</div>';
+    }).join('');
+    drop.style.display='block';
+  }, 200);
+}
+
+function acSelectEpf(userId, name){
+  document.getElementById('epf-fam-name').value = name;
+  document.getElementById('epf-fam-existing-id').value = userId;
+  document.getElementById('epf-ac-drop').style.display = 'none';
+}
+
+async function saveEditPtFamily(){
+  const oldLinkId = document.getElementById('epf-old-link-id').value;
+  const patientId = document.getElementById('epf-patient-id').value;
+  const existingId = document.getElementById('epf-fam-existing-id').value;
+  const famName   = document.getElementById('epf-fam-name').value.trim();
+  const mode      = document.querySelector('input[name="epf-mode"]:checked')?.value;
+  const msg       = document.getElementById('epf-msg');
+  const btn       = document.getElementById('epf-save-btn');
+
+  if(!famName){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập tên người nhà'; return; }
+  if(mode==='existing' && !existingId){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng chọn người nhà từ danh sách'; return; }
+
+  btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
+  try {
+    // Xóa liên kết cũ
+    if(oldLinkId) await fetch(AAPI+'/admin/'+UID+'/families/'+oldLinkId, {method:'DELETE'});
+
+    // Tạo liên kết mới
+    const body = {
+      patientId,
+      relation:  document.getElementById('epf-rel').value||null,
+      isPrimary: document.getElementById('epf-primary').checked,
+    };
+    if(mode==='existing'){
+      body.existingUserId = existingId;
+    } else {
+      body.name     = famName;
+      body.phone    = document.getElementById('epf-phone').value.trim()||null;
+      body.email    = document.getElementById('epf-email').value.trim()||null;
+      body.password = document.getElementById('epf-pw').value.trim()||'123456';
+    }
+    const r = await fetch(AAPI+'/admin/'+UID+'/families', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if(!r.ok) throw new Error(d.error||'Lỗi');
+
+    msg.style.color='var(--green)'; msg.textContent='✅ Đã cập nhật';
+    setTimeout(function(){
+      closeModal('modal-edit-pt-family');
+      // Reload người nhà trong card bệnh nhân
+      const el = document.getElementById('pt-fam-list-'+patientId);
+      if(el){ delete el.dataset.loaded; el.dataset.forceReload='1'; loadPatientFamilies(patientId); }
+      loadFamilies();
+    }, 1200);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+  btn.disabled=false;
 }
 
 // ── QUẢN LÝ LIÊN KẾT NGƯỜI NHÀ - BỆNH NHÂN ──
