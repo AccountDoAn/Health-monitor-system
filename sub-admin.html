@@ -552,10 +552,15 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     </div>
     <div class="field">
       <label>Họ tên người nhà *</label>
-      <div class="ac-wrap">
-        <input id="epf-fam-name" type="text" placeholder="Nhập tên để tìm..." autocomplete="off"
-          oninput="acSearchEpf(this.value)" onfocus="acSearchEpf(this.value)"/>
-        <div class="ac-dropdown" id="epf-ac-drop"></div>
+      <!-- Combobox khi đã có tài khoản -->
+      <div id="epf-existing-wrap">
+        <select id="epf-fam-select" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);background:var(--card)" onchange="epfSelectFamily(this)">
+          <option value="">— Chọn người nhà —</option>
+        </select>
+      </div>
+      <!-- Textbox khi tạo mới -->
+      <div id="epf-new-name-wrap" style="display:none">
+        <input id="epf-fam-name" type="text" placeholder="Nguyễn Thị B..."/>
       </div>
     </div>
     <div id="epf-new-fields" style="display:none">
@@ -788,10 +793,19 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <label>Họ tên người nhà
         <span id="pt-fam-name-hint" style="font-weight:400;color:var(--muted);font-size:.62rem"> — nhập để tìm hoặc tạo mới</span>
       </label>
-      <div class="ac-wrap">
-        <input id="pt-fam-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
-          oninput="acSearchPtFamily(this.value)" onfocus="acSearchPtFamily(this.value)"/>
-        <div class="ac-dropdown" id="pt-fam-ac-drop"></div>
+      <!-- Combobox khi đã có tài khoản -->
+      <div id="pt-fam-existing-wrap" style="display:none">
+        <select id="pt-fam-select" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);background:var(--card)" onchange="document.getElementById('pt-fam-existing-id').value=this.value">
+          <option value="">— Chọn người nhà —</option>
+        </select>
+      </div>
+      <!-- Textbox khi tạo mới -->
+      <div id="pt-fam-new-wrap">
+        <div class="ac-wrap">
+          <input id="pt-fam-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
+            oninput="acSearchPtFamily(this.value)" onfocus="acSearchPtFamily(this.value)"/>
+          <div class="ac-dropdown" id="pt-fam-ac-drop"></div>
+        </div>
       </div>
     </div>
     <div id="pt-fam-new-fields">
@@ -2501,6 +2515,16 @@ async function acSearchFamily(q){
 // Không dùng hover fill/clear nữa — tránh layout flicker
 
 // Khi click chọn gợi ý
+function afSelectFamily(sel){
+  _afSelectedUserId = sel.value;
+  // Điền thông tin từ familiesCache
+  const f = familiesCache.find(function(x){ return x.userId === sel.value; });
+  if(f){
+    document.getElementById('af-phone').value = f.phone||'';
+    document.getElementById('af-email').value = f.email||'';
+  }
+}
+
 function acSelect(name, phone, email, uid){
   _afSelectedUserId = uid;
   document.getElementById('af-name').value  = name;
@@ -2718,29 +2742,24 @@ async function saveEditPatient(){
 
 // ── SỬA / XÓA NGƯỜI NHÀ TRONG CARD BỆNH NHÂN ──
 function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimary){
-  // Lưu linkId hiện tại để xóa sau
-  document.getElementById('epf-old-link-id').value = linkId;
-  document.getElementById('epf-patient-id').value  = ''; // sẽ lấy từ context
-  document.getElementById('epf-rel').value          = relation||'';
-  document.getElementById('epf-primary').checked    = (isPrimary===true||isPrimary==='true');
-  document.getElementById('epf-msg').textContent    = '';
+  document.getElementById('epf-old-link-id').value  = linkId;
+  document.getElementById('epf-patient-id').value   = '';
+  document.getElementById('epf-fam-existing-id').value = userId;
+  document.getElementById('epf-rel').value           = relation||'';
+  document.getElementById('epf-primary').checked     = (isPrimary===true||isPrimary==='true');
+  document.getElementById('epf-msg').textContent     = '';
 
   // Tìm patientId từ card đang mở
-  const openCard = document.querySelector('.page-card.open');
-  if(openCard){
-    const pid = openCard.id.replace('pt-card-','');
-    document.getElementById('epf-patient-id').value = pid;
-  }
+  const openCard = document.querySelector('.page-card.open[id^="pt-card-"]');
+  if(openCard) document.getElementById('epf-patient-id').value = openCard.id.replace('pt-card-','');
 
-  // Autocomplete người nhà — dùng familiesCache
-  const nameInput = document.getElementById('epf-fam-name');
-  nameInput.value = name;
-  document.getElementById('epf-fam-existing-id').value = userId;
-  document.getElementById('epf-new-fields').style.display = 'none';
-
-  // Load radio về "Đã có tài khoản"
+  // Set radio về "Đã có tài khoản" và load combobox
   document.querySelector('input[name="epf-mode"][value="existing"]').checked = true;
   toggleEpfMode('existing');
+
+  // Chọn sẵn người nhà hiện tại trong combobox
+  const sel = document.getElementById('epf-fam-select');
+  sel.value = userId;
 
   document.getElementById('modal-edit-pt-family').classList.add('open');
 }
@@ -3046,42 +3065,33 @@ function validatePhone(el){
 // ── SỬA LIÊN KẾT NGƯỜI NHÀ TỪ TAB BỆNH NHÂN ──
 function toggleEpfMode(mode){
   const isNew = mode === 'new';
-  document.getElementById('epf-new-fields').style.display = isNew ? '' : 'none';
-  document.getElementById('epf-fam-name').value = '';
+  document.getElementById('epf-existing-wrap').style.display = isNew ? 'none' : '';
+  document.getElementById('epf-new-name-wrap').style.display = isNew ? '' : 'none';
+  document.getElementById('epf-new-fields').style.display    = isNew ? '' : 'none';
   document.getElementById('epf-fam-existing-id').value = '';
-  document.getElementById('epf-ac-drop').style.display = 'none';
+  if(!isNew){
+    // Load combobox danh sách người nhà
+    const sel = document.getElementById('epf-fam-select');
+    sel.innerHTML = '<option value="">— Chọn người nhà —</option>'
+      + alphabetSort(familiesCache,'userName').map(function(f){
+          return '<option value="'+f.userId+'">'+esc(f.userName)+(f.phone?' · '+f.phone:'')+'</option>';
+        }).join('');
+  }
 }
 
-let _acEpfTimer = null;
-function acSearchEpf(q){
-  clearTimeout(_acEpfTimer);
-  const drop = document.getElementById('epf-ac-drop');
-  const mode = document.querySelector('input[name="epf-mode"]:checked')?.value;
-  if(mode === 'new' || !q.trim()){ drop.style.display='none'; return; }
-  _acEpfTimer = setTimeout(function(){
-    const lq = q.toLowerCase();
-    const matches = familiesCache.filter(function(f){
-      return (f.userName||'').toLowerCase().includes(lq);
-    }).slice(0,6);
-    if(!matches.length){ drop.style.display='none'; return; }
-    drop.innerHTML = matches.map(function(f){
-      return '<div class="ac-item" onmousedown="acSelectEpf(\''+f.userId+'\',\''+esc(f.userName)+'\')">'+esc(f.userName)+(f.phone?' · '+f.phone:'')+'</div>';
-    }).join('');
-    drop.style.display='block';
-  }, 200);
-}
-
-function acSelectEpf(userId, name){
-  document.getElementById('epf-fam-name').value = name;
-  document.getElementById('epf-fam-existing-id').value = userId;
-  document.getElementById('epf-ac-drop').style.display = 'none';
+function epfSelectFamily(sel){
+  document.getElementById('epf-fam-existing-id').value = sel.value;
 }
 
 async function saveEditPtFamily(){
   const oldLinkId = document.getElementById('epf-old-link-id').value;
   const patientId = document.getElementById('epf-patient-id').value;
-  const existingId = document.getElementById('epf-fam-existing-id').value;
-  const famName   = document.getElementById('epf-fam-name').value.trim();
+  const existingId = mode==='existing'
+    ? document.getElementById('epf-fam-select').value
+    : '';
+  const famName = mode==='existing'
+    ? document.getElementById('epf-fam-select').options[document.getElementById('epf-fam-select').selectedIndex]?.text || ''
+    : document.getElementById('epf-fam-name').value.trim();
   const mode      = document.querySelector('input[name="epf-mode"]:checked')?.value;
   const msg       = document.getElementById('epf-msg');
   const btn       = document.getElementById('epf-save-btn');
@@ -3201,29 +3211,46 @@ async function saveEditLink(){
 // ── TOGGLE FAM MODE (radio button) ──
 function toggleFamMode(prefix, mode){
   const isExisting = mode === 'existing';
-  // Disable/enable các field ngoài tên
-  [prefix+'-fam-phone', prefix+'-fam-email', prefix+'-fam-pw',
-   prefix+'-phone',     prefix+'-email',     prefix+'-pw'].forEach(function(id){
-    const el = document.getElementById(id);
+  const fields = ['phone','email','pw'];
+  fields.forEach(function(f){
+    const el = document.getElementById(prefix+'-fam-'+f) || document.getElementById(prefix+'-'+f);
     if(!el) return;
     el.disabled = isExisting;
     el.style.opacity = isExisting ? '0.5' : '1';
     el.style.cursor  = isExisting ? 'not-allowed' : '';
     el.style.background = isExisting ? 'var(--bg)' : '';
   });
+
+  // Chuyển đổi combobox/textbox cho prefix pt và af
+  const existingWrap = document.getElementById(prefix+'-fam-existing-wrap');
+  const newWrap      = document.getElementById(prefix+'-fam-new-wrap');
+  if(existingWrap) existingWrap.style.display = isExisting ? '' : 'none';
+  if(newWrap)      newWrap.style.display      = isExisting ? 'none' : '';
+
+  // Load combobox nếu chuyển sang existing
+  if(isExisting){
+    const sel = document.getElementById(prefix+'-fam-select');
+    if(sel){
+      sel.innerHTML = '<option value="">— Chọn người nhà —</option>'
+        + alphabetSort(familiesCache,'userName').map(function(f){
+            return '<option value="'+f.userId+'">'+esc(f.userName)+(f.phone?' · '+f.phone:'')+'</option>';
+          }).join('');
+      sel.value = '';
+    }
+  }
+
   // Hint text
-  const hint = document.getElementById(prefix+'-fam-name-hint') || document.getElementById(prefix+'-name-hint');
+  const hint = document.getElementById(prefix+'-fam-name-hint');
   if(hint) hint.textContent = isExisting
-    ? ' — nhập tên để tìm tài khoản có sẵn'
+    ? ' — chọn từ danh sách'
     : ' — nhập để tìm hoặc tạo mới';
+
   // Reset existing id nếu chuyển sang tạo mới
   if(!isExisting){
-    const exEl = document.getElementById(prefix+'-fam-existing-id') || document.getElementById(prefix+'-existing-id');
+    const exEl = document.getElementById(prefix+'-fam-existing-id');
     if(exEl){ exEl.value = ''; }
-    // Xóa các field khi chuyển sang tạo mới
-    [prefix+'-fam-phone',prefix+'-fam-email',prefix+'-phone',prefix+'-email'].forEach(function(id){
-      const el=document.getElementById(id); if(el) el.value='';
-    });
+    const nameEl = document.getElementById(prefix+'-fam-name');
+    if(nameEl) nameEl.value = '';
   }
 }
 
@@ -3256,7 +3283,6 @@ function acSelectPtFam(name,phone,email,uid){
   document.getElementById('pt-fam-email').value = email;
   document.getElementById('pt-fam-existing-id').value = uid;
   document.getElementById('pt-fam-ac-drop').style.display='none';
-  // Nếu đang ở mode existing → giữ disable, chỉ hiện thông tin
   const mode = document.querySelector('input[name="pt-fam-mode"]:checked')?.value;
   if(mode === 'existing'){
     ['pt-fam-phone','pt-fam-email','pt-fam-pw'].forEach(function(id){
@@ -3462,10 +3488,19 @@ async function saveDoctor(){
       <label>Họ tên *
         <span id="af-name-hint" style="font-weight:400;color:var(--muted);font-size:.62rem"> — Nhập để tìm tài khoản có sẵn hoặc tạo mới</span>
       </label>
-      <div class="ac-wrap">
-        <input id="af-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
-          oninput="acSearchFamily(this.value)" onfocus="acSearchFamily(this.value)"/>
-        <div class="ac-dropdown" id="af-ac-drop"></div>
+      <!-- Combobox khi đã có tài khoản -->
+      <div id="af-fam-existing-wrap" style="display:none">
+        <select id="af-fam-select" style="width:100%;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-family:'Sora',sans-serif;font-size:.76rem;color:var(--text);background:var(--card)" onchange="afSelectFamily(this)">
+          <option value="">— Chọn người nhà —</option>
+        </select>
+      </div>
+      <!-- Textbox khi tạo mới -->
+      <div id="af-fam-new-wrap">
+        <div class="ac-wrap">
+          <input id="af-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
+            oninput="acSearchFamily(this.value)" onfocus="acSearchFamily(this.value)"/>
+          <div class="ac-dropdown" id="af-ac-drop"></div>
+        </div>
       </div>
     </div>
 
