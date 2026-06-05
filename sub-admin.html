@@ -2741,7 +2741,7 @@ async function saveEditPatient(){
 }
 
 // ── SỬA / XÓA NGƯỜI NHÀ TRONG CARD BỆNH NHÂN ──
-function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimary){
+async function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimary){
   document.getElementById('epf-old-link-id').value  = linkId;
   document.getElementById('epf-patient-id').value   = '';
   document.getElementById('epf-fam-existing-id').value = userId;
@@ -2753,13 +2753,21 @@ function openEditPtFamily(linkId, userId, name, phone, email, relation, isPrimar
   const openCard = document.querySelector('.page-card.open[id^="pt-card-"]');
   if(openCard) document.getElementById('epf-patient-id').value = openCard.id.replace('pt-card-','');
 
+  // Đảm bảo familiesCache đã có dữ liệu
+  if(!familiesCache.length){
+    try {
+      const r = await fetch(AAPI+'/admin/'+UID+'/families');
+      if(r.ok){ familiesCache = await r.json(); familiesFiltered = familiesCache; }
+    } catch(_){}
+  }
+
   // Set radio về "Đã có tài khoản" và load combobox
   document.querySelector('input[name="epf-mode"][value="existing"]').checked = true;
   toggleEpfMode('existing');
 
   // Chọn sẵn người nhà hiện tại trong combobox
   const sel = document.getElementById('epf-fam-select');
-  sel.value = userId;
+  if(sel) sel.value = userId;
 
   document.getElementById('modal-edit-pt-family').classList.add('open');
 }
@@ -3070,7 +3078,6 @@ function toggleEpfMode(mode){
   document.getElementById('epf-new-fields').style.display    = isNew ? '' : 'none';
   document.getElementById('epf-fam-existing-id').value = '';
   if(!isNew){
-    // Load combobox danh sách người nhà
     const sel = document.getElementById('epf-fam-select');
     sel.innerHTML = '<option value="">— Chọn người nhà —</option>'
       + alphabetSort(familiesCache,'userName').map(function(f){
