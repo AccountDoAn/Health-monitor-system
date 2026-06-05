@@ -435,6 +435,8 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         <div class="sec-title">📋 Nhật ký hệ thống</div>
         <span style="font-size:.7rem;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:7px;border:1px solid var(--border)">🔒 Chỉ đọc</span>
         <div id="log-realtime-badge" style="display:none;align-items:center;gap:5px;font-size:.7rem;color:#27ae60;font-weight:600">
+          <span style="width:7px;height:7px;border-radius:50%;background:#27ae60;display:inline-block;animation:pulse 1.5s infinite"></span>Realtime
+        </div>
       </div>
       <!-- Bộ lọc -->
       <div style="display:flex;flex-wrap:wrap;gap:10px;padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);align-items:flex-end">
@@ -442,30 +444,33 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Hành động</span>
           <select id="log-flt-action" onchange="loadLogs()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)">
             <option value="">Tất cả</option>
-            <optgroup label="Hệ thống">
-              <option value="LOGIN">🔵 Đăng nhập</option>
-              <option value="CREATE">🟢 Tạo mới (trigger)</option>
-              <option value="UPDATE">🟡 Cập nhật (trigger)</option>
-              <option value="DELETE">🔴 Xóa (trigger)</option>
-            </optgroup>
+            <optgroup label="Đăng nhập"><option value="LOGIN">Đăng nhập</option></optgroup>
             <optgroup label="Bệnh nhân">
-              <option value="CREATE_PATIENT">🟢 Tiếp nhận bệnh nhân</option>
-              <option value="UPDATE_PATIENT">🟡 Cập nhật bệnh nhân</option>
-              <option value="DELETE_PATIENT">🔴 Xóa bệnh nhân</option>
+              <option value="CREATE_PATIENT">Tiếp nhận bệnh nhân</option>
+              <option value="UPDATE_PATIENT">Sửa bệnh nhân</option>
+              <option value="DELETE_PATIENT">Xóa bệnh nhân</option>
             </optgroup>
-            <optgroup label="Bác sĩ & Người nhà">
-              <option value="CREATE_DOCTOR">🟢 Tạo bác sĩ</option>
-              <option value="UPDATE_DOCTOR">🟡 Cập nhật bác sĩ</option>
-              <option value="CREATE_FAMILY">🟢 Tạo người nhà</option>
-              <option value="UPDATE_FAMILY">🟡 Cập nhật người nhà</option>
-              <option value="DELETE_FAMILY">🔴 Xóa liên kết người nhà</option>
-              <option value="ASSIGN_DOCTOR">🟡 Phân công bác sĩ</option>
+            <optgroup label="Bác sĩ">
+              <option value="CREATE_DOCTOR">Tạo bác sĩ</option>
+              <option value="UPDATE_DOCTOR">Sửa bác sĩ</option>
+              <option value="ASSIGN_DOCTOR">Phân công bác sĩ</option>
+            </optgroup>
+            <optgroup label="Người nhà">
+              <option value="CREATE_FAMILY">Tạo người nhà</option>
+              <option value="UPDATE_FAMILY">Sửa người nhà</option>
+              <option value="DELETE_FAMILY">Xóa liên kết người nhà</option>
             </optgroup>
             <optgroup label="Thiết bị & CSYT">
-              <option value="ASSIGN_DEVICE">🟡 Gán thiết bị</option>
-              <option value="CREATE_HOSPITAL">🟢 Tạo CSYT</option>
-              <option value="UPDATE_HOSPITAL">🟡 Cập nhật CSYT</option>
-              <option value="CREATE_SUBADMIN">🟢 Tạo Sub Admin</option>
+              <option value="ASSIGN_DEVICE">Gán thiết bị</option>
+              <option value="CREATE_HOSPITAL">Tạo CSYT</option>
+              <option value="UPDATE_HOSPITAL">Sửa CSYT</option>
+              <option value="CREATE_SUBADMIN">Tạo Sub Admin</option>
+              <option value="UPDATE_SUBADMIN">Sửa Sub Admin</option>
+            </optgroup>
+            <optgroup label="Trigger tự động">
+              <option value="CREATE">Tạo mới (trigger)</option>
+              <option value="UPDATE">Cập nhật (trigger)</option>
+              <option value="DELETE">Xóa (trigger)</option>
             </optgroup>
           </select>
         </div>
@@ -488,8 +493,22 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
         </div>
         <button onclick="resetLogFilter()" style="padding:5px 12px;border:1.5px solid var(--border);border-radius:7px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">✕ Xóa lọc</button>
       </div>
-      <!-- Timeline -->
-      <div id="log-body" style="padding:12px 18px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
+      <!-- Bảng -->
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:150px">Thời gian</th>
+              <th style="width:170px">Người thực hiện</th>
+              <th style="width:200px">Hành động</th>
+              <th>Chi tiết</th>
+            </tr>
+          </thead>
+          <tbody id="log-body">
+            <tr><td colspan="4"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
       <!-- Phân trang -->
       <div id="log-pagination" style="display:none;align-items:center;justify-content:space-between;padding:10px 18px;border-top:1px solid var(--border)">
         <span style="font-size:.72rem;color:var(--muted)" id="log-page-info">—</span>
@@ -1903,72 +1922,84 @@ async function loadLogs(){
         day:'2-digit',month:'2-digit',year:'numeric',
         hour:'2-digit',minute:'2-digit',second:'2-digit'
       }) : '—';
-      const initials = (l.userName||'?').split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
 
       // Parse du_lieu_bo_sung
       let detail = null;
       try { detail = l.detail ? (typeof l.detail==='string' ? JSON.parse(l.detail) : l.detail) : null; } catch(_){}
 
-      // Xác định nhãn hành động thông minh hơn dựa vào loai_doi_tuong + du_lieu_bo_sung
+      // Xác định nhãn thông minh
       function getSmartLabel(){
         const base = ACTION_LABEL[l.action]||l.action;
-        // Nếu đã có action cụ thể từ logAction() thì dùng luôn
         if(l.action !== 'CREATE' && l.action !== 'UPDATE' && l.action !== 'DELETE') return base;
-        // Với trigger tự động, đọc thêm context từ loai_doi_tuong
-        if(l.targetType === 'nguoi_dung'){
-          const hoTen = detail?.ho_ten || detail?.after?.ho_ten || '';
+        const d = detail?.after || detail || {};
+        const hoTen = d.ho_ten || '';
+        if(l.targetType==='nguoi_dung'){
           if(l.action==='CREATE') return 'Tạo tài khoản'+(hoTen?' — '+hoTen:'');
           if(l.action==='UPDATE') return 'Cập nhật tài khoản'+(hoTen?' — '+hoTen:'');
           if(l.action==='DELETE') return 'Xóa tài khoản'+(hoTen?' — '+hoTen:'');
         }
-        if(l.targetType === 'co_so_y_te'){
-          const ten = detail?.ten_co_so || detail?.after?.ten_co_so || '';
+        if(l.targetType==='co_so_y_te'){
+          const ten = d.ten_co_so||'';
           if(l.action==='CREATE') return 'Tạo cơ sở y tế'+(ten?' — '+ten:'');
           if(l.action==='UPDATE') return 'Cập nhật CSYT'+(ten?' — '+ten:'');
         }
-        if(l.targetType === 'lien_ket_bac_si'){
-          if(l.action==='CREATE') return 'Tạo liên kết bác sĩ — bệnh nhân';
-          if(l.action==='DELETE') return 'Xóa liên kết bác sĩ — bệnh nhân';
+        if(l.targetType==='lien_ket_bac_si'){
+          return l.action==='CREATE'?'Tạo liên kết BS—BN':'Xóa liên kết BS—BN';
         }
-        if(l.targetType === 'lien_ket_nguoi_nha'){
-          if(l.action==='CREATE') return 'Tạo liên kết người nhà — bệnh nhân';
+        if(l.targetType==='lien_ket_nguoi_nha'){
+          if(l.action==='CREATE') return 'Tạo liên kết người nhà—BN';
           if(l.action==='UPDATE') return 'Cập nhật liên kết người nhà';
-          if(l.action==='DELETE') return 'Xóa liên kết người nhà — bệnh nhân';
+          if(l.action==='DELETE') return 'Xóa liên kết người nhà—BN';
         }
-        if(l.targetType === 'lich_su_gan_thiet_bi'){
-          if(l.action==='CREATE') return 'Gán thiết bị cho bệnh nhân';
-          if(l.action==='UPDATE') return 'Cập nhật lịch sử gán thiết bị';
-        }
-        if(l.targetType === 'ho_so_benh_nhan'){
-          if(l.action==='CREATE') return 'Tạo hồ sơ bệnh nhân';
-          if(l.action==='UPDATE') return 'Cập nhật hồ sơ bệnh nhân';
-        }
-        if(l.targetType === 'thiet_bi_iot'){
-          const serial = detail?.so_seri || detail?.after?.so_seri || '';
+        if(l.targetType==='lich_su_gan_thiet_bi') return l.action==='CREATE'?'Gán thiết bị':'Cập nhật gán thiết bị';
+        if(l.targetType==='ho_so_benh_nhan') return l.action==='CREATE'?'Tạo hồ sơ BN':'Cập nhật hồ sơ BN';
+        if(l.targetType==='thiet_bi_iot'){
+          const serial = d.so_seri||'';
           if(l.action==='CREATE') return 'Thêm thiết bị'+(serial?' — '+serial:'');
           if(l.action==='UPDATE') return 'Cập nhật thiết bị'+(serial?' — '+serial:'');
         }
         return base;
       }
 
+      // Chi tiết
+      function getDetail(){
+        if(!detail) return '<span style="color:var(--muted);font-size:.7rem">—</span>';
+        const d = detail?.after || detail || {};
+        const parts = [];
+        if(d.ho_ten)        parts.push('<span class="mono" style="font-weight:600;color:var(--navy)">'+esc(d.ho_ten)+'</span>');
+        if(d.so_dien_thoai) parts.push('📞 '+esc(d.so_dien_thoai));
+        if(d.email)         parts.push('✉️ '+esc(d.email));
+        if(d.ten_co_so)     parts.push('🏥 '+esc(d.ten_co_so));
+        if(d.so_seri)       parts.push('<span class="mono">'+esc(d.so_seri)+'</span>');
+        return parts.length
+          ? '<div style="display:flex;flex-wrap:wrap;gap:6px;font-size:.7rem;color:var(--text)">'+parts.join('')+'</div>'
+          : '<span style="color:var(--muted);font-size:.7rem">'+esc(l.targetType||'—')+'</span>';
+      }
+
       const smartLabel = getSmartLabel();
       const tableLabel = TABLE_LABEL[l.targetType]||l.targetType||'—';
+      const userName   = l.userName||'Hệ thống';
+      const initials   = userName.split(' ').map(function(w){return w[0];}).slice(-2).join('').toUpperCase();
 
-      return '<div class="log-item">'
-        +'<div class="log-dot '+ac+'">'+initials+'</div>'
-        +'<div style="flex:1;min-width:0">'
-        +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
-        +'<span class="log-action-badge '+ac+'">'+esc(smartLabel)+'</span>'
-        +'<span style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(l.userName||'Hệ thống')+'</span>'
-        +(l.userEmail?'<span style="font-size:.66rem;color:var(--muted)">'+esc(l.userEmail)+'</span>':'')
-        +'</div>'
-        +'<div style="margin-top:4px;font-size:.65rem;color:var(--muted)">'
-        +'🗂 <strong style="color:var(--text)">'+esc(tableLabel)+'</strong>'
-        +(l.targetId?'<span style="font-family:\'DM Mono\',monospace;font-size:.65rem;margin-left:6px">'+esc(l.targetId.slice(0,8).toUpperCase())+'</span>':'')
-        +'</div>'
-        +'</div>'
-        +'<div style="font-size:.65rem;color:var(--muted);white-space:nowrap;text-align:right;flex-shrink:0">'+time+'</div>'
-        +'</div>';
+      return '<tr>'
+        // Thời gian
+        +'<td class="mono" style="font-size:.7rem;color:var(--muted);white-space:nowrap">'+time+'</td>'
+        // Người thực hiện
+        +'<td>'
+        +(l.userName
+          ?'<div style="display:flex;align-items:center;gap:7px">'
+            +'<div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.62rem;font-weight:800;flex-shrink:0">'+initials+'</div>'
+            +'<div><div style="font-size:.76rem;font-weight:600;color:var(--text)">'+esc(l.userName)+'</div>'
+            +(l.userEmail?'<div style="font-size:.64rem;color:var(--muted)">'+esc(l.userEmail)+'</div>':'')
+            +'</div></div>'
+          :'<span style="font-size:.7rem;color:var(--muted);font-style:italic">🤖 Trigger tự động</span>')
+        +'</td>'
+        // Hành động
+        +'<td><span class="log-action-badge '+ac+'" style="font-size:.68rem">'+esc(smartLabel)+'</span>'
+        +'<div style="font-size:.62rem;color:var(--muted);margin-top:3px">🗂 '+esc(tableLabel)+'</div></td>'
+        // Chi tiết
+        +'<td>'+getDetail()+'</td>'
+        +'</tr>';
     }).join('');
 
     // Pagination
