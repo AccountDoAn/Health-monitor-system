@@ -672,133 +672,56 @@ app.post("/devices", async (req, res) => {
 // ============================================================
 
 // GET /logs — nhật ký hoạt động (không thể xóa/sửa)
-// ============================================================
-// API LẤY NHẬT KÝ HỆ THỐNG - CHUẨN HÓA THEO DATABASE THỰC TẾ
-// ============================================================
-
 app.get("/logs", async (req, res) => {
   try {
-    const { page = 1, limit = 50, tab, dateFrom, dateTo } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const { page=1, limit=20, action, target, dateFrom, dateTo } = req.query;
+    const offset = (parseInt(page)-1) * parseInt(limit);
 
-    // 1. Khởi tạo truy vấn đúng theo các cột trong image_8ae09d.png
-    let query = supabase
-      .from("nhat_ky_he_thong")
-      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, dia_chi_ip, du_lieu_bo_sung, ngay_tao", { count: "exact" })
-      .order("ngay_tao", { ascending: false });
+    const EXCLUDED_TABLES = ['lien_ket_bac_si','lien_ket_nguoi_nha','lich_su_gan_thiet_bi','ho_so_benh_nhan'];
 
-    // 2. Xử lý phân loại TAB trực tiếp từ Backend dựa trên cột loai_doi_tuong và hanh_dong
-    if (tab) {
-      switch (tab) {
-        case "access": // Tab Đăng nhập / Đăng xuất
-          query = query.in("hanh_dong", ["LOGIN", "LOGOUT"]);
-          break;
-        case "devices": // Tab Thiết bị & Gán thiết bị
-          query = query.in("loai_doi_tuong", ["thiet_bi_iot", "lich_su_gan_thiet_bi"]);
-          break;
-        case "patients": // Tab Bệnh nhân & Người nhà
-          query = query.in("loai_doi_tuong", ["ho_so_benh_nhan", "lien_ket_nguoi_nha"]);
-          break;
-        case "doctors": // Tab Bác sĩ
-          query = query.eq("loai_doi_tuong", "lien_ket_bac_si");
-          break;
-        case "subadmins": // Tab Quản lý nhân sự/Sub-admin
-          query = query.eq("loai_doi_tuong", "nguoi_dung");
-          break;
-        default:
-          break;
-      }
-    }
+    let query = supabase.from("nhat_ky_he_thong")
+      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, dia_chi_ip, du_lieu_bo_sung, ngay_tao", { count: 'exact' })
+      .order("ngay_tao", { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
 
-    // Bộ lọc theo khoảng thời gian
+    if (action)   query = query.eq("hanh_dong", action);
+    if (target)   query = query.eq("loai_doi_tuong", target);
+    else          query = query.not("loai_doi_tuong", "in", `(${EXCLUDED_TABLES.join(',')})`);
     if (dateFrom) query = query.gte("ngay_tao", dateFrom);
-    if (dateTo)   query = query.lte("ngay_tao", dateTo + "T23:59:59");
+    if (dateTo)   query = query.lte("ngay_tao", dateTo+'T23:59:59');
 
-    // Thực hiện phân trang
-    query = query.range(offset, offset + parseInt(limit) - 1);
-
-    const { data: logs, error, count } = await query;
+    const { data, error, count } = await query;
     if (error) throw error;
 
-    // 3. Gom toàn bộ ID người dùng xuất hiện trong log để truy vấn thông tin (Tên, Email)
-    // Bao gồm cả người thực hiện (nguoi_dung_id) và người bị tác động (doi_tuong_id nếu loai_doi_tuong là nguoi_dung)
-    const userIds = new Set();
-    (logs || []).forEach(log => {
-      if (log.nguoi_dung_id) userIds.add(log.nguoi_dung_id);
-      if (log.loai_doi_tuong === "nguoi_dung" && log.doi_tuong_id) userIds.add(log.doi_tuong_id);
-    });
-
-    const userMap = {};
-    if (userIds.size > 0) {
-      const { data: users } = await supabase
-        .from("nguoi_dung")
-        .select("id, ho_ten, email");
-      
-      (users || []).forEach(u => {
-        userMap[u.id] = { name: u.ho_ten, email: u.email };
-      });
+    // Lấy tên người dùng
+    const uids = [...new Set((data||[]).map(l=>l.nguoi_dung_id).filter(Boolean))];
+    const uMap = {};
+    if (uids.length) {
+      const { data: users } = await supabase.from("nguoi_dung")
+        .select("id, ho_ten, email").in("id", uids);
+      (users||[]).forEach(u=>{ uMap[u.id]={name:u.ho_ten, email:u.email}; });
     }
 
-    // 4. Chuẩn hóa cấu trúc dữ liệu trả về cho Frontend hiển thị
-    const formattedLogs = (logs || []).map(log => {
-      let performerName = "Hệ thống (Trigger)";
-      let performerEmail = "—";
-
-      // Nếu có nguoi_dung_id (như log LOGIN hoặc CREATE_DEVICE trong ảnh)
-      if (log.nguoi_dung_id && userMap[log.nguoi_dung_id]) {
-        performerName = userMap[log.nguoi_dung_id].name;
-        performerEmail = userMap[log.nguoi_dung_id].email;
-      } 
-      // Nếu không có nguoi_dung_id nhưng hành động xảy ra trên bảng nguoi_dung và tìm thấy thông tin email trong du_lieu_bo_sung hoặc userMap
-      else if (log.loai_doi_tuong === "admin" && log.du_lieu_bo_sung?.email) {
-        performerEmail = log.du_lieu_bo_sung.email;
-        performerName = "Admin";
-      }
-
-      // Mô tả chi tiết hành động dựa trên dữ liệu thực tế
-      let actionDescription = `${log.hanh_dong} trên ${log.loai_doi_tuong}`;
-      if (log.hanh_dong === "LOGIN") actionDescription = "Đăng nhập hệ thống";
-      if (log.hanh_dong === "LOGOUT") actionDescription = "Đăng xuất hệ thống";
-      if (log.hanh_dong === "CREATE_DEVICE") actionDescription = "Thêm mới thiết bị IoT";
-      
-      // Nếu là hành động Thêm/Sửa/Xóa nhân sự, lấy tên của người bị tác động
-      let targetName = "—";
-      if (log.loai_doi_tuong === "nguoi_dung" && log.doi_tuong_id && userMap[log.doi_tuong_id]) {
-        targetName = userMap[log.doi_tuong_id].name;
-      }
-
-      return {
-        id: log.id,
-        time: log.ngay_tao,
-        ip: log.dia_chi_ip || "—",
-        performer: {
-          id: log.nguoi_dung_id,
-          name: performerName,
-          email: performerEmail
-        },
-        action: {
-          type: log.hanh_dong,          // CREATE, UPDATE, DELETE, LOGIN...
-          targetTable: log.loai_doi_tuong, // ho_so_benh_nhan, thiet_bi_iot...
-          targetId: log.doi_tuong_id,
-          description: actionDescription
-        },
-        targetName: targetName,         // Tên đối tượng bị tác động (nếu có)
-        details: log.du_lieu_bo_sung    // Giữ nguyên trường JSON để Frontend xem chi tiết after/before nếu cần
-      };
-    });
-
-    // 5. Trả dữ liệu về Client
     res.json({
-      success: true,
       total: count || 0,
-      page: parseInt(page),
+      page:  parseInt(page),
       limit: parseInt(limit),
-      data: formattedLogs
+      data: (data||[]).map(l=>({
+        id:         l.id,
+        userId:     l.nguoi_dung_id,
+        userName:   uMap[l.nguoi_dung_id]?.name || '—',
+        userEmail:  uMap[l.nguoi_dung_id]?.email || '—',
+        action:     l.hanh_dong,
+        targetType: l.loai_doi_tuong,
+        targetId:   l.doi_tuong_id,
+        ip:         l.dia_chi_ip,
+        detail:     l.du_lieu_bo_sung,
+        time:       l.ngay_tao,
+      }))
     });
-
   } catch (err) {
-    console.error("[GET /logs] Error:", err.message);
-    res.status(500).json({ success: false, error: "Lỗi xử lý dữ liệu nhật ký hệ thống" });
+    console.error("[GET /logs]", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 
