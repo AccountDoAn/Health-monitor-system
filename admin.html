@@ -453,8 +453,10 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
               <option value="CREATE_SUBADMIN">Tạo Sub Admin</option>
               <option value="UPDATE_SUBADMIN">Sửa Sub Admin</option>
               <option value="DELETE_SUBADMIN">Xóa Sub Admin</option>
+              <option value="CREATE_DEVICE">Thêm thiết bị</option>
               <option value="UPDATE_DEVICE">Sửa thiết bị</option>
               <option value="DELETE_DEVICE">Xóa thiết bị</option>
+              <option value="CHANGE_PASSWORD">Đổi mật khẩu</option>
             </optgroup>
             <optgroup label="Trigger tự động">
               <option value="CREATE">Tạo mới</option>
@@ -1836,7 +1838,7 @@ async function saveDevice(){
 // ── NHẬT KÝ ──
 // ── NHẬT KÝ HỆ THỐNG ──
 let logPage = 1;
-const LOG_PER_PAGE = 20;
+const LOG_PER_PAGE = 8;
 let logRealtimeSub = null;
 
 const TABLE_LABEL = {
@@ -1851,7 +1853,8 @@ const ACTION_LABEL = {
   LOGIN:'Đăng nhập',
   CREATE_HOSPITAL:'Tạo cơ sở y tế', UPDATE_HOSPITAL:'Cập nhật CSYT',
   CREATE_SUBADMIN:'Tạo tài khoản Sub Admin', UPDATE_SUBADMIN:'Cập nhật Sub Admin', DELETE_SUBADMIN:'Xóa Sub Admin',
-  UPDATE_DEVICE:'Cập nhật thiết bị', DELETE_DEVICE:'Xóa thiết bị',
+  UPDATE_DEVICE:'Cập nhật thiết bị', DELETE_DEVICE:'Xóa thiết bị', CREATE_DEVICE:'Thêm thiết bị',
+  CHANGE_PASSWORD:'Đổi mật khẩu', LOGOUT:'Đăng xuất',
   // Sub-admin
   CREATE_PATIENT:'Tiếp nhận bệnh nhân mới', UPDATE_PATIENT:'Cập nhật bệnh nhân', DELETE_PATIENT:'Xóa bệnh nhân',
   CREATE_DOCTOR:'Tạo tài khoản bác sĩ', UPDATE_DOCTOR:'Cập nhật bác sĩ',
@@ -1862,7 +1865,8 @@ const ACTION_CLASS = {
   CREATE:'CREATE', UPDATE:'UPDATE', DELETE:'DELETE', LOGIN:'LOGIN',
   CREATE_HOSPITAL:'CREATE', UPDATE_HOSPITAL:'UPDATE',
   CREATE_SUBADMIN:'CREATE', UPDATE_SUBADMIN:'UPDATE', DELETE_SUBADMIN:'DELETE',
-  UPDATE_DEVICE:'UPDATE', DELETE_DEVICE:'DELETE',
+  UPDATE_DEVICE:'UPDATE', DELETE_DEVICE:'DELETE', CREATE_DEVICE:'CREATE',
+  CHANGE_PASSWORD:'OTHER', LOGOUT:'LOGIN',
   CREATE_PATIENT:'CREATE', UPDATE_PATIENT:'UPDATE', DELETE_PATIENT:'DELETE',
   CREATE_DOCTOR:'CREATE', UPDATE_DOCTOR:'UPDATE',
   CREATE_FAMILY:'CREATE', UPDATE_FAMILY:'UPDATE', DELETE_FAMILY:'DELETE',
