@@ -728,6 +728,22 @@ app.get("/logs", async (req, res) => {
       return true;
     });
 
+    // Lấy tổng count sau khi lọc sub-admin triggers
+    // Cần fetch thêm để đếm chính xác — lấy tất cả ids trước
+    const countQuery = supabase.from("nhat_ky_he_thong")
+      .select("id, nguoi_dung_id, hanh_dong", { count: 'exact' })
+      .in("hanh_dong", action ? [action] : ALLOWED_ACTIONS)
+      .in("loai_doi_tuong", target ? [target] : ADMIN_TABLES);
+
+    const { data: allIds } = await countQuery;
+    const filteredAll = (allIds||[]).filter(l => {
+      if(!TRIGGER_ACTIONS.includes(l.hanh_dong)) return true;
+      if(!l.nguoi_dung_id) return true;
+      if(subAdminIds.includes(l.nguoi_dung_id)) return false;
+      return true;
+    });
+    const trueTotal = filteredAll.length;
+
     const uids = [...new Set(filtered.map(l=>l.nguoi_dung_id).filter(Boolean))];
     const uMap = {};
     if (uids.length) {
@@ -737,7 +753,7 @@ app.get("/logs", async (req, res) => {
     }
 
     res.json({
-      total: filtered.length, page: parseInt(page), limit: parseInt(limit),
+      total: trueTotal, page: parseInt(page), limit: parseInt(limit),
       data: filtered.map(l=>({
         id:         l.id,
         userId:     l.nguoi_dung_id,
