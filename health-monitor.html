@@ -1057,11 +1057,12 @@ async function loadAccRecord(pid){
         <button class="acc-save" style="background:var(--sky);color:var(--navy)" onclick="loadThresholdHistory('${pid}')">📋 Lịch sử ngưỡng</button>
         <div class="acc-rmsg" id="acc-rmsg-${pid}"></div>
       </div>
-      <!-- Tab lịch sử ngưỡng -->
+      <!-- Tab lịch sử ngưỡng (inline) -->
       <div id="threshold-history-${pid}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
         <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px">📋 Lịch sử thay đổi ngưỡng cảnh báo</div>
         <div id="threshold-history-body-${pid}"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
-      </div>`;
+      </div>
+    `;
   } catch(e){ if(body) body.innerHTML=`<div style="color:var(--danger);font-size:.74rem;padding:10px 0">⚠️ ${esc(e.message)}</div>`; }
 }
 
@@ -1117,6 +1118,9 @@ async function saveAccRec(pid){
     msg.style.color='var(--green)'; msg.textContent='✅ Lưu thành công!';
     const tag=document.getElementById('acc-tag-'+pid);
     if(tag){tag.textContent='Có hồ sơ';tag.style.background='var(--mint)';tag.style.color='var(--navy)';}
+    // Reload lịch sử ngưỡng nếu đang xem tab đó
+    const thrView = document.getElementById('view-threshold-history');
+    if(thrView && thrView.style.display !== 'none') loadThresholdHistoryView();
     setTimeout(()=>msg.textContent='',3000);
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
 }
