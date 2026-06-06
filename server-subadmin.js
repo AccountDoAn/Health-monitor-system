@@ -310,6 +310,8 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
     await supabase.from("nguoi_dung")
       .update({ lan_dang_nhap_cuoi: new Date().toISOString() }).eq("id", user.id);
 
+    await logAction(user.id, 'LOGIN', 'sub_admin', user.id, { email: user.email, hospital: hospital?.ten_co_so }, getIp(req));
+
     res.json({
       userId:       user.id,
       name:         user.ho_ten,
@@ -526,6 +528,7 @@ app.post("/admin/:userId/devices/:deviceId/assign", async (req, res) => {
       nguoi_gan: userId, ngay_gan: new Date().toISOString(), trang_thai_hoat_dong: true,
     });
     if (error) throw error;
+    await logAction(userId,'ASSIGN_DEVICE','lich_su_gan_thiet_bi',deviceId,{patientId,deviceId},getIp(req));
     res.json({ ok: true });
   } catch (err) {
     console.error("[POST /admin/devices/assign]", err.message);
@@ -1012,6 +1015,7 @@ app.post("/admin/:userId/families", async (req, res) => {
       });
       if (linkErr) throw linkErr;
     }
+    await logAction(req.params.userId,'CREATE_FAMILY','lien_ket_nguoi_nha',lqId,{patientId,relation},getIp(req));
     res.json({ ok: true, userId: lqId });
   } catch (err) {
     console.error("[POST /admin/families]", err.message);
@@ -1194,6 +1198,7 @@ app.post("/admin/:userId/doctors", async (req, res) => {
     const { data: role } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_bs").maybeSingle();
     if (role) await supabase.from("phan_quyen_nguoi_dung").insert({ nguoi_dung_id:newUser.id, vai_tro_id:role.id });
 
+    await logAction(req.params.userId,'CREATE_DOCTOR','nguoi_dung',newUser.id,{name:name.trim()},getIp(req));
     res.json({ doctorId:newUser.id, name:name.trim() });
   } catch (err) {
     console.error("[POST /admin/doctors]", err.message);
@@ -1226,7 +1231,7 @@ app.post("/admin/:userId/assign-doctor", async (req, res) => {
       ngay_phan_cong:    new Date().toISOString(),
     });
     if (error) throw error;
-
+    await logAction(userId,'ASSIGN_DOCTOR','lien_ket_bac_si',null,{patientId,doctorId},getIp(req));
     res.json({ ok:true });
   } catch (err) {
     console.error("[POST /admin/assign-doctor]", err.message);
