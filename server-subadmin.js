@@ -106,15 +106,6 @@ app.post("/auth/reset-password", async (req, res) => {
   } catch(err){ res.status(500).json({ error:err.message }); }
 });
 
-// POST /auth/logout
-app.post("/auth/logout", async (req, res) => {
-  try {
-    const { userId } = req.body;
-    if(userId) await logAction(userId,'LOGOUT','sub_admin',userId,{},getIp(req));
-    res.json({ ok: true });
-  } catch(err){ res.status(500).json({ error: err.message }); }
-});
-
 // ===== CORS =====
 const corsOptions = {
   origin: function(origin, callback) {
@@ -335,6 +326,15 @@ app.post("/auth/login", loginLimiter, async (req, res) => {
     console.error("[POST /admin/auth/login]", err.message);
     res.status(500).json({ error: err.message });
   }
+});
+
+// POST /auth/logout
+app.post("/auth/logout", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if(userId) await logAction(userId,'LOGOUT','sub_admin',userId,{},getIp(req));
+    res.json({ ok: true });
+  } catch(err){ res.status(500).json({ error: err.message }); }
 });
 
 // POST /auth/change-password
