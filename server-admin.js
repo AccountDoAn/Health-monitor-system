@@ -852,12 +852,21 @@ app.delete("/devices/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { adminId } = req.body;
-    // Kiểm tra còn gán bệnh nhân không
-    const { data: assigns } = await supabase.from("lich_su_gan_thiet_bi")
-      .select("id").eq("thiet_bi_id", id).eq("trang_thai_hoat_dong", true);
-    if (assigns?.length) return res.status(409).json({ error: "Thiết bị đang được gán cho bệnh nhân. Thu hồi trước khi xóa." });
+
+    // Kiểm tra thiết bị đang được gán bệnh nhân (trang_thai_hoat_dong = true)
+    const { data: activeAssigns } = await supabase.from("lich_su_gan_thiet_bi")
+      .select("id").eq("thiet_bi_id", id).eq("trang_thai_hoat_dong", true).limit(1);
+    if(activeAssigns?.length)
+      return res.status(409).json({ error: "Thiết bị đang được gán cho bệnh nhân. Vui lòng thu hồi trước khi xóa." });
+
+    // Kiểm tra thiết bị đã từng được gán (có lịch sử — ngay_huy_gan NOT NULL)
+    const { data: historyAssigns } = await supabase.from("lich_su_gan_thiet_bi")
+      .select("id").eq("thiet_bi_id", id).not("ngay_huy_gan", "is", null).limit(1);
+    if(historyAssigns?.length)
+      return res.status(409).json({ error: "Thiết bị đã có lịch sử gán bệnh nhân và chưa được thu hồi hoàn toàn. Không thể xóa." });
+
     const { error } = await supabase.from("thiet_bi_iot").delete().eq("id", id);
-    if (error) throw error;
+    if(error) throw error;
     await logAction(adminId, "DELETE_DEVICE", "thiet_bi_iot", id, {}, getIp(req));
     res.json({ ok: true });
   } catch (err) {
