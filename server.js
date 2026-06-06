@@ -1863,6 +1863,88 @@ app.get("/doctor/:doctorId/active-alerts", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
+// GET /threshold/:patientId — lấy ngưỡng hiện tại
+app.get("/threshold/:patientId", async (req, res) => {
+  try {
+    const { data } = await supabase.from("nguong_canh_bao")
+      .select("*").eq("nguoi_dung_tb_id", req.params.patientId)
+      .eq("trang_thai_hoat_dong", true).maybeSingle();
+    res.json(data || null);
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
+// POST /threshold/:patientId — tạo mới hoặc cập nhật ngưỡng
+app.post("/threshold/:patientId", async (req, res) => {
+  try {
+    const pid = req.params.patientId;
+    const { nhip_tim_toi_thieu, nhip_tim_toi_da, spo2_toi_thieu, nhip_tim_co_so, spo2_co_so, doctorId } = req.body;
+
+    // Kiểm tra đã có ngưỡng chưa
+    const { data: existing } = await supabase.from("nguong_canh_bao")
+      .select("id, nhip_tim_co_so, spo2_co_so")
+      .eq("nguoi_dung_tb_id", pid)
+      .eq("trang_thai_hoat_dong", true).maybeSingle();
+
+    const payload = {
+      nguoi_dung_tb_id:   pid,
+      nguoi_thiet_lap_id: doctorId,
+      trang_thai_hoat_dong: true,
+      hieu_luc_tu: new Date().toISOString(),
+    };
+    if(nhip_tim_toi_thieu !== null) payload.nhip_tim_toi_thieu = nhip_tim_toi_thieu;
+    if(nhip_tim_toi_da    !== null) payload.nhip_tim_toi_da    = nhip_tim_toi_da;
+    if(spo2_toi_thieu     !== null) payload.spo2_toi_thieu     = spo2_toi_thieu;
+    if(nhip_tim_co_so     !== null) payload.nhip_tim_co_so     = nhip_tim_co_so;
+    if(spo2_co_so         !== null) payload.spo2_co_so         = spo2_co_so;
+
+    if(existing){
+      // Đã có → UPDATE
+      await supabase.from("nguong_canh_bao").update(payload).eq("id", existing.id);
+
+      // Ghi lịch sử nếu baseline thay đổi
+      const coSoChanged = (nhip_tim_co_so !== null && nhip_tim_co_so !== existing.nhip_tim_co_so)
+                       || (spo2_co_so     !== null && spo2_co_so     !== existing.spo2_co_so);
+      if(coSoChanged){
+        await supabase.from("lich_su_nguong_co_so").insert({
+          nguoi_dung_tb_id:  pid,
+          nhip_tim_co_so_moi: nhip_tim_co_so || existing.nhip_tim_co_so,
+          spo2_co_so_moi:     spo2_co_so     || existing.spo2_co_so,
+          ly_do_cap_nhat:    'bac_si_chinh_sua',
+          nguoi_thay_doi_id: doctorId,
+          ngay_tinh_lai:     new Date().toISOString(),
+        });
+      }
+    } else {
+      // Chưa có → INSERT
+      await supabase.from("nguong_canh_bao").insert(payload);
+      // Ghi lịch sử lần đầu
+      if(nhip_tim_co_so || spo2_co_so){
+        await supabase.from("lich_su_nguong_co_so").insert({
+          nguoi_dung_tb_id:  pid,
+          nhip_tim_co_so_moi: nhip_tim_co_so || 70,
+          spo2_co_so_moi:     spo2_co_so     || 97,
+          ly_do_cap_nhat:    'bac_si_chinh_sua',
+          nguoi_thay_doi_id: doctorId,
+          ngay_tinh_lai:     new Date().toISOString(),
+        });
+      }
+    }
+    res.json({ ok: true });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
+// GET /threshold/:patientId/history — lịch sử ngưỡng cơ sở
+app.get("/threshold/:patientId/history", async (req, res) => {
+  try {
+    const { data } = await supabase.from("lich_su_nguong_co_so")
+      .select("*")
+      .eq("nguoi_dung_tb_id", req.params.patientId)
+      .order("ngay_tinh_lai", { ascending: false })
+      .limit(50);
+    res.json(data || []);
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
 // GET /doctor/:id/profile
 app.get("/doctor/:id/profile", async (req, res) => {
   try {
