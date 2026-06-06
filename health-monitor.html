@@ -262,6 +262,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <button class="sb-btn" onclick="switchView('records',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>Hồ sơ bệnh án
     </button>
+    <button class="sb-btn" onclick="switchView('threshold-history',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Lịch sử ngưỡng
+    </button>
   </div>
   <div class="sb-bottom">
     <div class="sb-user" onclick="openProfile()" title="Chỉnh sửa hồ sơ">
@@ -499,6 +502,42 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <button class="bprim" id="pf-save-btn" onclick="saveProfile()">💾 Lưu thay đổi</button>
   </div>
 </div>
+
+  <!-- VIEW: LỊCH SỬ NGƯỠNG CẢO BÁO -->
+  <div class="content" id="view-threshold-history" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">📋 Lịch sử ngưỡng cảnh báo</div>
+      </div>
+      <!-- Bộ lọc -->
+      <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Bệnh nhân</span>
+          <select id="thr-flt-patient" onchange="loadThresholdHistoryView()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)">
+            <option value="">Tất cả bệnh nhân</option>
+          </select>
+        </div>
+        <button onclick="loadThresholdHistoryView()" style="margin-top:18px;padding:5px 14px;border:1.5px solid var(--navy);border-radius:7px;background:none;color:var(--navy);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer">🔄 Làm mới</button>
+      </div>
+      <!-- Bảng -->
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:20%">Thời gian</th>
+              <th style="width:25%">Bệnh nhân</th>
+              <th style="width:18%">Nhịp tim cơ sở</th>
+              <th style="width:18%">SpO2 cơ sở</th>
+              <th style="width:19%">Lý do</th>
+            </tr>
+          </thead>
+          <tbody id="thr-history-body">
+            <tr><td colspan="5"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 
 <button class="cfab" onclick="toggleChat()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
 <div class="cbox" id="cbox">
@@ -796,6 +835,7 @@ function switchView(name, btn){
   // Active button
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
+  if(name==='threshold-history') initThresholdHistoryView();
   // Hide all views
   ['overview','devices','links','records','patient'].forEach(v=>{
     document.getElementById('view-'+v).style.display = 'none';
@@ -1111,8 +1151,45 @@ async function loadThresholdHistory(pid){
     }
   } catch(e){ body.innerHTML='<div style="color:var(--danger);font-size:.74rem">⚠️ '+esc(e.message)+'</div>'; }
 }
-function openSettings(){ document.getElementById('modal-bg').classList.add('open'); }
-function closeSettings(){ document.getElementById('modal-bg').classList.remove('open'); }
+// ── LỊCH SỬ NGƯỠNG CẢNH BÁO ──
+async function loadThresholdHistoryView(){
+  const body = document.getElementById('thr-history-body');
+  if(!body) return;
+  body.innerHTML='<tr><td colspan="5"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>';
+  try {
+    const pid = document.getElementById('thr-flt-patient')?.value||'';
+    const url = pid ? `${API}/threshold/${pid}/history` : `${API}/threshold/all/history?doctorId=${DID}`;
+    const r = await fetch(url);
+    const list = r.ok ? await r.json() : [];
+    if(!list.length){
+      body.innerHTML='<tr><td colspan="5"><div class="loading">Chưa có lịch sử thay đổi nào</div></td></tr>';
+      return;
+    }
+    const LY_DO = { bac_si_chinh_sua:'Bác sĩ chỉnh sửa', tu_dong_7_ngay:'Tự động 7 ngày', reset_he_thong:'Reset hệ thống' };
+    body.innerHTML = list.map(h=>`
+      <tr>
+        <td style="font-size:.7rem;white-space:nowrap;color:var(--muted)">${new Date(h.ngay_tinh_lai).toLocaleString('vi-VN')}</td>
+        <td style="font-size:.76rem;font-weight:600">${esc(h.patient_name||'—')}</td>
+        <td><span style="font-size:.76rem;font-weight:700;color:var(--navy)">${h.nhip_tim_co_so_moi} <span style="font-size:.65rem;font-weight:400;color:var(--muted)">bpm</span></span></td>
+        <td><span style="font-size:.76rem;font-weight:700;color:var(--navy)">${h.spo2_co_so_moi}<span style="font-size:.65rem;font-weight:400;color:var(--muted)">%</span></span></td>
+        <td><span style="font-size:.7rem;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--muted)">${LY_DO[h.ly_do_cap_nhat]||h.ly_do_cap_nhat}</span></td>
+      </tr>`).join('');
+  } catch(e){ body.innerHTML=`<tr><td colspan="5"><div style="color:var(--danger);font-size:.74rem;padding:12px">⚠️ ${esc(e.message)}</div></td></tr>`; }
+}
+
+function initThresholdHistoryView(){
+  // Load danh sách bệnh nhân vào filter
+  const sel = document.getElementById('thr-flt-patient');
+  if(!sel) return;
+  const patients = document.querySelectorAll('.acc-item');
+  sel.innerHTML = '<option value="">Tất cả bệnh nhân</option>'
+    + Array.from(patients).map(el=>{
+        const pid = el.id.replace('acc-','');
+        const name = el.dataset.name||'';
+        return `<option value="${pid}">${esc(name)}</option>`;
+      }).join('');
+  loadThresholdHistoryView();
+}
 
 // ── HỒ SƠ BÁC SĨ ──
 let _profileAvatarFile = null;
