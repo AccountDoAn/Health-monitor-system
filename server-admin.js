@@ -720,9 +720,10 @@ app.get("/logs", async (req, res) => {
     if (error) throw error;
 
     // Lọc bỏ trigger rows (CREATE/UPDATE/DELETE) có nguoi_dung_id là sub_admin
+    // Nhưng GIỮ LẠI LOGIN/LOGOUT của sub_admin
     const filtered = (data||[]).filter(l => {
-      if(!TRIGGER_ACTIONS.includes(l.hanh_dong)) return true; // Giữ tất cả action cụ thể
-      if(!l.nguoi_dung_id) return true; // Giữ trigger tự động (null = hệ thống)
+      if(!TRIGGER_ACTIONS.includes(l.hanh_dong)) return true; // Giữ tất cả action cụ thể (LOGIN, LOGOUT, CREATE_HOSPITAL...)
+      if(!l.nguoi_dung_id) return true; // Giữ trigger null (hệ thống tự động)
       if(subAdminIds.includes(l.nguoi_dung_id)) return false; // Bỏ trigger từ sub-admin
       return true;
     });
