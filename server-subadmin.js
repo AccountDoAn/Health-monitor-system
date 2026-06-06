@@ -1224,9 +1224,18 @@ app.post("/admin/:userId/assign-doctor", async (req, res) => {
     const hsId = await getAdminHospital(userId);
     if (!hsId) return res.status(403).json({ error: "Không có quyền truy cập" });
 
+    // Kiểm tra bác sĩ thuộc CSYT
     const { data: doc } = await supabase.from("nguoi_dung").select("id, co_so_y_te_id").eq("id",doctorId).maybeSingle();
     if (!doc || doc.co_so_y_te_id !== hsId)
       return res.status(403).json({ error: "Bác sĩ không thuộc đơn vị của bạn" });
+
+    // Kiểm tra patientId phải có role user_tb
+    const { data: tbRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","user_tb").maybeSingle();
+    if(tbRole){
+      const { data: pq } = await supabase.from("phan_quyen_nguoi_dung")
+        .select("nguoi_dung_id").eq("nguoi_dung_id",patientId).eq("vai_tro_id",tbRole.id).maybeSingle();
+      if(!pq) return res.status(400).json({ error: "Người được chọn không phải bệnh nhân. Không thể phân công bác sĩ." });
+    }
 
     await supabase.from("lien_ket_bac_si")
       .update({ trang_thai_hoat_dong:false })
