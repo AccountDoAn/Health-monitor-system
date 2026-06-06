@@ -1117,7 +1117,14 @@ async function saveAccRec(pid){
     // Reload lịch sử ngưỡng nếu đang xem tab đó
     const thrView = document.getElementById('view-threshold-history');
     if(thrView && thrView.style.display !== 'none') loadThresholdHistoryView();
-    setTimeout(()=>msg.textContent='',3000);
+    // Reload accordion sau 500ms để cập nhật badge ngưỡng, giữ trạng thái mở
+    setTimeout(async ()=>{
+      await loadAccRecord(pid);
+      // Đảm bảo accordion vẫn mở
+      const item = document.getElementById('acc-'+pid);
+      if(item && !item.classList.contains('open')) item.classList.add('open');
+    }, 500);
+    setTimeout(()=>{ const m=document.getElementById('acc-rmsg-'+pid); if(m) m.textContent=''; }, 3000);
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
 }
 
