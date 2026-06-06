@@ -1863,6 +1863,29 @@ app.get("/doctor/:doctorId/active-alerts", async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 
+// GET /threshold/all/history — lịch sử ngưỡng tất cả bệnh nhân của bác sĩ
+app.get("/threshold/all/history", async (req, res) => {
+  try {
+    const { doctorId } = req.query;
+    // Lấy danh sách bệnh nhân của bác sĩ này
+    const { data: links } = await supabase.from("lien_ket_bac_si")
+      .select("nguoi_dung_tb_id").eq("nguoi_dung_bs_id", doctorId).eq("trang_thai_hoat_dong", true);
+    const ptIds = (links||[]).map(l=>l.nguoi_dung_tb_id);
+    if(!ptIds.length) return res.json([]);
+
+    const { data: history } = await supabase.from("lich_su_nguong_co_so")
+      .select("*, nguoi_dung!nguoi_dung_tb_id(ho_ten)")
+      .in("nguoi_dung_tb_id", ptIds)
+      .order("ngay_tinh_lai", { ascending: false })
+      .limit(100);
+
+    res.json((history||[]).map(h=>({
+      ...h,
+      patient_name: h.nguoi_dung?.ho_ten||'—'
+    })));
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
 // GET /threshold/:patientId — lấy ngưỡng hiện tại
 app.get("/threshold/:patientId", async (req, res) => {
   try {
@@ -1937,11 +1960,11 @@ app.post("/threshold/:patientId", async (req, res) => {
 app.get("/threshold/:patientId/history", async (req, res) => {
   try {
     const { data } = await supabase.from("lich_su_nguong_co_so")
-      .select("*")
+      .select("*, nguoi_dung!nguoi_dung_tb_id(ho_ten)")
       .eq("nguoi_dung_tb_id", req.params.patientId)
       .order("ngay_tinh_lai", { ascending: false })
       .limit(50);
-    res.json(data || []);
+    res.json((data||[]).map(h=>({...h, patient_name: h.nguoi_dung?.ho_ten||'—'})));
   } catch(err){ res.status(500).json({ error: err.message }); }
 });
 
