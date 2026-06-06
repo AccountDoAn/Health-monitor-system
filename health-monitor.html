@@ -829,26 +829,28 @@ const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 
 function doLogout(){ if(!confirm('Đăng xuất?')) return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
 // ── VIEW SWITCHING ──
-const viewTitles = {overview:'Tổng quan bệnh nhân', devices:'Thiết bị theo dõi', links:'Liên kết người nhà', records:'Hồ sơ bệnh án'};
+const viewTitles = {overview:'Tổng quan bệnh nhân', devices:'Thiết bị theo dõi', links:'Liên kết người nhà', records:'Hồ sơ bệnh án', 'threshold-history':'Lịch sử ngưỡng cảnh báo'};
 
 function switchView(name, btn){
   // Active button
   document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
-  if(name==='threshold-history') initThresholdHistoryView();
   // Hide all views
-  ['overview','devices','links','records','patient'].forEach(v=>{
-    document.getElementById('view-'+v).style.display = 'none';
+  ['overview','devices','links','records','patient','threshold-history'].forEach(v=>{
+    const el = document.getElementById('view-'+v);
+    if(el) el.style.display = 'none';
   });
   // Show selected
-  document.getElementById('view-'+name).style.display = 'flex';
+  const target = document.getElementById('view-'+name);
+  if(target) target.style.display = 'flex';
   document.getElementById('page-title').textContent = viewTitles[name] || name;
   // Live dot only on overview
   document.getElementById('live-dot').style.display = name==='overview' ? 'flex' : 'none';
   // Load content
-  if(name==='devices')  renderDevicesPage();
-  if(name==='links')    renderLinksPage();
-  if(name==='records')  renderRecordsPage();
+  if(name==='devices')            renderDevicesPage();
+  if(name==='links')              renderLinksPage();
+  if(name==='records')            renderRecordsPage();
+  if(name==='threshold-history')  initThresholdHistoryView();
 }
 
 function setNav(b){ switchView('overview', b); } // compat
