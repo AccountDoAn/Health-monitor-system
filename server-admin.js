@@ -687,10 +687,10 @@ app.get("/logs", async (req, res) => {
     const offset = (parseInt(page)-1) * parseInt(limit);
 
     const ALLOWED_ACTIONS = [
-      'LOGIN','LOGOUT',
+      'LOGIN','LOGOUT','CHANGE_PASSWORD',
       'CREATE_HOSPITAL','UPDATE_HOSPITAL','DELETE_HOSPITAL',
       'CREATE_SUBADMIN','UPDATE_SUBADMIN','DELETE_SUBADMIN',
-      'UPDATE_DEVICE','DELETE_DEVICE',
+      'CREATE_DEVICE','UPDATE_DEVICE','DELETE_DEVICE',
       'CREATE','UPDATE','DELETE',
     ];
     const ADMIN_TABLES = ['co_so_y_te','nguoi_dung','thiet_bi_iot','admin','sub_admin'];
