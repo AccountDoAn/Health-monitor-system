@@ -268,6 +268,15 @@ app.post("/auth/reset-password", async (req, res) => {
   } catch(err){ res.status(500).json({ error:err.message }); }
 });
 
+// POST /auth/logout
+app.post("/auth/logout", async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if(userId) await logAction(userId,'LOGOUT','admin',userId,{},getIp(req));
+    res.json({ ok: true });
+  } catch(err){ res.status(500).json({ error: err.message }); }
+});
+
 // GET /hospitals — danh sách tất cả CSYT
 app.get("/hospitals", async (req, res) => {
   try {
@@ -677,23 +686,34 @@ app.get("/logs", async (req, res) => {
     const { page=1, limit=20, action, target, dateFrom, dateTo } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
 
-    const EXCLUDED_TABLES = ['lien_ket_bac_si','lien_ket_nguoi_nha','lich_su_gan_thiet_bi','ho_so_benh_nhan'];
+    // Chỉ hiển thị:
+    // 1. Đăng nhập/đăng xuất của tất cả (LOGIN, LOGOUT)
+    // 2. Thêm/sửa/xóa của admin (CREATE_HOSPITAL, UPDATE_HOSPITAL, CREATE_SUBADMIN...)
+    // 3. Trigger tự động từ bảng cấp admin (co_so_y_te, nguoi_dung, thiet_bi_iot)
+    const ALLOWED_ACTIONS = [
+      'LOGIN','LOGOUT',
+      'CREATE_HOSPITAL','UPDATE_HOSPITAL','DELETE_HOSPITAL',
+      'CREATE_SUBADMIN','UPDATE_SUBADMIN','DELETE_SUBADMIN',
+      'UPDATE_DEVICE','DELETE_DEVICE',
+      'CREATE','UPDATE','DELETE',
+    ];
+    const ADMIN_TABLES = ['co_so_y_te','nguoi_dung','thiet_bi_iot','admin','sub_admin'];
 
     let query = supabase.from("nhat_ky_he_thong")
       .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, dia_chi_ip, du_lieu_bo_sung, ngay_tao", { count: 'exact' })
       .order("ngay_tao", { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1);
+      .range(offset, offset + parseInt(limit) - 1)
+      .in("hanh_dong", action ? [action] : ALLOWED_ACTIONS);
 
-    if (action)   query = query.eq("hanh_dong", action);
-    if (target)   query = query.eq("loai_doi_tuong", target);
-    else          query = query.not("loai_doi_tuong", "in", `(${EXCLUDED_TABLES.join(',')})`);
+    if (target) query = query.eq("loai_doi_tuong", target);
+    else        query = query.in("loai_doi_tuong", ADMIN_TABLES);
+
     if (dateFrom) query = query.gte("ngay_tao", dateFrom);
     if (dateTo)   query = query.lte("ngay_tao", dateTo+'T23:59:59');
 
     const { data, error, count } = await query;
     if (error) throw error;
 
-    // Lấy tên người dùng
     const uids = [...new Set((data||[]).map(l=>l.nguoi_dung_id).filter(Boolean))];
     const uMap = {};
     if (uids.length) {
@@ -703,14 +723,12 @@ app.get("/logs", async (req, res) => {
     }
 
     res.json({
-      total: count || 0,
-      page:  parseInt(page),
-      limit: parseInt(limit),
+      total: count||0, page: parseInt(page), limit: parseInt(limit),
       data: (data||[]).map(l=>({
         id:         l.id,
         userId:     l.nguoi_dung_id,
-        userName:   uMap[l.nguoi_dung_id]?.name || '—',
-        userEmail:  uMap[l.nguoi_dung_id]?.email || '—',
+        userName:   uMap[l.nguoi_dung_id]?.name||null,
+        userEmail:  uMap[l.nguoi_dung_id]?.email||null,
         action:     l.hanh_dong,
         targetType: l.loai_doi_tuong,
         targetId:   l.doi_tuong_id,
