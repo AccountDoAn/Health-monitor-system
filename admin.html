@@ -1079,8 +1079,9 @@ async function changeAdminPassword(){
   if(f){ const sizes={12:'87.5%',14:'100%',16:'112.5%'}; document.documentElement.style.fontSize=sizes[f]||'100%'; }
 })();
 
-function doLogout(){
+async function doLogout(){
   if(!confirm('Đăng xuất?')) return;
+  try { await fetch(AAPI+'/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:UID})}); } catch(_){}
   localStorage.removeItem('hm_session');
   location.replace('index.html');
 }
