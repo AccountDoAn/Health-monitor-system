@@ -897,7 +897,12 @@ let devCache=[], ptCache=[], docCache=[], familiesCache=[], familiesFiltered=[];
 let assignDevId=null, assignDocPtId=null;
 let _afSelectedUserId = null;
 
-function doLogout(){ if(!confirm('Đăng xuất?'))return; localStorage.removeItem('hm_session'); location.replace('index.html'); }
+async function doLogout(){
+  if(!confirm('Đăng xuất?')) return;
+  try { await fetch(AAPI+'/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:UID})}); } catch(_){}
+  localStorage.removeItem('hm_session');
+  location.replace('index.html');
+}
 
 // ── VIEW SWITCHING ──
 function switchView(name, btn){
@@ -1713,6 +1718,7 @@ async function savePatient(){
     }
 
     msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo hồ sơ bệnh nhân!';
+    showToast('🏥 Đã thêm bệnh nhân mới thành công!', 'success');
     setTimeout(()=>{ closeModal('modal-patient'); loadPatients(); loadOverview(); }, 1200);
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
   btn.disabled=false;
@@ -2319,6 +2325,26 @@ async function saveProfile(){
   btn.disabled=false;
 }
 
+// ── TOAST THÔNG BÁO ──
+function showToast(msg, type){
+  let toast = document.getElementById('sa-toast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'sa-toast';
+    toast.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--navy);color:#fff;padding:12px 24px;border-radius:12px;font-family:\'Sora\',sans-serif;font-size:.82rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);transition:transform .3s cubic-bezier(.34,1.56,.64,1);white-space:nowrap';
+    document.body.appendChild(toast);
+  }
+  if(type==='success') toast.style.background='#2d7a2d';
+  else if(type==='error') toast.style.background='#c0392b';
+  else toast.style.background='var(--navy)';
+  toast.textContent = msg;
+  toast.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){
+    toast.style.transform = 'translateX(-50%) translateY(-80px)';
+  }, 3000);
+}
+
 // ── TÌM KIẾM BỆNH NHÂN ──
 let ptFiltered = [];
 
@@ -2582,6 +2608,7 @@ async function saveAddFamily(){
     const d = await r.json();
     if(!r.ok) throw new Error(d.error||'Lỗi');
     msg.style.color='var(--green)'; msg.textContent='✅ Đã thêm người nhà thành công';
+    showToast('👨‍👩‍👧 Đã thêm người nhà thành công!', 'success');
     setTimeout(()=>{
       closeModal('modal-add-family');
       // Reload danh sách người nhà của bệnh nhân trong card
@@ -2852,6 +2879,7 @@ async function saveCreateFamily(){
       if(!r.ok) throw new Error(d.error||'Lỗi');
     }
     msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo tài khoản người nhà';
+    showToast('👨‍👩‍👧 Đã tạo tài khoản người nhà thành công!', 'success');
     setTimeout(()=>{ closeModal('modal-create-family'); loadFamilies(); }, 1200);
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
   btn.disabled=false;
@@ -3329,6 +3357,7 @@ async function saveDoctor(){
     const d=await r.json();
     if(r.ok){
       msg.style.color='var(--green)'; msg.textContent='✅ Đã tạo: '+esc(name);
+      showToast('🩺 Đã tạo tài khoản bác sĩ thành công!', 'success');
       setTimeout(function(){ closeModal('modal-doctor'); loadDoctors(); }, 1200);
     } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
   } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
