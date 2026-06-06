@@ -462,31 +462,48 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">📋 Lịch sử ngưỡng cảnh báo</div>
+        <div id="thr-realtime-badge" style="display:none;align-items:center;gap:5px;font-size:.7rem;font-weight:600;color:#27ae60;background:#e6f7e6;padding:3px 10px;border-radius:8px;border:1px solid #b7e4c7">
+          <span style="width:7px;height:7px;border-radius:50%;background:#27ae60;display:inline-block;animation:pulse 1.5s infinite"></span>Realtime
+        </div>
       </div>
-      <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <!-- Bộ lọc -->
+      <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Bệnh nhân</span>
-          <select id="thr-flt-patient" onchange="loadThresholdHistoryView()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)">
+          <select id="thr-flt-patient" onchange="loadThresholdHistoryView()" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text);min-width:200px">
             <option value="">Tất cả bệnh nhân</option>
           </select>
         </div>
-        <button onclick="loadThresholdHistoryView()" style="margin-top:18px;padding:5px 14px;border:1.5px solid var(--navy);border-radius:7px;background:none;color:var(--navy);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer">🔄 Làm mới</button>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Từ ngày</span>
+          <input type="date" id="thr-flt-from" onchange="loadThresholdHistoryView()" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)"/>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Đến ngày</span>
+          <input type="date" id="thr-flt-to" onchange="loadThresholdHistoryView()" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:8px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)"/>
+        </div>
+        <button onclick="resetThrFilter()" style="padding:6px 14px;border:1.5px solid var(--border);border-radius:8px;background:none;font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;color:var(--muted);cursor:pointer">✕ Xóa lọc</button>
       </div>
-      <div class="tbl-wrap">
-        <table class="tbl">
+      <!-- Bảng -->
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;table-layout:fixed">
           <thead>
-            <tr>
-              <th style="width:20%">Thời gian</th>
-              <th style="width:25%">Bệnh nhân</th>
-              <th style="width:18%">Nhịp tim cơ sở</th>
-              <th style="width:18%">SpO2 cơ sở</th>
-              <th style="width:19%">Lý do</th>
+            <tr style="background:var(--bg)">
+              <th style="width:20%;padding:10px 18px;text-align:left;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)">Thời gian</th>
+              <th style="width:25%;padding:10px 18px;text-align:left;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)">Bệnh nhân</th>
+              <th style="width:18%;padding:10px 18px;text-align:left;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)">Nhịp tim cơ sở</th>
+              <th style="width:18%;padding:10px 18px;text-align:left;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)">SpO2 cơ sở</th>
+              <th style="width:19%;padding:10px 18px;text-align:left;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)">Lý do</th>
             </tr>
           </thead>
           <tbody id="thr-history-body">
             <tr><td colspan="5"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>
           </tbody>
         </table>
+      </div>
+      <!-- Thống kê -->
+      <div id="thr-stats" style="padding:8px 18px;border-top:1px solid var(--border);font-size:.7rem;color:var(--muted);display:none">
+        Hiển thị <span id="thr-count">0</span> bản ghi
       </div>
     </div>
   </div>
@@ -1193,44 +1210,87 @@ async function loadThresholdHistory(pid){
   } catch(e){ body.innerHTML='<div style="color:var(--danger);font-size:.74rem">⚠️ '+esc(e.message)+'</div>'; }
 }
 // ── LỊCH SỬ NGƯỠNG CẢNH BÁO ──
+let _thrRealtimeChannel = null;
+
+function resetThrFilter(){
+  document.getElementById('thr-flt-patient').value='';
+  const f=document.getElementById('thr-flt-from'); if(f) f.value='';
+  const t=document.getElementById('thr-flt-to');   if(t) t.value='';
+  loadThresholdHistoryView();
+}
+
 async function loadThresholdHistoryView(){
-  const body = document.getElementById('thr-history-body');
+  const body=document.getElementById('thr-history-body');
+  const stats=document.getElementById('thr-stats');
+  const cnt=document.getElementById('thr-count');
   if(!body) return;
   body.innerHTML='<tr><td colspan="5"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>';
   try {
-    const pid = document.getElementById('thr-flt-patient')?.value||'';
-    const url = pid ? `${API}/threshold/${pid}/history` : `${API}/threshold/all/history?doctorId=${DID}`;
-    const r = await fetch(url);
-    const list = r.ok ? await r.json() : [];
+    const pid  = document.getElementById('thr-flt-patient')?.value||'';
+    const from = document.getElementById('thr-flt-from')?.value||'';
+    const to   = document.getElementById('thr-flt-to')?.value||'';
+    let url = pid ? `${API}/threshold/${pid}/history` : `${API}/threshold/all/history?doctorId=${DID}`;
+    if(from) url+=(url.includes('?')?'&':'?')+'from='+from;
+    if(to)   url+=(url.includes('?')?'&':'?')+'to='+to;
+    const r=await fetch(url);
+    const list=r.ok?await r.json():[];
     if(!list.length){
-      body.innerHTML='<tr><td colspan="5"><div class="loading">Chưa có lịch sử thay đổi nào</div></td></tr>';
-      return;
+      body.innerHTML='<tr><td colspan="5" style="padding:32px;text-align:center;color:var(--muted);font-size:.76rem;font-style:italic">Chưa có lịch sử thay đổi nào</td></tr>';
+      if(stats) stats.style.display='none'; return;
     }
-    const LY_DO = { bac_si_chinh_sua:'Bác sĩ chỉnh sửa', tu_dong_7_ngay:'Tự động 7 ngày', reset_he_thong:'Reset hệ thống' };
-    body.innerHTML = list.map(h=>`
-      <tr>
-        <td style="font-size:.7rem;white-space:nowrap;color:var(--muted)">${new Date(h.ngay_tinh_lai).toLocaleString('vi-VN')}</td>
-        <td style="font-size:.76rem;font-weight:600">${esc(h.patient_name||'—')}</td>
-        <td><span style="font-size:.76rem;font-weight:700;color:var(--navy)">${h.nhip_tim_co_so_moi} <span style="font-size:.65rem;font-weight:400;color:var(--muted)">bpm</span></span></td>
-        <td><span style="font-size:.76rem;font-weight:700;color:var(--navy)">${h.spo2_co_so_moi}<span style="font-size:.65rem;font-weight:400;color:var(--muted)">%</span></span></td>
-        <td><span style="font-size:.7rem;padding:2px 8px;border-radius:6px;background:var(--bg);color:var(--muted)">${LY_DO[h.ly_do_cap_nhat]||h.ly_do_cap_nhat}</span></td>
-      </tr>`).join('');
-  } catch(e){ body.innerHTML=`<tr><td colspan="5"><div style="color:var(--danger);font-size:.74rem;padding:12px">⚠️ ${esc(e.message)}</div></td></tr>`; }
+    const LY_DO={bac_si_chinh_sua:'✏️ Bác sĩ chỉnh sửa',tu_dong_7_ngay:'🤖 Tự động 7 ngày',reset_he_thong:'🔄 Reset hệ thống'};
+    body.innerHTML=list.map(h=>{
+      const time=new Date(h.ngay_tinh_lai).toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+      const init=(h.patient_name||'?').split(' ').map(w=>w[0]).slice(-2).join('').toUpperCase();
+      return `<tr style="border-bottom:1px solid var(--border)" onmouseover="this.style.background='rgba(26,58,92,.03)'" onmouseout="this.style.background=''">
+        <td style="padding:12px 18px;font-size:.7rem;color:var(--muted);white-space:nowrap;font-family:'DM Mono',monospace">${time}</td>
+        <td style="padding:12px 18px"><div style="display:flex;align-items:center;gap:8px">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:800;flex-shrink:0">${esc(init)}</div>
+          <span style="font-size:.76rem;font-weight:600;color:var(--text)">${esc(h.patient_name||'—')}</span></div></td>
+        <td style="padding:12px 18px"><span style="font-size:.82rem;font-weight:700;color:var(--navy)">${h.nhip_tim_co_so_moi}</span><span style="font-size:.66rem;color:var(--muted);margin-left:3px">bpm</span></td>
+        <td style="padding:12px 18px"><span style="font-size:.82rem;font-weight:700;color:var(--navy)">${h.spo2_co_so_moi}</span><span style="font-size:.66rem;color:var(--muted);margin-left:3px">%</span></td>
+        <td style="padding:12px 18px"><span style="font-size:.7rem;padding:3px 10px;border-radius:6px;background:var(--bg);border:1px solid var(--border);color:var(--muted)">${LY_DO[h.ly_do_cap_nhat]||h.ly_do_cap_nhat}</span></td>
+      </tr>`;
+    }).join('');
+    if(stats&&cnt){stats.style.display='block';cnt.textContent=list.length;}
+  } catch(e){body.innerHTML=`<tr><td colspan="5" style="padding:24px;color:var(--danger);font-size:.74rem">⚠️ ${esc(e.message)}</td></tr>`;}
 }
 
 function initThresholdHistoryView(){
-  // Load danh sách bệnh nhân vào filter
-  const sel = document.getElementById('thr-flt-patient');
-  if(!sel) return;
-  const patients = document.querySelectorAll('.acc-item');
-  sel.innerHTML = '<option value="">Tất cả bệnh nhân</option>'
-    + Array.from(patients).map(el=>{
-        const pid = el.id.replace('acc-','');
-        const name = el.dataset.name||'';
-        return `<option value="${pid}">${esc(name)}</option>`;
-      }).join('');
+  const sel=document.getElementById('thr-flt-patient');
+  if(sel&&sel.options.length<=1){
+    // Thử lấy từ acc-items trước
+    const items=document.querySelectorAll('.acc-item[id^="acc-"]');
+    if(items.length){
+      items.forEach(el=>{
+        const pid=el.id.replace('acc-','');
+        const name=el.querySelector('.acc-name')?.textContent||'';
+        if(pid&&name){const opt=document.createElement('option');opt.value=pid;opt.textContent=name;sel.appendChild(opt);}
+      });
+    } else {
+      fetch(`${API}/doctor/${DID}/patients`).then(r=>r.json()).then(list=>{
+        (list||[]).forEach(p=>{const opt=document.createElement('option');opt.value=p.patientId;opt.textContent=p.patientName||p.name||'—';sel.appendChild(opt);});
+      }).catch(()=>{});
+    }
+  }
   loadThresholdHistoryView();
+  setupThrRealtime();
 }
+
+function setupThrRealtime(){
+  if(_thrRealtimeChannel) return;
+  if(!_sb) return;
+  _thrRealtimeChannel=_sb.channel('thr-history-live')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'lich_su_nguong_co_so'},function(){
+      const view=document.getElementById('view-threshold-history');
+      if(view&&view.style.display!=='none') loadThresholdHistoryView();
+    })
+    .subscribe(function(status){
+      const badge=document.getElementById('thr-realtime-badge');
+      if(badge) badge.style.display=status==='SUBSCRIBED'?'flex':'none';
+    });
+}
+
 
 // ── HỒ SƠ BÁC SĨ ──
 let _profileAvatarFile = null;
