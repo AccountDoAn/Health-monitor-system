@@ -599,11 +599,63 @@ app.delete("/subadmins/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const { adminId } = req.body;
-    // Xóa phân quyền
+
+    // Lấy CSYT của subadmin
+    const { data: saUser } = await supabase.from("nguoi_dung")
+      .select("co_so_y_te_id, ho_ten").eq("id", id).maybeSingle();
+    const hsId = saUser?.co_so_y_te_id;
+
+    if(hsId){
+      // Lấy role IDs
+      const { data: roles } = await supabase.from("vai_tro")
+        .select("id, ten_vai_tro")
+        .in("ten_vai_tro", ["user_tb","user_bs","user_lq"]);
+      const roleIds = (roles||[]).map(r=>r.id);
+
+      // Lấy tất cả user thuộc CSYT này
+      const { data: usersInHs } = await supabase.from("nguoi_dung")
+        .select("id").eq("co_so_y_te_id", hsId).eq("trang_thai_hoat_dong", true)
+        .neq("id", id); // Loại trừ chính subadmin
+
+      const userIds = (usersInHs||[]).map(u=>u.id);
+
+      // Kiểm tra còn bệnh nhân/bác sĩ/người nhà không
+      let hasData = false;
+      if(userIds.length && roleIds.length){
+        const { data: pq } = await supabase.from("phan_quyen_nguoi_dung")
+          .select("nguoi_dung_id")
+          .in("nguoi_dung_id", userIds)
+          .in("vai_tro_id", roleIds);
+        if(pq?.length) hasData = true;
+      }
+
+      // Kiểm tra còn thiết bị gán cho CSYT không
+      if(!hasData){
+        const { data: devs } = await supabase.from("thiet_bi_iot")
+          .select("id").eq("co_so_y_te_id", hsId).limit(1);
+        if(devs?.length) hasData = true;
+      }
+
+      if(hasData){
+        return res.status(400).json({
+          error: `Không thể xóa Sub Admin "${saUser.ho_ten}" vì cơ sở y tế vẫn còn dữ liệu (bệnh nhân, bác sĩ, người nhà hoặc thiết bị). Vui lòng xóa hết dữ liệu và cơ sở y tế trước.`
+        });
+      }
+
+      // Kiểm tra CSYT đã bị xóa/vô hiệu chưa
+      const { data: hs } = await supabase.from("co_so_y_te")
+        .select("id, trang_thai_hoat_dong").eq("id", hsId).maybeSingle();
+      if(hs?.trang_thai_hoat_dong){
+        return res.status(400).json({
+          error: `Cơ sở y tế của Sub Admin "${saUser.ho_ten}" vẫn đang hoạt động. Vui lòng vô hiệu hóa cơ sở y tế trước.`
+        });
+      }
+    }
+
+    // Đủ điều kiện — xóa subadmin
     await supabase.from("phan_quyen_nguoi_dung").delete().eq("nguoi_dung_id", id);
-    // Vô hiệu hóa tài khoản
     await supabase.from("nguoi_dung").update({ trang_thai_hoat_dong: false }).eq("id", id);
-    await logAction(adminId, "DELETE_SUBADMIN", "nguoi_dung", id, {}, getIp(req));
+    await logAction(adminId, "DELETE_SUBADMIN", "nguoi_dung", id, {name: saUser?.ho_ten}, getIp(req));
     res.json({ ok: true });
   } catch (err) {
     console.error("[DELETE /subadmins/:id]", err.message);
