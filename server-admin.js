@@ -686,10 +686,6 @@ app.get("/logs", async (req, res) => {
     const { page=1, limit=20, action, target, dateFrom, dateTo } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
 
-    // Chỉ hiển thị:
-    // 1. Đăng nhập/đăng xuất của tất cả (LOGIN, LOGOUT)
-    // 2. Thêm/sửa/xóa của admin (CREATE_HOSPITAL, UPDATE_HOSPITAL, CREATE_SUBADMIN...)
-    // 3. Trigger tự động từ bảng cấp admin (co_so_y_te, nguoi_dung, thiet_bi_iot)
     const ALLOWED_ACTIONS = [
       'LOGIN','LOGOUT',
       'CREATE_HOSPITAL','UPDATE_HOSPITAL','DELETE_HOSPITAL',
@@ -698,6 +694,15 @@ app.get("/logs", async (req, res) => {
       'CREATE','UPDATE','DELETE',
     ];
     const ADMIN_TABLES = ['co_so_y_te','nguoi_dung','thiet_bi_iot','admin','sub_admin'];
+    const TRIGGER_ACTIONS = ['CREATE','UPDATE','DELETE'];
+
+    // Lấy danh sách sub_admin IDs để loại khỏi trigger rows
+    const { data: saRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","sub_admin").maybeSingle();
+    let subAdminIds = [];
+    if(saRole){
+      const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id", saRole.id);
+      subAdminIds = (pq||[]).map(p=>p.nguoi_dung_id);
+    }
 
     let query = supabase.from("nhat_ky_he_thong")
       .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, dia_chi_ip, du_lieu_bo_sung, ngay_tao", { count: 'exact' })
@@ -714,7 +719,15 @@ app.get("/logs", async (req, res) => {
     const { data, error, count } = await query;
     if (error) throw error;
 
-    const uids = [...new Set((data||[]).map(l=>l.nguoi_dung_id).filter(Boolean))];
+    // Lọc bỏ trigger rows (CREATE/UPDATE/DELETE) có nguoi_dung_id là sub_admin
+    const filtered = (data||[]).filter(l => {
+      if(!TRIGGER_ACTIONS.includes(l.hanh_dong)) return true; // Giữ tất cả action cụ thể
+      if(!l.nguoi_dung_id) return true; // Giữ trigger tự động (null = hệ thống)
+      if(subAdminIds.includes(l.nguoi_dung_id)) return false; // Bỏ trigger từ sub-admin
+      return true;
+    });
+
+    const uids = [...new Set(filtered.map(l=>l.nguoi_dung_id).filter(Boolean))];
     const uMap = {};
     if (uids.length) {
       const { data: users } = await supabase.from("nguoi_dung")
@@ -723,8 +736,8 @@ app.get("/logs", async (req, res) => {
     }
 
     res.json({
-      total: count||0, page: parseInt(page), limit: parseInt(limit),
-      data: (data||[]).map(l=>({
+      total: filtered.length, page: parseInt(page), limit: parseInt(limit),
+      data: filtered.map(l=>({
         id:         l.id,
         userId:     l.nguoi_dung_id,
         userName:   uMap[l.nguoi_dung_id]?.name||null,
