@@ -444,33 +444,22 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
           <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Hành động</span>
           <select id="log-flt-action" onchange="loadLogs()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)">
             <option value="">Tất cả</option>
-            <optgroup label="Đăng nhập"><option value="LOGIN">Đăng nhập</option></optgroup>
-            <optgroup label="Bệnh nhân">
-              <option value="CREATE_PATIENT">Tiếp nhận bệnh nhân</option>
-              <option value="UPDATE_PATIENT">Sửa bệnh nhân</option>
-              <option value="DELETE_PATIENT">Xóa bệnh nhân</option>
+            <optgroup label="Đăng nhập">
+              <option value="LOGIN">Đăng nhập</option>
             </optgroup>
-            <optgroup label="Bác sĩ">
-              <option value="CREATE_DOCTOR">Tạo bác sĩ</option>
-              <option value="UPDATE_DOCTOR">Sửa bác sĩ</option>
-              <option value="ASSIGN_DOCTOR">Phân công bác sĩ</option>
-            </optgroup>
-            <optgroup label="Người nhà">
-              <option value="CREATE_FAMILY">Tạo người nhà</option>
-              <option value="UPDATE_FAMILY">Sửa người nhà</option>
-              <option value="DELETE_FAMILY">Xóa liên kết người nhà</option>
-            </optgroup>
-            <optgroup label="Thiết bị & CSYT">
-              <option value="ASSIGN_DEVICE">Gán thiết bị</option>
+            <optgroup label="Hành động của Admin">
               <option value="CREATE_HOSPITAL">Tạo CSYT</option>
               <option value="UPDATE_HOSPITAL">Sửa CSYT</option>
               <option value="CREATE_SUBADMIN">Tạo Sub Admin</option>
               <option value="UPDATE_SUBADMIN">Sửa Sub Admin</option>
+              <option value="DELETE_SUBADMIN">Xóa Sub Admin</option>
+              <option value="UPDATE_DEVICE">Sửa thiết bị</option>
+              <option value="DELETE_DEVICE">Xóa thiết bị</option>
             </optgroup>
             <optgroup label="Trigger tự động">
-              <option value="CREATE">Tạo mới (trigger)</option>
-              <option value="UPDATE">Cập nhật (trigger)</option>
-              <option value="DELETE">Xóa (trigger)</option>
+              <option value="CREATE">Tạo mới</option>
+              <option value="UPDATE">Cập nhật</option>
+              <option value="DELETE">Xóa</option>
             </optgroup>
           </select>
         </div>
