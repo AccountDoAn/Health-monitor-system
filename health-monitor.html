@@ -964,8 +964,13 @@ async function loadAccRecord(pid){
   const tag  = document.getElementById('acc-tag-'+pid);
   if(!body) return;
   try {
-    const r = await fetch(`${API}/medical-record/${pid}`);
+    // Fetch hồ sơ và ngưỡng cảnh báo song song
+    const [r, rt] = await Promise.all([
+      fetch(`${API}/medical-record/${pid}`),
+      fetch(`${API}/threshold/${pid}`)
+    ]);
     const rec = r.ok ? await r.json() : null;
+    const p = { threshold: rt.ok ? await rt.json() : null };
     const v = k => rec?.[k] ?? '';
     if(tag){
       tag.textContent = rec ? 'Có hồ sơ' : 'Chưa có hồ sơ';
@@ -976,6 +981,12 @@ async function loadAccRecord(pid){
       const sid = `rf-${pid}-${id}`;
       if(type==='select') return `<select id="${sid}" class="acc-fsel"><option value="">—</option>${opts.map(o=>`<option ${String(val)===o?'selected':''}>${o}</option>`).join('')}</select>`;
       return `<input id="${sid}" type="${type}" value="${esc(String(val))}" class="acc-finp"/>`;
+    };
+    const ncb = p.threshold || {};
+    const hasThreshold = p.threshold !== null && p.threshold !== undefined;
+    const fncb = (id, val) => {
+      const sid = `rf-${pid}-ncb-${id}`;
+      return `<input id="${sid}" type="number" value="${val !== null && val !== undefined ? val : ''}" class="acc-finp" placeholder="${hasThreshold ? '' : 'Chưa có'}"/>`;
     };
     body.innerHTML = `
       <div class="acc-grid">
@@ -988,9 +999,28 @@ async function loadAccRecord(pid){
         <div class="acc-field"><div class="acc-flbl">Người liên hệ khẩn</div>${fi('nguoi_lien_he_khan_ten','text',v('nguoi_lien_he_khan_ten'))}</div>
         <div class="acc-field"><div class="acc-flbl">SĐT liên hệ khẩn</div>${fi('nguoi_lien_he_khan_sdt','text',v('nguoi_lien_he_khan_sdt'))}</div>
       </div>
+      <!-- Ngưỡng cảnh báo -->
+      <div style="margin:14px 0 8px;padding-top:12px;border-top:1px solid var(--border)">
+        <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:10px">
+          ⚠️ Ngưỡng cảnh báo ${hasThreshold ? '<span style="font-size:.6rem;background:var(--mint);color:var(--navy);padding:1px 7px;border-radius:5px;margin-left:6px">Đã thiết lập</span>' : '<span style="font-size:.6rem;background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:5px;margin-left:6px">Chưa thiết lập</span>'}
+        </div>
+        <div class="acc-grid">
+          <div class="acc-field"><div class="acc-flbl">Nhịp tim tối thiểu <span style="color:var(--muted)">(bpm)</span></div>${fncb('nhip_tim_toi_thieu', ncb.nhip_tim_toi_thieu)}</div>
+          <div class="acc-field"><div class="acc-flbl">Nhịp tim tối đa <span style="color:var(--muted)">(bpm)</span></div>${fncb('nhip_tim_toi_da', ncb.nhip_tim_toi_da)}</div>
+          <div class="acc-field"><div class="acc-flbl">SpO2 tối thiểu <span style="color:var(--muted)">(%)</span></div>${fncb('spo2_toi_thieu', ncb.spo2_toi_thieu)}</div>
+          <div class="acc-field"><div class="acc-flbl">Nhịp tim cơ sở <span style="color:var(--muted)">(bpm)</span></div>${fncb('nhip_tim_co_so', ncb.nhip_tim_co_so)}</div>
+          <div class="acc-field"><div class="acc-flbl">SpO2 cơ sở <span style="color:var(--muted)">(%)</span></div>${fncb('spo2_co_so', ncb.spo2_co_so)}</div>
+        </div>
+      </div>
       <div class="acc-footer">
         <button class="acc-save" onclick="saveAccRec('${pid}')">💾 Lưu hồ sơ</button>
+        <button class="acc-save" style="background:var(--sky);color:var(--navy)" onclick="loadThresholdHistory('${pid}')">📋 Lịch sử ngưỡng</button>
         <div class="acc-rmsg" id="acc-rmsg-${pid}"></div>
+      </div>
+      <!-- Tab lịch sử ngưỡng -->
+      <div id="threshold-history-${pid}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px">
+        <div style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px">📋 Lịch sử thay đổi ngưỡng cảnh báo</div>
+        <div id="threshold-history-body-${pid}"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
       </div>`;
   } catch(e){ if(body) body.innerHTML=`<div style="color:var(--danger);font-size:.74rem;padding:10px 0">⚠️ ${esc(e.message)}</div>`; }
 }
@@ -1010,20 +1040,76 @@ function filterRecords(q){
 async function saveAccRec(pid){
   const msg = document.getElementById('acc-rmsg-'+pid);
   const g = f => { const e = document.getElementById(`rf-${pid}-${f}`); return e ? e.value.trim()||null : null; };
+  const gn = f => { const e = document.getElementById(`rf-${pid}-${f}`); return e && e.value.trim() ? parseFloat(e.value.trim()) : null; };
+
+  // Hồ sơ bệnh nhân
   const payload = {};
   ['nhom_mau','benh_man_tinh','di_ung','tien_su_y_te','nguoi_lien_he_khan_ten','nguoi_lien_he_khan_sdt'].forEach(f=>{ const v=g(f); if(v) payload[f]=v; });
-  ['chieu_cao_cm','can_nang_kg'].forEach(f=>{ const v=g(f); if(v) payload[f]=parseFloat(v); });
+  ['chieu_cao_cm','can_nang_kg'].forEach(f=>{ const v=gn(f); if(v) payload[f]=v; });
+
+  // Ngưỡng cảnh báo
+  const ncbPayload = {
+    nhip_tim_toi_thieu: gn('ncb-nhip_tim_toi_thieu'),
+    nhip_tim_toi_da:    gn('ncb-nhip_tim_toi_da'),
+    spo2_toi_thieu:     gn('ncb-spo2_toi_thieu'),
+    nhip_tim_co_so:     gn('ncb-nhip_tim_co_so'),
+    spo2_co_so:         gn('ncb-spo2_co_so'),
+  };
+  const hasNcbData = Object.values(ncbPayload).some(v => v !== null);
+
   msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
   try {
+    // Lưu hồ sơ bệnh nhân
     const r = await fetch(`${API}/medical-record/${pid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     const d = await r.json();
-    if(r.ok){
-      msg.style.color='var(--green)'; msg.textContent='✅ Lưu thành công!';
-      const tag=document.getElementById('acc-tag-'+pid);
-      if(tag){tag.textContent='Có hồ sơ';tag.style.background='var(--mint)';tag.style.color='var(--navy)';}
-      setTimeout(()=>msg.textContent='',3000);
-    } else { msg.style.color='var(--danger)'; msg.textContent='⚠️ '+(d.error||'Lỗi'); }
-  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ Không thể kết nối'; }
+    if(!r.ok) throw new Error(d.error||'Lỗi lưu hồ sơ');
+
+    // Lưu ngưỡng cảnh báo nếu có dữ liệu
+    if(hasNcbData){
+      const rn = await fetch(`${API}/threshold/${pid}`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({...ncbPayload, doctorId: DID})
+      });
+      const dn = await rn.json();
+      if(!rn.ok) throw new Error(dn.error||'Lỗi lưu ngưỡng');
+    }
+
+    msg.style.color='var(--green)'; msg.textContent='✅ Lưu thành công!';
+    const tag=document.getElementById('acc-tag-'+pid);
+    if(tag){tag.textContent='Có hồ sơ';tag.style.background='var(--mint)';tag.style.color='var(--navy)';}
+    setTimeout(()=>msg.textContent='',3000);
+  } catch(e){ msg.style.color='var(--danger)'; msg.textContent='⚠️ '+esc(e.message); }
+}
+
+async function loadThresholdHistory(pid){
+  const wrap = document.getElementById('threshold-history-'+pid);
+  const body = document.getElementById('threshold-history-body-'+pid);
+  if(!wrap || !body) return;
+  // Toggle
+  if(wrap.style.display !== 'none' && body.dataset.loaded){
+    wrap.style.display='none'; body.dataset.loaded=''; return;
+  }
+  wrap.style.display='block';
+  body.innerHTML='<div class="loading"><span class="spin"></span>Đang tải...</div>';
+  try {
+    const r = await fetch(`${API}/threshold/${pid}/history`);
+    const list = r.ok ? await r.json() : [];
+    if(!list.length){
+      body.innerHTML='<div style="font-size:.74rem;color:var(--muted);font-style:italic;padding:8px 0">Chưa có lịch sử thay đổi</div>';
+    } else {
+      body.innerHTML='<div class="tbl-wrap"><table class="tbl"><thead><tr>'
+        +'<th>Thời gian</th><th>Nhịp tim cơ sở</th><th>SpO2 cơ sở</th><th>Lý do</th>'
+        +'</tr></thead><tbody>'
+        +list.map(h=>`<tr>
+          <td style="font-size:.7rem;white-space:nowrap">${new Date(h.ngay_tinh_lai).toLocaleString('vi-VN')}</td>
+          <td style="font-size:.74rem">${h.nhip_tim_co_so_moi} bpm</td>
+          <td style="font-size:.74rem">${h.spo2_co_so_moi}%</td>
+          <td style="font-size:.7rem;color:var(--muted)">${h.ly_do_cap_nhat==='bac_si_chinh_sua'?'Bác sĩ chỉnh sửa':h.ly_do_cap_nhat}</td>
+        </tr>`).join('')
+        +'</tbody></table></div>';
+      body.dataset.loaded='1';
+    }
+  } catch(e){ body.innerHTML='<div style="color:var(--danger);font-size:.74rem">⚠️ '+esc(e.message)+'</div>'; }
 }
 function openSettings(){ document.getElementById('modal-bg').classList.add('open'); }
 function closeSettings(){ document.getElementById('modal-bg').classList.remove('open'); }
