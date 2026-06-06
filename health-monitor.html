@@ -456,6 +456,41 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       <div id="records-body" style="padding:12px 16px"><div class="loading"><span class="spin"></span>Đang tải...</div></div>
     </div>
   </div>
+
+  <!-- VIEW: LỊCH SỬ NGƯỠNG CẢNH BÁO -->
+  <div class="content" id="view-threshold-history" style="display:none">
+    <div class="sec-card">
+      <div class="sec-head">
+        <div class="sec-title">📋 Lịch sử ngưỡng cảnh báo</div>
+      </div>
+      <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Bệnh nhân</span>
+          <select id="thr-flt-patient" onchange="loadThresholdHistoryView()" style="padding:5px 10px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);font-family:'Sora',sans-serif;font-size:.74rem;color:var(--text)">
+            <option value="">Tất cả bệnh nhân</option>
+          </select>
+        </div>
+        <button onclick="loadThresholdHistoryView()" style="margin-top:18px;padding:5px 14px;border:1.5px solid var(--navy);border-radius:7px;background:none;color:var(--navy);font-family:'Sora',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer">🔄 Làm mới</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th style="width:20%">Thời gian</th>
+              <th style="width:25%">Bệnh nhân</th>
+              <th style="width:18%">Nhịp tim cơ sở</th>
+              <th style="width:18%">SpO2 cơ sở</th>
+              <th style="width:19%">Lý do</th>
+            </tr>
+          </thead>
+          <tbody id="thr-history-body">
+            <tr><td colspan="5"><div class="loading"><span class="spin"></span>Đang tải...</div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="tip" id="tip"></div>
@@ -503,13 +538,12 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
   </div>
 </div>
 
-  <!-- VIEW: LỊCH SỬ NGƯỠNG CẢO BÁO -->
+  <!-- VIEW: LỊCH SỬ NGƯỠNG CẢNH BÁO -->
   <div class="content" id="view-threshold-history" style="display:none">
     <div class="sec-card">
       <div class="sec-head">
         <div class="sec-title">📋 Lịch sử ngưỡng cảnh báo</div>
       </div>
-      <!-- Bộ lọc -->
       <div style="padding:12px 18px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div style="display:flex;flex-direction:column;gap:4px">
           <span style="font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Bệnh nhân</span>
