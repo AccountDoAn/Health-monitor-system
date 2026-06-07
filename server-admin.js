@@ -187,7 +187,7 @@ app.get("/dashboard", async (req, res) => {
 
     const now = Date.now();
     const devices = devResult.data || [];
-    const onlineCount  = devices.filter(d => d.lan_online_cuoi && now - new Date(d.lan_online_cuoi).getTime() < 60000).length;
+    const onlineCount  = devices.filter(d => d.trang_thai_hoat_dong === true).length;
     const offlineCount = devices.length - onlineCount;
 
     res.json({
@@ -687,7 +687,7 @@ app.get("/devices", async (req, res) => {
       id:           d.id,
       serial:       d.so_seri,
       battery:      d.phan_tram_pin,
-      online:       d.lan_online_cuoi ? now - new Date(d.lan_online_cuoi).getTime() < 60000 : false,
+      online: d.trang_thai_hoat_dong === true,
       lastOnline:   d.lan_online_cuoi,
       active:       d.trang_thai_hoat_dong,
       registeredAt: d.ngay_dang_ky,
