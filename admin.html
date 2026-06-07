@@ -545,6 +545,42 @@ _sb.channel('nhat-ky-realtime')
     }
   });
 
+// Realtime thiết bị
+const _devDebounce = {};
+function _debounce(key, fn, ms){
+  clearTimeout(_devDebounce[key]);
+  _devDebounce[key] = setTimeout(fn, ms||1500);
+}
+
+_sb.channel('admin-devices-rt')
+  .on('postgres_changes',{event:'*',schema:'public',table:'thiet_bi_iot'},function(){
+    _debounce('devices',function(){
+      if(document.getElementById('view-devices')?.style.display!=='none') loadDevices();
+      updateDashboard();
+    });
+  })
+  .on('postgres_changes',{event:'*',schema:'public',table:'lich_su_gan_thiet_bi'},function(){
+    _debounce('devices',function(){
+      if(document.getElementById('view-devices')?.style.display!=='none') loadDevices();
+    });
+  })
+  .subscribe();
+
+// Realtime CSYT & Sub-admin
+_sb.channel('admin-hospitals-rt')
+  .on('postgres_changes',{event:'*',schema:'public',table:'co_so_y_te'},function(){
+    _debounce('hospitals',function(){
+      if(document.getElementById('view-hospitals')?.style.display!=='none') loadHospitals();
+      updateDashboard();
+    });
+  })
+  .on('postgres_changes',{event:'*',schema:'public',table:'nguoi_dung'},function(){
+    _debounce('hospitals',function(){
+      if(document.getElementById('view-hospitals')?.style.display!=='none') loadHospitals();
+    });
+  })
+  .subscribe();
+
 function showNewLogToast(){
   let toast = document.getElementById('log-new-toast');
   if(!toast){
