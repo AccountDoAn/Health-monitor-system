@@ -689,9 +689,7 @@ app.get("/doctor/:doctorId/patients", async (req, res) => {
           deviceId:   assign.thiet_bi_id,
           serial:     dev.so_seri,
           battery:    dev.phan_tram_pin,
-          online:     dev.lan_online_cuoi
-                        ? now - new Date(dev.lan_online_cuoi).getTime() < 60000
-                        : false,
+          online: dev?.trang_thai_hoat_dong === true,
           lastOnline: dev.lan_online_cuoi,
           assignedAt: assign.ngay_gan,
         } : null,
@@ -824,9 +822,7 @@ app.get("/devices", async (req, res) => {
       hardware:        d.phien_ban_phan_cung,
       battery:         d.phan_tram_pin,
       active:          d.trang_thai_hoat_dong,
-      online:          d.lan_online_cuoi
-                         ? now - new Date(d.lan_online_cuoi).getTime() < 60000
-                         : false,
+      online: d.trang_thai_hoat_dong === true,
       lastOnline:      d.lan_online_cuoi,
       registeredAt:    d.ngay_dang_ky,
       hospitalId:      d.co_so_y_te_id,
@@ -897,9 +893,7 @@ app.get("/devices/active", async (req, res) => {
         deviceId:     a.thiet_bi_id,
         serial:       dev?.so_seri,
         battery:      dev?.phan_tram_pin,
-        online:       dev?.lan_online_cuoi
-                        ? now - new Date(dev.lan_online_cuoi).getTime() < 60000
-                        : false,
+        online: dev?.trang_thai_hoat_dong === true,
         lastOnline:   dev?.lan_online_cuoi,
         hospitalId:   dev?.co_so_y_te_id,
         hospitalName: dev?.hospitalName,
@@ -935,9 +929,7 @@ app.get("/devices/:deviceId/status", async (req, res) => {
     if (error) throw error;
 
     const now = Date.now();
-    const online = data.lan_online_cuoi
-      ? now - new Date(data.lan_online_cuoi).getTime() < 60000
-      : false;
+    const online = data.trang_thai_hoat_dong === true;
 
     res.json({
       deviceId:    data.id,
