@@ -396,7 +396,7 @@ app.get("/admin/:userId/overview", async (req, res) => {
       id:         d.id,
       serial:     d.so_seri,
       battery:    d.phan_tram_pin,
-      online:     d.lan_online_cuoi ? now - new Date(d.lan_online_cuoi).getTime() < 60000 : false,
+      online: d.trang_thai_hoat_dong === true,
       lastOnline: d.lan_online_cuoi,
     }));
 
@@ -478,7 +478,7 @@ app.get("/admin/:userId/devices", async (req, res) => {
       serial:       d.so_seri,
       firmware:     d.phien_ban_firmware,
       battery:      d.phan_tram_pin,
-      online:       d.lan_online_cuoi ? now-new Date(d.lan_online_cuoi).getTime()<60000 : false,
+      online: d.trang_thai_hoat_dong === true,
       lastOnline:   d.lan_online_cuoi,
       active:       d.trang_thai_hoat_dong,
       registeredAt: d.ngay_dang_ky,
@@ -671,7 +671,7 @@ app.get("/admin/:userId/patients", async (req, res) => {
         devDetailMap[d.id] = {
           serial:  d.so_seri,
           battery: d.phan_tram_pin,
-          online:  d.lan_online_cuoi ? now - new Date(d.lan_online_cuoi).getTime() < 60000 : false,
+          online: d.trang_thai_hoat_dong === true,
         };
       });
     }
