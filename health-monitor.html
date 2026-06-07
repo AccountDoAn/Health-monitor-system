@@ -230,6 +230,15 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .acc-body{display:none;padding:14px 18px;background:var(--card);border-top:2px solid var(--navy);}
 .acc-item.open .acc-body{display:block;animation:fadeIn .2s ease;}
 #view-records{flex:1;overflow-y:auto;min-height:0;}
+#view-links .sec-card,
+#view-records .sec-card,
+#view-overview .sec-card,
+#view-devices .sec-card{overflow:visible;}
+#view-links .sec-head,
+#view-records .sec-head,
+#view-overview .sec-head,
+#view-devices .sec-head{border-radius:12px 12px 0 0;overflow:hidden;}
+
 #view-records .acc-item{overflow:visible;}
 
 .acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;}
@@ -431,8 +440,8 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 
   <!-- VIEW: LIÊN KẾT -->
   <div class="content" id="view-links" style="display:none">
-    <div class="sec-card">
-      <div class="sec-head">
+    <div class="sec-card" style="overflow:visible">
+      <div class="sec-head" style="border-radius:12px 12px 0 0;overflow:hidden">
         <div class="sec-title">👨‍👩‍👧 Liên kết người nhà</div>
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
           <div class="srch">
