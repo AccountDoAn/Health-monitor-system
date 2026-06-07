@@ -229,6 +229,9 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 .acc-item.open .acc-chevron{color:rgba(255,255,255,.8);transform:rotate(180deg);}
 .acc-body{display:none;padding:14px 18px;background:var(--card);border-top:2px solid var(--navy);}
 .acc-item.open .acc-body{display:block;animation:fadeIn .2s ease;}
+#view-records{flex:1;overflow-y:auto;min-height:0;}
+#view-records .acc-item{overflow:visible;}
+
 .acc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:14px;}
 .acc-field{display:flex;flex-direction:column;gap:3px;}
 .acc-flbl{font-size:.61rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
@@ -446,8 +449,8 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
 
   <!-- VIEW: HỒ SƠ BỆNH ÁN -->
   <div class="content" id="view-records" style="display:none">
-    <div class="sec-card">
-      <div class="sec-head">
+    <div class="sec-card" style="overflow:visible">
+      <div class="sec-head" style="border-radius:12px 12px 0 0;overflow:hidden">
         <div class="sec-title">🗂️ Hồ sơ bệnh án</div>
         <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
           <div class="srch">
