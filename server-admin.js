@@ -553,25 +553,7 @@ app.post("/subadmins", async (req, res) => {
   }
 });
 
-// PATCH /subadmins/:id — kích hoạt / vô hiệu hóa tài khoản
-app.patch("/subadmins/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { adminId, active, password } = req.body;
-
-    const updates = {};
-    if (active !== undefined)  updates.trang_thai_hoat_dong = active;
-    if (password !== undefined) updates.mat_khau = password;
-
-    await supabase.from("nguoi_dung").update(updates).eq("id", id);
-    await logAction(adminId, "UPDATE_SUBADMIN", "nguoi_dung", id, updates, getIp(req));
-    res.json({ ok: true });
-  } catch (err) {
-    console.error("[PATCH /subadmins/:id]", err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
+// PATCH /subadmins/:id — cập nhật thông tin sub admin
 app.patch("/subadmins/:id", async (req, res) => {
   try {
     const { id } = req.params;
