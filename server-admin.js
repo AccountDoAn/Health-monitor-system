@@ -749,24 +749,32 @@ app.get("/logs", async (req, res) => {
     // Lọc:
     // - Admin → hiển thị tất cả hành động
     // - Sub-admin → CHỈ hiển thị LOGIN và LOGOUT
-    // - Trigger hệ thống (nguoi_dung_id = null) → hiển thị
+    // - Trigger hệ thống (nguoi_dung_id = null) → chỉ giữ nếu thuộc bảng admin-level
+    const ADMIN_TABLES = ['co_so_y_te','thiet_bi_iot','admin','sub_admin'];
+    const TRIGGER_ACTIONS = ['CREATE','UPDATE','DELETE'];
+
     const filtered = (data||[]).filter(l => {
-      if(!l.nguoi_dung_id) return true; // trigger hệ thống
       if(adminIds.includes(l.nguoi_dung_id)) return true; // admin → tất cả
       if(subAdminIds.includes(l.nguoi_dung_id)) return ['LOGIN','LOGOUT'].includes(l.hanh_dong); // sub-admin → chỉ login/logout
-      return true;
+      // Trigger hệ thống (null) → chỉ giữ nếu thuộc bảng admin-level
+      if(!l.nguoi_dung_id && TRIGGER_ACTIONS.includes(l.hanh_dong)){
+        return ADMIN_TABLES.includes(l.loai_doi_tuong);
+      }
+      return false; // bỏ tất cả còn lại
     });
 
     // Đếm tổng chính xác
     const { data: allRows } = await supabase.from("nhat_ky_he_thong")
-      .select("id, nguoi_dung_id, hanh_dong")
+      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong")
       .gte("ngay_tao", dateFrom||'2000-01-01')
       .lte("ngay_tao", dateTo ? dateTo+'T23:59:59' : '2099-12-31');
     const trueTotal = (allRows||[]).filter(l => {
-      if(!l.nguoi_dung_id) return true;
       if(adminIds.includes(l.nguoi_dung_id)) return true;
       if(subAdminIds.includes(l.nguoi_dung_id)) return ['LOGIN','LOGOUT'].includes(l.hanh_dong);
-      return true;
+      if(!l.nguoi_dung_id && TRIGGER_ACTIONS.includes(l.hanh_dong)){
+        return ADMIN_TABLES.includes(l.loai_doi_tuong);
+      }
+      return false;
     }).length;
 
     const uids = [...new Set(filtered.map(l=>l.nguoi_dung_id).filter(Boolean))];
