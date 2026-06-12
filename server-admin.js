@@ -734,12 +734,24 @@ app.get("/logs", async (req, res) => {
       subAdminIds = (pq||[]).map(p=>p.nguoi_dung_id);
     }
 
-    // Hàm filter: admin → tất cả | sub-admin → chỉ LOGIN/LOGOUT | null → chỉ bảng admin-level
-    const ADMIN_TABLES  = ['co_so_y_te','thiet_bi_iot','admin','sub_admin','nguoi_dung'];
+    // Các action hợp lệ của admin
+    const ADMIN_ACTIONS = [
+      'LOGIN','LOGOUT','CHANGE_PASSWORD',
+      'CREATE_HOSPITAL','UPDATE_HOSPITAL','DELETE_HOSPITAL',
+      'CREATE_SUBADMIN','UPDATE_SUBADMIN','DELETE_SUBADMIN',
+      'CREATE_DEVICE','UPDATE_DEVICE','DELETE_DEVICE',
+    ];
+    // Bảng admin-level cho trigger tự động
+    const ADMIN_TABLES = ['co_so_y_te','thiet_bi_iot'];
+
+    // Hàm filter: admin → tất cả | sub-admin → chỉ LOGIN/LOGOUT | null → chỉ admin action + bảng admin-level
     const PASS = (l) => {
       if(l.nguoi_dung_id && adminIds.includes(l.nguoi_dung_id))    return true;
       if(l.nguoi_dung_id && subAdminIds.includes(l.nguoi_dung_id)) return ['LOGIN','LOGOUT'].includes(l.hanh_dong);
-      if(!l.nguoi_dung_id) return ADMIN_TABLES.includes(l.loai_doi_tuong);
+      if(!l.nguoi_dung_id){
+        // Trigger tự động: chỉ giữ nếu thuộc bảng admin-level
+        return ADMIN_TABLES.includes(l.loai_doi_tuong) && ['CREATE','UPDATE','DELETE'].includes(l.hanh_dong);
+      }
       return false;
     };
 
