@@ -734,8 +734,6 @@ app.get("/logs", async (req, res) => {
       subAdminIds = (pq||[]).map(p=>p.nguoi_dung_id);
     }
 
-    console.log('[logs] adminIds:', adminIds.length, 'subAdminIds:', subAdminIds, 'subAdminIds count:', subAdminIds.length);
-
     // Hàm filter: admin → tất cả | sub-admin → chỉ LOGIN/LOGOUT | null → chỉ bảng admin-level
     const ADMIN_TABLES  = ['co_so_y_te','thiet_bi_iot','admin','sub_admin','nguoi_dung'];
     const PASS = (l) => {
