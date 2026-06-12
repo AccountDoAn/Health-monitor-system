@@ -801,11 +801,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);displa
       </div>
       <!-- Textbox khi tạo mới -->
       <div id="pt-fam-new-wrap">
-        <div class="ac-wrap">
-          <input id="pt-fam-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
-            oninput="acSearchPtFamily(this.value)" onfocus="acSearchPtFamily(this.value)"/>
-          <div class="ac-dropdown" id="pt-fam-ac-drop"></div>
-        </div>
+        <input id="pt-fam-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"/>
       </div>
     </div>
     <div id="pt-fam-new-fields">
@@ -1668,7 +1664,7 @@ function openAddPatient(){
   const ptRadios = document.querySelectorAll('input[name="pt-fam-mode"]');
   if(ptRadios.length){ ptRadios[0].checked=true; toggleFamMode('pt','new'); }
   document.getElementById('pt-fam-new-fields').style.display='block';
-  document.getElementById('pt-fam-ac-drop').style.display='none';
+  const _ptDrop=document.getElementById('pt-fam-ac-drop'); if(_ptDrop) _ptDrop.style.display='none';
   document.getElementById('pt-fam-pw').value='123456';
   document.getElementById('pt-msg').textContent='';
   document.getElementById('modal-patient').classList.add('open');
@@ -1701,9 +1697,10 @@ async function savePatient(){
     const pid = d.patientId;
 
     // Tạo liên kết người nhà nếu có nhập — lỗi không ảnh hưởng tạo bệnh nhân
-    const famName    = document.getElementById('pt-fam-name').value.trim();
+    const famMode    = document.querySelector('input[name="pt-fam-mode"]:checked')?.value;
+    const famName    = famMode==='existing' ? '' : document.getElementById('pt-fam-name').value.trim();
     const famRel     = document.getElementById('pt-fam-rel').value;
-    const famExistId = document.getElementById('pt-fam-existing-id').value;
+    const famExistId = famMode==='existing' ? document.getElementById('pt-fam-existing-id').value : '';
 
     if(famName || famExistId){
       try {
@@ -2520,7 +2517,7 @@ function openAddFamily(pid, pname){
   document.getElementById('af-rel').value   = '';
   document.getElementById('af-primary').checked = false;
   document.getElementById('af-msg').textContent = '';
-  document.getElementById('af-ac-drop').style.display = 'none';
+  const _afDrop=document.getElementById('af-ac-drop'); if(_afDrop) _afDrop.style.display='none';
   document.getElementById('af-new-fields').style.display = 'block';
   document.getElementById('modal-add-family').classList.add('open');
 }
@@ -2529,6 +2526,7 @@ function openAddFamily(pid, pname){
 let _acTimer = null;
 async function acSearchFamily(q){
   const drop = document.getElementById('af-ac-drop');
+  if(!drop) return;
   clearTimeout(_acTimer);
   if(!q || q.length < 2){ drop.style.display='none'; return; }
   _acTimer = setTimeout(async function(){
@@ -2567,7 +2565,7 @@ function acSelect(name, phone, email, uid){
   document.getElementById('af-name').value  = name;
   document.getElementById('af-phone').value = phone;
   document.getElementById('af-email').value = email;
-  document.getElementById('af-ac-drop').style.display = 'none';
+  const _afDrop=document.getElementById('af-ac-drop'); if(_afDrop) _afDrop.style.display='none';
   // Nếu đang ở mode existing → giữ disable
   const mode = document.querySelector('input[name="af-fam-mode"]:checked')?.value;
   if(mode === 'existing'){
@@ -2605,11 +2603,11 @@ async function saveAddFamily(){
       isPrimary:  document.getElementById('af-primary').checked,
     };
 
-    if(_afSelectedUserId){
-      // TH2: gán tài khoản có sẵn
+    if(mode==='existing'){
+      // Gán tài khoản có sẵn — chỉ từ combobox
       payload.existingUserId = _afSelectedUserId;
     } else {
-      // TH1: tạo tài khoản mới
+      // Tạo tài khoản mới — chỉ từ textbox
       payload.name     = name;
       payload.phone    = document.getElementById('af-phone').value.trim()||null;
       payload.email    = document.getElementById('af-email').value.trim()||null;
@@ -3316,13 +3314,22 @@ function toggleFamMode(prefix, mode){
 
   // Load combobox nếu chuyển sang existing
   if(isExisting){
-    const sel = document.getElementById(prefix+'-fam-select');
-    if(sel){
+    const fillSelect = function(){
+      const sel = document.getElementById(prefix+'-fam-select');
+      if(!sel) return;
       sel.innerHTML = '<option value="">— Chọn người nhà —</option>'
         + alphabetSort(familiesCache,'userName').map(function(f){
             return '<option value="'+f.userId+'">'+esc(f.userName)+(f.phone?' · '+f.phone:'')+'</option>';
           }).join('');
       sel.value = '';
+    };
+    if(!familiesCache.length){
+      fetch(AAPI+'/admin/'+UID+'/families')
+        .then(function(r){ return r.ok ? r.json() : []; })
+        .then(function(list){ familiesCache = list||[]; familiesFiltered = familiesCache; fillSelect(); })
+        .catch(function(){ fillSelect(); });
+    } else {
+      fillSelect();
     }
   }
 
@@ -3330,20 +3337,22 @@ function toggleFamMode(prefix, mode){
   const hint = document.getElementById(prefix+'-fam-name-hint');
   if(hint) hint.textContent = isExisting
     ? ' — chọn từ danh sách'
-    : ' — nhập để tìm hoặc tạo mới';
+    : ' — tự nhập thông tin tài khoản mới';
 
-  // Reset existing id nếu chuyển sang tạo mới
+  // Reset khi chuyển sang tạo mới
   if(!isExisting){
     const exEl = document.getElementById(prefix+'-fam-existing-id');
     if(exEl){ exEl.value = ''; }
-    const nameEl = document.getElementById(prefix+'-fam-name');
+    const nameEl = document.getElementById(prefix+'-fam-name') || document.getElementById(prefix+'-name');
     if(nameEl) nameEl.value = '';
+    if(prefix==='af') _afSelectedUserId = null;
   }
 }
 
 let _acPtFamTimer = null;
 async function acSearchPtFamily(q){
   const drop = document.getElementById('pt-fam-ac-drop');
+  if(!drop) return;
   clearTimeout(_acPtFamTimer);
   if(!q||q.length<2){ drop.style.display='none'; return; }
   _acPtFamTimer = setTimeout(async function(){
@@ -3369,7 +3378,7 @@ function acSelectPtFam(name,phone,email,uid){
   document.getElementById('pt-fam-phone').value = phone;
   document.getElementById('pt-fam-email').value = email;
   document.getElementById('pt-fam-existing-id').value = uid;
-  document.getElementById('pt-fam-ac-drop').style.display='none';
+  const _ptDrop=document.getElementById('pt-fam-ac-drop'); if(_ptDrop) _ptDrop.style.display='none';
   const mode = document.querySelector('input[name="pt-fam-mode"]:checked')?.value;
   if(mode === 'existing'){
     ['pt-fam-phone','pt-fam-email','pt-fam-pw'].forEach(function(id){
@@ -3584,11 +3593,7 @@ async function saveDoctor(){
       </div>
       <!-- Textbox khi tạo mới -->
       <div id="af-fam-new-wrap">
-        <div class="ac-wrap">
-          <input id="af-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"
-            oninput="acSearchFamily(this.value)" onfocus="acSearchFamily(this.value)"/>
-          <div class="ac-dropdown" id="af-ac-drop"></div>
-        </div>
+        <input id="af-name" type="text" placeholder="Nguyễn Thị B..." autocomplete="off"/>
       </div>
     </div>
 
