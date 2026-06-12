@@ -156,7 +156,6 @@ async function logAction(userId, action, targetType, targetId, detail, ip){
       loai_doi_tuong:  targetType,
       doi_tuong_id:    targetId || null,
       du_lieu_bo_sung: detail || {},
-      dia_chi_ip:      ip || null,
       ngay_tao:        new Date().toISOString(),
     });
   } catch(_){}
