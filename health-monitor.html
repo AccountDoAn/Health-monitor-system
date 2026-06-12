@@ -770,6 +770,54 @@ function setupRealtime(){
 }
 
 // Khởi động Realtime sau khi load xong danh sách bệnh nhân
+function updateBellBadge(){
+  const n = pts.filter(p=>p.alertLevel==='canh_bao').length;
+  const btn   = document.getElementById('bell-btn');
+  const badge = document.getElementById('bell-badge');
+  const countB= document.getElementById('alert-count-badge');
+  if(n>0){
+    btn.classList.add('has-alert');
+    badge.style.display='flex';
+    badge.textContent=n>99?'99+':n;
+    if(countB) countB.textContent=n;
+  } else {
+    btn.classList.remove('has-alert');
+    badge.style.display='none';
+    if(countB) countB.textContent=0;
+  }
+}
+
+function renderAlertPopup(){
+  const body=document.getElementById('alert-popup-body');
+  if(!body) return;
+  if(!pts.length){
+    body.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:.78rem">Chưa có bệnh nhân</div>';
+    return;
+  }
+  body.innerHTML=pts.map(function(p){
+    const isAlert=p.alertLevel==='canh_bao';
+    const thr=p.threshold;
+    const hrMax=thr?.nhip_tim_toi_da||120;
+    const hrMin=thr?.nhip_tim_toi_thieu||50;
+    const spo2Min=thr?.spo2_toi_thieu||94;
+    const triColor=isAlert?'var(--warn)':'transparent';
+    return '<div class="alert-item" onclick="gotoPatient(\''+p.id+'\')">'
+      +'<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0" fill="'+triColor+'">'
+      +'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>'
+      +(isAlert?'<line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="17" r="1" fill="#fff"/>':'')
+      +'</svg>'
+      +'<div class="alert-item-info">'
+      +'<div class="alert-item-name">'+esc(p.name)+'</div>'
+      +'<div class="alert-item-serial">'+esc(p.serial||'—')+'</div>'
+      +'</div>'
+      +'<div style="text-align:right;min-width:80px">'
+      +(p.hr!=null?'<div style="font-size:.75rem;font-weight:700;color:'+(isAlert&&(p.hr>hrMax||p.hr<hrMin)?'var(--danger)':'var(--text)')+'">'+p.hr+' bpm</div>':'')
+      +(p.spo2!=null?'<div style="font-size:.75rem;color:'+(isAlert&&p.spo2<spo2Min?'var(--danger)':'var(--muted)')+'">'+p.spo2+'%</div>':'')
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
 function startRealtime(){
   setupRealtime();
   updateBellBadge();
