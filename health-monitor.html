@@ -686,13 +686,24 @@ async function onNewVital(payload){
     pt.hr         = v.nhip_tim   ?? pt.hr;
     pt.spo2       = v.spo2       ?? pt.spo2;
     pt.last       = v.thoi_gian_do;
-    // Tính lại alertLevel từ data mới
+    // Tính lại alertLevel từ ngưỡng cảnh báo của bệnh nhân
     const hr = pt.hr != null ? Number(pt.hr) : null;
     const sp = pt.spo2 != null ? Number(pt.spo2) : null;
-    if(hr==null && sp==null) pt.alertLevel = 'binh_thuong';
-    else if((sp!=null&&sp<90)||(hr!=null&&(hr>120||hr<45))) pt.alertLevel = 'nguy_hiem';
-    else if((sp!=null&&sp<94)||(hr!=null&&(hr>100||hr<50))) pt.alertLevel = 'canh_bao';
-    else pt.alertLevel = 'binh_thuong';
+    const thr = pt.threshold;
+    if(hr==null && sp==null){
+      pt.alertLevel = 'binh_thuong';
+    } else if(thr){
+      // Dùng ngưỡng riêng của bệnh nhân
+      const hrMax  = thr.nhip_tim_toi_da    || 120;
+      const hrMin  = thr.nhip_tim_toi_thieu || 50;
+      const spo2Min = thr.spo2_toi_thieu    || 94;
+      const hrAlert  = hr  != null && (hr > hrMax || hr < hrMin);
+      const spo2Alert = sp != null && sp < spo2Min;
+      pt.alertLevel = (hrAlert || spo2Alert) ? 'canh_bao' : 'binh_thuong';
+    } else {
+      // Chưa thiết lập ngưỡng → không cảnh báo
+      pt.alertLevel = 'binh_thuong';
+    }
     renderPts(pts, document.getElementById('srch').value);
     updSum();
     document.getElementById('last-upd').textContent =
@@ -1788,7 +1799,8 @@ async function loadData(){
       last:p.live?.updatedAt,
       alertLevel:p.live?.alertLevel||'binh_thuong',
       deviceStatus:p.live?.deviceStatus||null,
-      blood:p.profile?.nhom_mau, disease:p.profile?.benh_man_tinh, phone:p.phone
+      blood:p.profile?.nhom_mau, disease:p.profile?.benh_man_tinh, phone:p.phone,
+      threshold: p.threshold||null,
     }));
     renderPts(pts);
     updSum();
