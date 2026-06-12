@@ -667,15 +667,18 @@ app.get("/doctor/:doctorId/patients", async (req, res) => {
     const thresholdMap = {};
     (thresholds||[]).forEach(t=>{ thresholdMap[t.nguoi_dung_tb_id] = t; });
 
-    // 5. Lấy live data
-    const { data: liveData } = await supabase
-      .from("trang_thai_live")
-      .select("nguoi_dung_tb_id, nhip_tim_live, spo2_live, muc_do_canh_bao, trang_thai_thiet_bi, thoi_gian_cap_nhat")
-      .in("nguoi_dung_tb_id", patientIds)
-      .limit(patientIds.length);
-
+    // 5. Lấy dữ liệu sinh tồn mới nhất từ du_lieu_sinh_ton
     const liveMap = {};
-    (liveData || []).forEach((l) => { if (patientIds.includes(l.nguoi_dung_tb_id)) liveMap[l.nguoi_dung_tb_id] = l; });
+    for(const pid of patientIds){
+      const { data: latest } = await supabase
+        .from("du_lieu_sinh_ton")
+        .select("nguoi_dung_tb_id, nhip_tim, spo2, thoi_gian_do")
+        .eq("nguoi_dung_tb_id", pid)
+        .order("thoi_gian_do", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if(latest) liveMap[pid] = latest;
+    }
 
     // 6. Merge
     const now = Date.now();
@@ -711,11 +714,11 @@ app.get("/doctor/:doctorId/patients", async (req, res) => {
           assignedAt: assign.ngay_gan,
         } : null,
         live: live ? {
-          heartRate:    live.nhip_tim_live,
-          spo2:         live.spo2_live,
-          alertLevel:   live.muc_do_canh_bao,
-          deviceStatus: live.trang_thai_thiet_bi,
-          updatedAt:    live.thoi_gian_cap_nhat,
+          heartRate:    live.nhip_tim,
+          spo2:         live.spo2,
+          alertLevel:   null,
+          deviceStatus: null,
+          updatedAt:    live.thoi_gian_do,
         } : null,
       };
     });
