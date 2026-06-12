@@ -656,6 +656,17 @@ app.get("/doctor/:doctorId/patients", async (req, res) => {
       (devices || []).forEach((d) => { if (deviceIds.includes(d.id)) deviceMap[d.id] = d; });
     }
 
+    // 5b. Lấy ngưỡng cảnh báo
+    const { data: thresholds } = await supabase
+      .from("nguong_canh_bao")
+      .select("nguoi_dung_tb_id, nhip_tim_toi_da, nhip_tim_toi_thieu, spo2_toi_thieu")
+      .in("nguoi_dung_tb_id", patientIds)
+      .eq("trang_thai_hoat_dong", true)
+      .limit(patientIds.length);
+
+    const thresholdMap = {};
+    (thresholds||[]).forEach(t=>{ thresholdMap[t.nguoi_dung_tb_id] = t; });
+
     // 5. Lấy live data
     const { data: liveData } = await supabase
       .from("trang_thai_live")
@@ -675,6 +686,7 @@ app.get("/doctor/:doctorId/patients", async (req, res) => {
       const live   = liveMap[pid];
       const pat    = patientMap[pid] || {};
       const prof   = profileMap[pid] || null;
+      const thr    = thresholdMap[pid] || null;
       return {
         patientId:       pid,
         patientName:     pat.ho_ten || `ID:${pid?.slice(0,8)}`,
@@ -683,6 +695,11 @@ app.get("/doctor/:doctorId/patients", async (req, res) => {
         dob:             pat.ngay_sinh,
         gender:          pat.gioi_tinh,
         profile:         prof,
+        threshold:       thr ? {
+          nhip_tim_toi_da:    thr.nhip_tim_toi_da,
+          nhip_tim_toi_thieu: thr.nhip_tim_toi_thieu,
+          spo2_toi_thieu:     thr.spo2_toi_thieu,
+        } : null,
         monitoringLevel: l.tan_suat_theo_doi,
         assignedAt:      l.ngay_phan_cong,
         device: dev ? {
