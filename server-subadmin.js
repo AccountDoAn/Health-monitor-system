@@ -1255,10 +1255,9 @@ app.delete("/admin/:userId/unassign-doctor", async (req, res) => {
     if(!patientId || !doctorId) return res.status(400).json({ error:"Thiếu thông tin" });
 
     const { error } = await supabase.from("lien_ket_bac_si")
-      .update({ trang_thai_hoat_dong: false, ngay_huy_phan_cong: new Date().toISOString() })
+      .delete()
       .eq("nguoi_dung_tb_id", patientId)
-      .eq("nguoi_dung_bs_id", doctorId)
-      .eq("trang_thai_hoat_dong", true);
+      .eq("nguoi_dung_bs_id", doctorId);
     if(error) throw error;
 
     await logAction(userId,'UNASSIGN_DOCTOR','lien_ket_bac_si',null,{patientId,doctorId},getIp(req));
@@ -1291,9 +1290,10 @@ app.post("/admin/:userId/assign-doctor", async (req, res) => {
       if(!pq) return res.status(400).json({ error: "Người được chọn không phải bệnh nhân. Không thể phân công bác sĩ." });
     }
 
+    // Xóa liên kết cũ (nếu có) trước khi tạo liên kết mới
     await supabase.from("lien_ket_bac_si")
-      .update({ trang_thai_hoat_dong:false })
-      .eq("nguoi_dung_tb_id",patientId).eq("trang_thai_hoat_dong",true);
+      .delete()
+      .eq("nguoi_dung_tb_id",patientId);
 
     const { error } = await supabase.from("lien_ket_bac_si").insert({
       nguoi_dung_tb_id:  patientId,
