@@ -1153,6 +1153,39 @@ app.get("/admin/:userId/doctors", async (req, res) => {
   }
 });
 
+// DELETE /admin/:userId/doctors/:doctorId/fire — sa thải bác sĩ
+app.delete("/admin/:userId/doctors/:doctorId/fire", async (req, res) => {
+  try {
+    const { userId, doctorId } = req.params;
+    const { name } = req.body;
+
+    // Kiểm tra còn liên kết bệnh nhân không
+    const { data: activeLinks } = await supabase.from("lien_ket_bac_si")
+      .select("id, nguoi_dung_tb_id, nguoi_dung!nguoi_dung_tb_id(ho_ten)")
+      .eq("nguoi_dung_bs_id", doctorId)
+      .eq("trang_thai_hoat_dong", true);
+
+    if(activeLinks?.length){
+      const names = activeLinks.map(l=>l.nguoi_dung?.ho_ten||'—').join(', ');
+      return res.status(409).json({
+        error: `Bác sĩ "${name}" đang phụ trách ${activeLinks.length} bệnh nhân: ${names}. Vui lòng hủy liên kết bệnh nhân trước khi sa thải.`
+      });
+    }
+
+    // Vô hiệu hóa tài khoản bác sĩ
+    const { error } = await supabase.from("nguoi_dung")
+      .update({ trang_thai_hoat_dong: false })
+      .eq("id", doctorId);
+    if(error) throw error;
+
+    await logAction(userId, 'DELETE_DOCTOR', 'nguoi_dung', doctorId, { name: name||doctorId }, getIp(req));
+    res.json({ ok: true });
+  } catch(err){
+    console.error("[DELETE /doctors/fire]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // PATCH /admin/:userId/doctors/:doctorId — cập nhật thông tin bác sĩ
 app.patch("/admin/:userId/doctors/:doctorId", async (req, res) => {
   try {
@@ -1210,6 +1243,28 @@ app.post("/admin/:userId/doctors", async (req, res) => {
     res.json({ doctorId:newUser.id, name:name.trim() });
   } catch (err) {
     console.error("[POST /admin/doctors]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DELETE /admin/:userId/unassign-doctor — hủy liên kết bác sĩ-bệnh nhân
+app.delete("/admin/:userId/unassign-doctor", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { patientId, doctorId } = req.body;
+    if(!patientId || !doctorId) return res.status(400).json({ error:"Thiếu thông tin" });
+
+    const { error } = await supabase.from("lien_ket_bac_si")
+      .update({ trang_thai_hoat_dong: false, ngay_huy_phan_cong: new Date().toISOString() })
+      .eq("nguoi_dung_tb_id", patientId)
+      .eq("nguoi_dung_bs_id", doctorId)
+      .eq("trang_thai_hoat_dong", true);
+    if(error) throw error;
+
+    await logAction(userId,'UNASSIGN_DOCTOR','lien_ket_bac_si',null,{patientId,doctorId},getIp(req));
+    res.json({ ok: true });
+  } catch(err){
+    console.error("[DELETE /unassign-doctor]", err.message);
     res.status(500).json({ error: err.message });
   }
 });
