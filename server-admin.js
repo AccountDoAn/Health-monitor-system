@@ -162,7 +162,6 @@ async function logAction(userId, action, targetType, targetId, detail, ip) {
       loai_doi_tuong: targetType,
       doi_tuong_id:   targetId || null,
       du_lieu_bo_sung: detail || {},
-      dia_chi_ip:     ip || null,
       ngay_tao:       new Date().toISOString(),
     });
   } catch (_) { /* Không throw — nhật ký không được làm gián đoạn nghiệp vụ */ }
@@ -739,7 +738,7 @@ app.get("/logs", async (req, res) => {
     }
 
     let query = supabase.from("nhat_ky_he_thong")
-      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, dia_chi_ip, du_lieu_bo_sung, ngay_tao", { count: 'exact' })
+      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, du_lieu_bo_sung, ngay_tao", { count: 'exact' })
       .order("ngay_tao", { ascending: false })
       .range(offset, offset + parseInt(limit) - 1)
       .in("hanh_dong", action ? [action] : ALLOWED_ACTIONS);
@@ -796,7 +795,6 @@ app.get("/logs", async (req, res) => {
         action:     l.hanh_dong,
         targetType: l.loai_doi_tuong,
         targetId:   l.doi_tuong_id,
-        ip:         l.dia_chi_ip,
         detail:     l.du_lieu_bo_sung,
         time:       l.ngay_tao,
       }))
