@@ -3179,8 +3179,8 @@ async function saveEditPtFamily(){
   const msg = document.getElementById('epf-msg');
   const btn = document.getElementById('epf-save-btn');
 
-  if(!famName){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập tên người nhà'; return; }
   if(mode==='existing' && !existingId){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng chọn người nhà từ danh sách'; return; }
+  if(mode==='new' && !famName){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên người nhà'; return; }
 
   btn.disabled=true; msg.style.color='var(--muted)'; msg.textContent='Đang lưu...';
   try {
