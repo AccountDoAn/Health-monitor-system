@@ -770,6 +770,12 @@ function setupRealtime(){
 }
 
 // Khởi động Realtime sau khi load xong danh sách bệnh nhân
+function toggleAlertPopup(){
+  const popup = document.getElementById('alert-popup');
+  const isOpen = popup.classList.toggle('open');
+  if(isOpen){ renderAlertPopup(); updateBellBadge(); }
+}
+
 function updateBellBadge(){
   const n = pts.filter(p=>p.alertLevel==='canh_bao').length;
   const btn   = document.getElementById('bell-btn');
