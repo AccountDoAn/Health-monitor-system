@@ -866,7 +866,8 @@ document.addEventListener('click',function(e){
 });
 
 function setupRealtime(){
-  // Channel vitals — filter theo bệnh nhân của bác sĩ này
+  // Channel vitals — lắng nghe INSERT vào du_lieu_sinh_ton
+  // Đây là nguồn dữ liệu duy nhất để tính cảnh báo
   _sb.channel('vitals-live')
     .on('postgres_changes', {
       event:  'INSERT',
@@ -1792,16 +1793,30 @@ async function loadData(){
     const r=await fetch(`${API}/doctor/${DID}/patients`);
     if(!r.ok) throw new Error('HTTP '+r.status);
     const raw=await r.json();
-    pts=raw.map(p=>({
-      id:p.patientId, name:p.patientName, dob:p.dob, gender:p.gender,
-      serial:p.device?.serial||'—',
-      hr:p.live?.heartRate??null, spo2:p.live?.spo2??null,
-      last:p.live?.updatedAt,
-      alertLevel:p.live?.alertLevel||'binh_thuong',
-      deviceStatus:p.live?.deviceStatus||null,
-      blood:p.profile?.nhom_mau, disease:p.profile?.benh_man_tinh, phone:p.phone,
-      threshold: p.threshold||null,
-    }));
+    pts=raw.map(p=>{
+      const hr  = p.live?.heartRate ?? null;
+      const sp  = p.live?.spo2      ?? null;
+      const thr = p.threshold       || null;
+      let alertLevel = 'binh_thuong';
+      if((hr!=null || sp!=null) && thr){
+        const hrMax   = thr.nhip_tim_toi_da    || 120;
+        const hrMin   = thr.nhip_tim_toi_thieu || 50;
+        const spo2Min = thr.spo2_toi_thieu     || 94;
+        const hrAlert   = hr!=null && (hr>hrMax || hr<hrMin);
+        const spo2Alert = sp!=null && sp<spo2Min;
+        alertLevel = (hrAlert||spo2Alert) ? 'canh_bao' : 'binh_thuong';
+      }
+      return {
+        id:p.patientId, name:p.patientName, dob:p.dob, gender:p.gender,
+        serial:p.device?.serial||'—',
+        hr, spo2:sp,
+        last:p.live?.updatedAt,
+        alertLevel,
+        deviceStatus:p.live?.deviceStatus||null,
+        blood:p.profile?.nhom_mau, disease:p.profile?.benh_man_tinh, phone:p.phone,
+        threshold: thr,
+      };
+    });
     renderPts(pts);
     updSum();
     document.getElementById('last-upd').textContent=new Date().toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
@@ -1838,11 +1853,15 @@ function renderPts(list,q=''){
       hr   = p.hr   != null ? Number(p.hr)   : null;
       spo2 = p.spo2 != null ? Number(p.spo2) : null;
     }
-    const hc=hr!=null?(hr>100||hr<50?'var(--danger)':hr>90?'var(--warn)':'var(--green)'):'var(--muted)';
-    const sc=spo2!=null?(spo2<90?'var(--danger)':spo2<94?'var(--warn)':'var(--navy)'):'var(--muted)';
+    const thr  = p.threshold;
+    const hrMax   = thr?.nhip_tim_toi_da    || 120;
+    const hrMin   = thr?.nhip_tim_toi_thieu || 50;
+    const spo2Min = thr?.spo2_toi_thieu     || 94;
+    const hc = hr!=null   ? (hr>hrMax||hr<hrMin   ? 'var(--danger)' : 'var(--green)') : 'var(--muted)';
+    const sc = spo2!=null ? (spo2<spo2Min          ? 'var(--danger)' : 'var(--navy)')  : 'var(--muted)';
     const dob=p.dob?new Date(p.dob).toLocaleDateString('vi-VN'):'—';
     const sid=(p.id||'').slice(0,8).toUpperCase();
-    const bdg=sbadge(hr,spo2);
+    const bdg=sbadge(hr,spo2,thr);
     return `<div class="pt-row${selPid===p.id?' sel':''}" onclick="clickPt('${p.id}')" data-tip-pid="${p.id}">
       <div class="mono">BN-${sid}</div>
       <div style="font-size:.82rem;font-weight:600">${esc(p.name)}</div>
@@ -1854,10 +1873,13 @@ function renderPts(list,q=''){
     </div>`;
   }).join('');
 }
-function sbadge(hr,spo2){
-  if(hr==null&&spo2==null) return '<span class="badge off">⚫ Offline</span>';
-  if((spo2!=null&&spo2<90)||(hr!=null&&(hr>120||hr<45))) return '<span class="badge danger">🔴 Nguy hiểm</span>';
-  if((spo2!=null&&spo2<94)||(hr!=null&&(hr>100||hr<50))) return '<span class="badge warn">🟡 Cảnh báo</span>';
+function sbadge(hr, spo2, thr){
+  if(hr==null && spo2==null) return '<span class="badge off">⚫ Offline</span>';
+  const hrMax   = thr?.nhip_tim_toi_da    || 120;
+  const hrMin   = thr?.nhip_tim_toi_thieu || 50;
+  const spo2Min = thr?.spo2_toi_thieu     || 94;
+  const alert = (hr!=null && (hr>hrMax||hr<hrMin)) || (spo2!=null && spo2<spo2Min);
+  if(alert) return '<span class="badge warn">🟡 Cảnh báo</span>';
   return '<span class="badge ok">🟢 Bình thường</span>';
 }
 
