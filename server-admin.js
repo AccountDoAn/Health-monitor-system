@@ -719,64 +719,55 @@ app.get("/logs", async (req, res) => {
     const { page=1, limit=20, action, target, dateFrom, dateTo } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
 
-    const ALLOWED_ACTIONS = [
-      'CREATE_DEVICE','UPDATE_DEVICE','DELETE_DEVICE',
-      'LOGIN','LOGOUT','CHANGE_PASSWORD',
-      'CREATE_HOSPITAL','UPDATE_HOSPITAL','DELETE_HOSPITAL',
-      'CREATE_SUBADMIN','UPDATE_SUBADMIN','DELETE_SUBADMIN',
-      'CREATE_DOCTOR','UPDATE_DOCTOR','DELETE_DOCTOR',
-      'CREATE','UPDATE','DELETE',
-    ];
-    const ADMIN_TABLES = ['co_so_y_te','nguoi_dung','thiet_bi_iot','admin','sub_admin'];
-    const TRIGGER_ACTIONS = ['CREATE','UPDATE','DELETE'];
+    // Lấy adminId để phân biệt
+    const { data: adminRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","admin").maybeSingle();
+    const { data: saRole }    = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","sub_admin").maybeSingle();
 
-    // Lấy danh sách sub_admin IDs để loại khỏi trigger rows
-    const { data: saRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","sub_admin").maybeSingle();
-    let subAdminIds = [];
+    let adminIds = [], subAdminIds = [];
+    if(adminRole){
+      const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id", adminRole.id);
+      adminIds = (pq||[]).map(p=>p.nguoi_dung_id);
+    }
     if(saRole){
       const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id", saRole.id);
       subAdminIds = (pq||[]).map(p=>p.nguoi_dung_id);
     }
 
     let query = supabase.from("nhat_ky_he_thong")
-      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, du_lieu_bo_sung, ngay_tao", { count: 'exact' })
+      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, du_lieu_bo_sung, ngay_tao")
       .order("ngay_tao", { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1)
-      .in("hanh_dong", action ? [action] : ALLOWED_ACTIONS);
+      .range(offset, offset + parseInt(limit) - 1);
 
-    if (target) query = query.eq("loai_doi_tuong", target);
-    else        query = query.in("loai_doi_tuong", ADMIN_TABLES);
+    if(action)   query = query.eq("hanh_dong", action);
+    if(target)   query = query.eq("loai_doi_tuong", target);
+    if(dateFrom) query = query.gte("ngay_tao", dateFrom);
+    if(dateTo)   query = query.lte("ngay_tao", dateTo+'T23:59:59');
 
-    if (dateFrom) query = query.gte("ngay_tao", dateFrom);
-    if (dateTo)   query = query.lte("ngay_tao", dateTo+'T23:59:59');
+    const { data, error } = await query;
+    if(error) throw error;
 
-    const { data, error, count } = await query;
-    if (error) throw error;
-
-    // Lọc bỏ trigger rows (CREATE/UPDATE/DELETE) có nguoi_dung_id là sub_admin
-    // Nhưng GIỮ LẠI LOGIN/LOGOUT của sub_admin
+    // Lọc:
+    // - Admin → hiển thị tất cả hành động
+    // - Sub-admin → CHỈ hiển thị LOGIN và LOGOUT
+    // - Trigger hệ thống (nguoi_dung_id = null) → hiển thị
     const filtered = (data||[]).filter(l => {
-      if(!TRIGGER_ACTIONS.includes(l.hanh_dong)) return true; // Giữ tất cả action cụ thể (LOGIN, LOGOUT, CREATE_HOSPITAL...)
-      if(!l.nguoi_dung_id) return true; // Giữ trigger null (hệ thống tự động)
-      if(subAdminIds.includes(l.nguoi_dung_id)) return false; // Bỏ trigger từ sub-admin
+      if(!l.nguoi_dung_id) return true; // trigger hệ thống
+      if(adminIds.includes(l.nguoi_dung_id)) return true; // admin → tất cả
+      if(subAdminIds.includes(l.nguoi_dung_id)) return ['LOGIN','LOGOUT'].includes(l.hanh_dong); // sub-admin → chỉ login/logout
       return true;
     });
 
-    // Lấy tổng count sau khi lọc sub-admin triggers
-    // Cần fetch thêm để đếm chính xác — lấy tất cả ids trước
-    const countQuery = supabase.from("nhat_ky_he_thong")
-      .select("id, nguoi_dung_id, hanh_dong", { count: 'exact' })
-      .in("hanh_dong", action ? [action] : ALLOWED_ACTIONS)
-      .in("loai_doi_tuong", target ? [target] : ADMIN_TABLES);
-
-    const { data: allIds } = await countQuery;
-    const filteredAll = (allIds||[]).filter(l => {
-      if(!TRIGGER_ACTIONS.includes(l.hanh_dong)) return true;
+    // Đếm tổng chính xác
+    const { data: allRows } = await supabase.from("nhat_ky_he_thong")
+      .select("id, nguoi_dung_id, hanh_dong")
+      .gte("ngay_tao", dateFrom||'2000-01-01')
+      .lte("ngay_tao", dateTo ? dateTo+'T23:59:59' : '2099-12-31');
+    const trueTotal = (allRows||[]).filter(l => {
       if(!l.nguoi_dung_id) return true;
-      if(subAdminIds.includes(l.nguoi_dung_id)) return false;
+      if(adminIds.includes(l.nguoi_dung_id)) return true;
+      if(subAdminIds.includes(l.nguoi_dung_id)) return ['LOGIN','LOGOUT'].includes(l.hanh_dong);
       return true;
-    });
-    const trueTotal = filteredAll.length;
+    }).length;
 
     const uids = [...new Set(filtered.map(l=>l.nguoi_dung_id).filter(Boolean))];
     const uMap = {};
