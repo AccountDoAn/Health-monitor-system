@@ -719,63 +719,46 @@ app.get("/logs", async (req, res) => {
     const { page=1, limit=20, action, target, dateFrom, dateTo } = req.query;
     const offset = (parseInt(page)-1) * parseInt(limit);
 
-    // Lấy adminId để phân biệt
-    const { data: adminRole } = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","admin").maybeSingle();
-    const { data: saRole }    = await supabase.from("vai_tro").select("id").eq("ten_vai_tro","sub_admin").maybeSingle();
-
+    // Lấy danh sách adminIds và subAdminIds
+    const [adminRoleRes, saRoleRes] = await Promise.all([
+      supabase.from("vai_tro").select("id").eq("ten_vai_tro","admin").maybeSingle(),
+      supabase.from("vai_tro").select("id").eq("ten_vai_tro","sub_admin").maybeSingle(),
+    ]);
     let adminIds = [], subAdminIds = [];
-    if(adminRole){
-      const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id", adminRole.id);
+    if(adminRoleRes.data){
+      const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id", adminRoleRes.data.id);
       adminIds = (pq||[]).map(p=>p.nguoi_dung_id);
     }
-    if(saRole){
-      const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id", saRole.id);
+    if(saRoleRes.data){
+      const { data: pq } = await supabase.from("phan_quyen_nguoi_dung").select("nguoi_dung_id").eq("vai_tro_id", saRoleRes.data.id);
       subAdminIds = (pq||[]).map(p=>p.nguoi_dung_id);
     }
 
-    let query = supabase.from("nhat_ky_he_thong")
+    // Hàm filter: admin → tất cả | sub-admin → chỉ LOGIN/LOGOUT | null → chỉ bảng admin-level
+    const ADMIN_TABLES  = ['co_so_y_te','thiet_bi_iot','admin','sub_admin','nguoi_dung'];
+    const PASS = (l) => {
+      if(l.nguoi_dung_id && adminIds.includes(l.nguoi_dung_id))    return true;
+      if(l.nguoi_dung_id && subAdminIds.includes(l.nguoi_dung_id)) return ['LOGIN','LOGOUT'].includes(l.hanh_dong);
+      if(!l.nguoi_dung_id) return ADMIN_TABLES.includes(l.loai_doi_tuong);
+      return false;
+    };
+
+    // Query lấy tất cả rồi filter phía server
+    let q = supabase.from("nhat_ky_he_thong")
       .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong, doi_tuong_id, du_lieu_bo_sung, ngay_tao")
-      .order("ngay_tao", { ascending: false })
-      .range(offset, offset + parseInt(limit) - 1);
+      .order("ngay_tao", { ascending: false });
 
-    if(action)   query = query.eq("hanh_dong", action);
-    if(target)   query = query.eq("loai_doi_tuong", target);
-    if(dateFrom) query = query.gte("ngay_tao", dateFrom);
-    if(dateTo)   query = query.lte("ngay_tao", dateTo+'T23:59:59');
+    if(action)   q = q.eq("hanh_dong", action);
+    if(target)   q = q.eq("loai_doi_tuong", target);
+    if(dateFrom) q = q.gte("ngay_tao", dateFrom);
+    if(dateTo)   q = q.lte("ngay_tao", dateTo+'T23:59:59');
 
-    const { data, error } = await query;
+    const { data: allData, error } = await q;
     if(error) throw error;
 
-    // Lọc:
-    // - Admin → hiển thị tất cả hành động
-    // - Sub-admin → CHỈ hiển thị LOGIN và LOGOUT
-    // - Trigger hệ thống (nguoi_dung_id = null) → chỉ giữ nếu thuộc bảng admin-level
-    const ADMIN_TABLES = ['co_so_y_te','thiet_bi_iot','admin','sub_admin'];
-    const TRIGGER_ACTIONS = ['CREATE','UPDATE','DELETE'];
-
-    const filtered = (data||[]).filter(l => {
-      if(adminIds.includes(l.nguoi_dung_id)) return true; // admin → tất cả
-      if(subAdminIds.includes(l.nguoi_dung_id)) return ['LOGIN','LOGOUT'].includes(l.hanh_dong); // sub-admin → chỉ login/logout
-      // Trigger hệ thống (null) → chỉ giữ nếu thuộc bảng admin-level
-      if(!l.nguoi_dung_id && TRIGGER_ACTIONS.includes(l.hanh_dong)){
-        return ADMIN_TABLES.includes(l.loai_doi_tuong);
-      }
-      return false; // bỏ tất cả còn lại
-    });
-
-    // Đếm tổng chính xác
-    const { data: allRows } = await supabase.from("nhat_ky_he_thong")
-      .select("id, nguoi_dung_id, hanh_dong, loai_doi_tuong")
-      .gte("ngay_tao", dateFrom||'2000-01-01')
-      .lte("ngay_tao", dateTo ? dateTo+'T23:59:59' : '2099-12-31');
-    const trueTotal = (allRows||[]).filter(l => {
-      if(adminIds.includes(l.nguoi_dung_id)) return true;
-      if(subAdminIds.includes(l.nguoi_dung_id)) return ['LOGIN','LOGOUT'].includes(l.hanh_dong);
-      if(!l.nguoi_dung_id && TRIGGER_ACTIONS.includes(l.hanh_dong)){
-        return ADMIN_TABLES.includes(l.loai_doi_tuong);
-      }
-      return false;
-    }).length;
+    const allFiltered = (allData||[]).filter(PASS);
+    const trueTotal   = allFiltered.length;
+    const filtered    = allFiltered.slice(offset, offset + parseInt(limit));
 
     const uids = [...new Set(filtered.map(l=>l.nguoi_dung_id).filter(Boolean))];
     const uMap = {};
