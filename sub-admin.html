@@ -2586,10 +2586,14 @@ document.addEventListener('click', function(e){
 
 async function saveAddFamily(){
   const pid  = document.getElementById('af-patient-id').value;
-  const name = document.getElementById('af-name').value.trim();
+  const mode = document.querySelector('input[name="af-fam-mode"]:checked')?.value;
+  const name = mode==='existing'
+    ? (document.getElementById('af-fam-select')?.selectedOptions[0]?.text||'').split(' · ')[0].trim()
+    : document.getElementById('af-name').value.trim();
   const rel  = document.getElementById('af-rel').value;
   const msg  = document.getElementById('af-msg');
-  if(!name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
+  if(mode==='existing' && !_afSelectedUserId){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng chọn người nhà từ danh sách'; return; }
+  if(mode!=='existing' && !name){ msg.style.color='var(--danger)'; msg.textContent='Vui lòng nhập họ tên'; return; }
   if(!rel){  msg.style.color='var(--danger)'; msg.textContent='Vui lòng chọn quan hệ'; return; }
 
   const btn = document.getElementById('af-save-btn');
