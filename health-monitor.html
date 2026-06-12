@@ -686,10 +686,10 @@ async function onNewVital(payload){
     pt.hr         = v.nhip_tim   ?? pt.hr;
     pt.spo2       = v.spo2       ?? pt.spo2;
     pt.last       = v.thoi_gian_do;
-    // Tính lại alertLevel từ ngưỡng cảnh báo của bệnh nhân
     const hr = pt.hr != null ? Number(pt.hr) : null;
     const sp = pt.spo2 != null ? Number(pt.spo2) : null;
     const thr = pt.threshold;
+    console.log('[Alert debug] hr:', hr, 'spo2:', sp, 'threshold:', thr);
     if(hr==null && sp==null){
       pt.alertLevel = 'binh_thuong';
     } else if(thr){
@@ -743,117 +743,10 @@ async function onNewVital(payload){
 }
 
 // Xử lý khi có cảnh báo mới
-function onNewAlert(payload){
-  const a = payload.new;
-  if(!a) return;
-  showRealtimePulse();
-  // Refresh lại summary để cập nhật số cảnh báo
-  updSum();
-}
 
-// Subscribe Realtime — lắng nghe INSERT vào du_lieu_sinh_ton và canh_bao_suc_khoe
+// Subscribe Realtime — lắng nghe INSERT vào du_lieu_sinh_ton
 // ── CẢNH BÁO BELL ──
-let alertCache = [];
 
-async function loadActiveAlerts(){
-  try {
-    const r = await fetch(`${API}/doctor/${DID}/active-alerts`);
-    if(!r.ok){
-      const err = await r.json().catch(()=>({}));
-      console.warn('[active-alerts] Server error:', err);
-      // Vẫn render popup với cache cũ, không clear
-      return;
-    }
-    alertCache = await r.json();
-    renderAlertPopup();
-    updateBellBadge();
-  } catch(e){
-    console.warn('[active-alerts] Fetch error:', e.message);
-    // Nếu popup đang mở, hiện thông báo lỗi kết nối
-    const body = document.getElementById('alert-popup-body');
-    if(body && document.getElementById('alert-popup').classList.contains('open')){
-      body.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:.78rem">⚠️ Không thể tải dữ liệu cảnh báo</div>';
-    }
-  }
-}
-
-function updateBellBadge(){
-  // Đếm số bệnh nhân đang có cảnh báo active (thiet_bi_het_gio, không có thiet_bi_bam_nut)
-  const activePids = new Set();
-  (alertCache||[]).forEach(function(a){
-    const methods = a.methods||[];
-    if(methods.includes('thiet_bi_het_gio') && !methods.includes('thiet_bi_bam_nut')){
-      activePids.add(a.patientId);
-    }
-  });
-  const n = activePids.size;
-  const btn   = document.getElementById('bell-btn');
-  const badge = document.getElementById('bell-badge');
-  const countBadge = document.getElementById('alert-count-badge');
-  if(n > 0){
-    btn.classList.add('has-alert');
-    badge.style.display='flex';
-    badge.textContent = n > 99 ? '99+' : n;
-    if(countBadge) countBadge.textContent = n;
-  } else {
-    btn.classList.remove('has-alert');
-    badge.style.display='none';
-    if(countBadge) countBadge.textContent = '0';
-  }
-}
-
-function renderAlertPopup(){
-  const body = document.getElementById('alert-popup-body');
-  if(!pts.length){
-    body.innerHTML='<div style="padding:24px;text-align:center;color:var(--muted);font-size:.78rem">Chưa có bệnh nhân</div>';
-    return;
-  }
-
-  // Map alertCache theo patientId để check trạng thái nhanh
-  const alertMap = {};
-  (alertCache||[]).forEach(function(a){
-    // Chỉ bật tam giác nếu có thiet_bi_het_gio và KHÔNG có thiet_bi_bam_nut
-    const methods = a.methods||[];
-    const active = methods.includes('thiet_bi_het_gio') && !methods.includes('thiet_bi_bam_nut');
-    if(active){
-      // Giữ mức độ nguy hiểm nhất nếu có nhiều cảnh báo
-      if(!alertMap[a.patientId] || a.severity==='nguy_hiem'){
-        alertMap[a.patientId] = a.severity;
-      }
-    }
-  });
-
-  body.innerHTML = pts.map(function(p){
-    const sev = alertMap[p.id]; // undefined = không có cảnh báo
-    const triColor = sev==='nguy_hiem' ? 'var(--danger)' : sev==='canh_bao' ? 'var(--warn)' : 'transparent';
-
-    return '<div class="alert-item" onclick="gotoPatient(\''+p.id+'\')">'
-      // Tam giác — luôn có trong DOM, chỉ đổi màu fill
-      +'<svg width="18" height="18" viewBox="0 0 24 24" style="flex-shrink:0;transition:fill .3s" fill="'+triColor+'">'
-      +'<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>'
-      +(sev?'<line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="17" r="1" fill="#fff"/>':'')
-      +'</svg>'
-      // Tên + serial
-      +'<div class="alert-item-info">'
-      +'<div class="alert-item-name">'+esc(p.name)+'</div>'
-      +'<div class="alert-item-serial">'+esc(p.serial||'—')+'</div>'
-      +'</div>'
-      +'</div>';
-  }).join('');
-}
-
-function toggleAlertPopup(){
-  const popup = document.getElementById('alert-popup');
-  if(popup.classList.contains('open')){
-    popup.classList.remove('open');
-    return;
-  }
-  popup.classList.add('open');
-  // Render ngay từ cache trước (không hiện "Đang tải...")
-  renderAlertPopup();
-  // Sau đó fetch mới để cập nhật
-  loadActiveAlerts();
-}
 
 function gotoPatient(pid){
   document.getElementById('alert-popup').classList.remove('open');
@@ -866,47 +759,21 @@ document.addEventListener('click',function(e){
 });
 
 function setupRealtime(){
-  // Channel vitals — lắng nghe INSERT vào du_lieu_sinh_ton
-  // Đây là nguồn dữ liệu duy nhất để tính cảnh báo
+  // Chỉ subscribe du_lieu_sinh_ton — nguồn duy nhất để tính cảnh báo
   _sb.channel('vitals-live')
     .on('postgres_changes', {
       event:  'INSERT',
       schema: 'public',
       table:  'du_lieu_sinh_ton',
     }, onNewVital)
-    .subscribe(function(status){
-      console.log('[Realtime vitals]', status);
-    });
-
-  // Channel alerts
-  _sb.channel('alerts-live')
-    .on('postgres_changes', {
-      event:  'INSERT',
-      schema: 'public',
-      table:  'canh_bao_suc_khoe',
-    }, onNewAlert)
-    .subscribe(function(status){
-      console.log('[Realtime alerts]', status);
-    });
+    .subscribe();
 }
 
 // Khởi động Realtime sau khi load xong danh sách bệnh nhân
-// (cần pts[] để biết bệnh nhân nào thuộc bác sĩ này)
 function startRealtime(){
   setupRealtime();
-  // Thêm subscription cho xác nhận cảnh báo
-  _sb.channel('alert-confirm')
-    .on('postgres_changes',{
-      event:'INSERT', schema:'public', table:'xac_nhan_canh_bao'
-    }, function(payload){
-      const method = payload.new?.phuong_thuc_xac_nhan;
-      if(method==='thiet_bi_het_gio'||method==='thiet_bi_bam_nut'){
-        loadActiveAlerts(); // Realtime cập nhật bell
-      }
-    })
-    .subscribe();
-  // Load cảnh báo lần đầu
-  loadActiveAlerts();
+  updateBellBadge();
+  renderAlertPopup();
 }
 
 let pts=[], vcache={}, selPid=null, selDate=null, allDates=[], curCPid=null, ccache={};
@@ -1827,7 +1694,6 @@ async function loadData(){
     preloadAllVitals();
     pickToday();
     // Load cảnh báo ngay khi vào
-    loadActiveAlerts();
   } catch(e){ document.getElementById('pt-list').innerHTML=`<div class="loading">⚠️ ${esc(e.message)}</div>`; }
 }
 
